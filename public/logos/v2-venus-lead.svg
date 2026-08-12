@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" fill="none" role="img" aria-label="RAIDA  Feminine Leadership">
+  <!-- Modern @ fused with leadership / upward business -->
+  <rect width="100" height="100" rx="22" fill="#0A1328"/>
+  <!-- Venus circle -->
+  <circle cx="50" cy="38" r="18" stroke="#C9A55C" stroke-width="4" fill="none"/>
+  <!-- Cross stem of @ becoming growth arrow -->
+  <path d="M50 56 V78" stroke="#E4A0B0" stroke-width="4" stroke-linecap="round"/>
+  <path d="M38 68 H62" stroke="#E4A0B0" stroke-width="4" stroke-linecap="round"/>
+  <!-- Upward entrepreneurship tip -->
+  <path d="M50 78 L42 88 M50 78 L58 88" stroke="#C9A55C" stroke-width="3.2" stroke-linecap="round"/>
+  <!-- Inner empowerment node -->
+  <circle cx="50" cy="38" r="6" fill="#E4A0B0"/>
+</svg>
