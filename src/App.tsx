@@ -16,6 +16,7 @@ export default function App() {
   return (
     <BrowserRouter>
       <Routes>
+        <Route path="admin" element={<AdminDashboardPage />} />
         <Route element={<Layout />}>
           <Route index element={<HomePage />} />
           <Route path="members" element={<MembersPage />} />
@@ -27,7 +28,6 @@ export default function App() {
           <Route path="partnerships" element={<PartnershipsPage />} />
           <Route path="membership" element={<MembershipPage />} />
           <Route path="dashboard" element={<DashboardPage />} />
-          <Route path="admin" element={<AdminDashboardPage />} />
         </Route>
       </Routes>
     </BrowserRouter>

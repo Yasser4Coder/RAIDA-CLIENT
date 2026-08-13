@@ -5,10 +5,11 @@ import {
   Handshake, CreditCard, Home, ChevronLeft,
 } from 'lucide-react'
 import { AnimatePresence, motion } from 'motion/react'
-import { navLinks } from '../../data/mockData'
+import { navLinks } from '../../data/nav'
 import Button from '../ui/Button'
 import Logo from '../ui/Logo'
 import { springs, useMotionSafe } from '../../lib/motion'
+import { useAuth } from '../../context/AuthContext'
 
 const linkIcons: Record<string, typeof Home> = {
   '/': Home,
@@ -24,6 +25,9 @@ export default function Navbar() {
   const [scrolled, setScrolled] = useState(false)
   const location = useLocation()
   const { reduce, transition } = useMotionSafe()
+  const { user } = useAuth()
+  const isStaff = user?.role === 'admin' || user?.role === 'super_admin'
+  const isAdminPath = location.pathname.startsWith('/admin')
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 8)
@@ -95,13 +99,15 @@ export default function Navbar() {
 
             {/* Desktop actions */}
             <div className="hidden lg:flex items-center gap-2 relative z-10">
-              <Link
-                to="/dashboard"
-                className="inline-flex items-center gap-2 h-9 px-3 rounded-full text-[13px] font-medium text-muted hover:text-navy hover:bg-navy/[0.04] transition-colors pressable-soft"
-              >
-                <LayoutDashboard className="w-4 h-4" />
-                لوحة التحكم
-              </Link>
+              {!isStaff && !isAdminPath && (
+                <Link
+                  to="/dashboard"
+                  className="inline-flex items-center gap-2 h-9 px-3 rounded-full text-[13px] font-medium text-muted hover:text-navy hover:bg-navy/[0.04] transition-colors pressable-soft"
+                >
+                  <LayoutDashboard className="w-4 h-4" />
+                  لوحة التحكم
+                </Link>
+              )}
               <Link
                 to="/membership"
                 className="inline-flex items-center gap-1.5 h-10 px-5 rounded-full bg-navy text-white text-[13px] font-semibold pressable shadow-sm hover:bg-navy-light transition-colors ring-1 ring-gold/20"
@@ -207,11 +213,13 @@ export default function Navbar() {
                 })}
 
                 <div className="mt-2 pt-2.5 border-t border-navy/[0.06] grid grid-cols-2 gap-2 px-1 pb-1">
-                  <Button to="/dashboard" variant="outline" size="sm" className="w-full !rounded-full">
-                    <LayoutDashboard className="w-4 h-4" />
-                    لوحتي
-                  </Button>
-                  <Button to="/membership" variant="gold" size="sm" className="w-full !rounded-full">
+                  {!isStaff && !isAdminPath && (
+                    <Button to="/dashboard" variant="outline" size="sm" className="w-full !rounded-full">
+                      <LayoutDashboard className="w-4 h-4" />
+                      لوحتي
+                    </Button>
+                  )}
+                  <Button to="/membership" variant="gold" size="sm" className={`w-full !rounded-full ${isStaff || isAdminPath ? 'col-span-2' : ''}`}>
                     انضمي مجاناً
                   </Button>
                 </div>

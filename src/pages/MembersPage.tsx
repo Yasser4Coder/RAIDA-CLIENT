@@ -1,11 +1,13 @@
 import { useMemo, useState } from 'react'
 import { Search, SlidersHorizontal, X, Users, Sparkles } from 'lucide-react'
 import { AnimatePresence, motion } from 'motion/react'
-import { members, wilayas, serviceCategories } from '../data/mockData'
 import MemberCard from '../components/ui/MemberCard'
 import Button from '../components/ui/Button'
 import { Stagger, StaggerItem } from '../components/ui/Reveal'
+import { LoadingBlock, ErrorBlock } from '../components/ui/StateBlocks'
 import { materialize, springs, useMotionSafe } from '../lib/motion'
+import { useAsyncData } from '../hooks/useAsyncData'
+import { catalogApi } from '../lib/catalog'
 
 export default function MembersPage() {
   const [search, setSearch] = useState('')
@@ -15,23 +17,28 @@ export default function MembersPage() {
   const [showFilters, setShowFilters] = useState(false)
   const { reduce, transition } = useMotionSafe()
 
-  const categories = [...new Set(members.map((m) => m.category))]
+  const filtersKey = `${search}|${wilaya}|${service}|${category}`
 
-  const filtered = useMemo(() => {
-    return members.filter((m) => {
-      const q = search.trim()
-      const matchSearch =
-        !q ||
-        m.name.includes(q) ||
-        m.specialty.includes(q) ||
-        m.title.includes(q) ||
-        m.city.includes(q)
-      const matchWilaya = !wilaya || m.wilaya === wilaya
-      const matchService = !service || m.services.includes(service)
-      const matchCategory = !category || m.category === category
-      return matchSearch && matchWilaya && matchService && matchCategory
-    })
-  }, [search, wilaya, service, category])
+  const { data: membersPayload, loading, error, reload } = useAsyncData(
+    () =>
+      catalogApi.members({
+        limit: 100,
+        search: search.trim() || undefined,
+        wilaya: wilaya || undefined,
+        service: service || undefined,
+        category: category || undefined,
+      }),
+    [filtersKey],
+  )
+
+  const { data: wilayas } = useAsyncData(() => catalogApi.wilayas(), [])
+  const { data: serviceCategories } = useAsyncData(() => catalogApi.serviceCategories(), [])
+
+  const members = membersPayload?.data ?? []
+  const categories = useMemo(
+    () => [...new Set(members.map((m) => m.category).filter(Boolean))],
+    [members],
+  )
 
   const clearFilters = () => {
     setSearch('')
@@ -45,7 +52,6 @@ export default function MembersPage() {
 
   return (
     <div className="min-h-screen bg-ivory">
-      {/* Page hero — hierarchy from skill */}
       <section className="relative isolate overflow-hidden pt-28 pb-10 sm:pb-12">
         <div className="absolute inset-0 -z-10 pointer-events-none" aria-hidden>
           <div className="absolute inset-0 bg-gradient-to-b from-rose-soft/90 via-ivory to-ivory" />
@@ -62,7 +68,9 @@ export default function MembersPage() {
             <div className="inline-flex items-center gap-2 rounded-full bg-white/70 px-3.5 py-1.5 text-[12px] font-semibold text-navy ring-1 ring-rose/25 shadow-xs mb-4">
               <Users className="w-3.5 h-3.5 text-rose" />
               دليل الأعضاء
-              <span className="text-muted font-medium">· {members.length.toLocaleString('ar-DZ')}+ رائدة</span>
+              <span className="text-muted font-medium">
+                · {(membersPayload?.meta?.total ?? members.length).toLocaleString('ar-DZ')}+ رائدة
+              </span>
             </div>
 
             <h1 className="text-4xl sm:text-5xl font-extrabold tracking-tight text-navy leading-[1.15]">
@@ -79,7 +87,6 @@ export default function MembersPage() {
       </section>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-20">
-        {/* Sticky translucent search chrome */}
         <div className="sticky top-[4.5rem] z-30 -mx-4 px-4 sm:mx-0 sm:px-0 mb-5">
           <div className="material rounded-[20px] shadow-md hairline edge-highlight p-3 sm:p-3.5">
             <div className="flex flex-col sm:flex-row gap-2.5">
@@ -121,7 +128,6 @@ export default function MembersPage() {
               </Button>
             </div>
 
-            {/* Advanced filters — materialize in/out same path */}
             <AnimatePresence initial={false}>
               {showFilters && (
                 <motion.div
@@ -141,7 +147,7 @@ export default function MembersPage() {
                       className="w-full px-3 h-10 rounded-[12px] border border-separator bg-white text-sm focus:outline-none focus:border-rose/40"
                     >
                       <option value="">كل الولايات</option>
-                      {wilayas.map((w) => (
+                      {(wilayas ?? []).map((w) => (
                         <option key={w} value={w}>
                           {w}
                         </option>
@@ -171,7 +177,7 @@ export default function MembersPage() {
                       className="w-full px-3 h-10 rounded-[12px] border border-separator bg-white text-sm focus:outline-none focus:border-rose/40"
                     >
                       <option value="">كل الخدمات</option>
-                      {serviceCategories.map((s) => (
+                      {(serviceCategories ?? []).map((s) => (
                         <option key={s.id} value={s.name}>
                           {s.name}
                         </option>
@@ -183,10 +189,9 @@ export default function MembersPage() {
             </AnimatePresence>
           </div>
 
-          {/* Results meta */}
           <div className="mt-3 flex items-center justify-between gap-3 px-1">
             <p className="text-[13px] text-muted">
-              <span className="font-semibold text-navy tabular-nums">{filtered.length}</span> نتيجة
+              <span className="font-semibold text-navy tabular-nums">{members.length}</span> نتيجة
             </p>
             {hasFilters && (
               <button
@@ -201,7 +206,6 @@ export default function MembersPage() {
           </div>
         </div>
 
-        {/* Category chips — spring active pill */}
         <div className="flex gap-2 overflow-x-auto pb-4 -mx-1 px-1 scrollbar-hide">
           <button
             type="button"
@@ -243,16 +247,20 @@ export default function MembersPage() {
           })}
         </div>
 
-        {/* Grid */}
-        {filtered.length > 0 ? (
+        {loading && <LoadingBlock />}
+        {error && <ErrorBlock message={error} onRetry={reload} />}
+
+        {!loading && !error && members.length > 0 ? (
           <Stagger className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-            {filtered.map((m) => (
+            {members.map((m) => (
               <StaggerItem key={m.id}>
                 <MemberCard member={m} />
               </StaggerItem>
             ))}
           </Stagger>
-        ) : (
+        ) : null}
+
+        {!loading && !error && members.length === 0 ? (
           <motion.div
             initial={reduce ? false : { opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
@@ -270,7 +278,7 @@ export default function MembersPage() {
               مسح الفلاتر
             </Button>
           </motion.div>
-        )}
+        ) : null}
       </div>
     </div>
   )

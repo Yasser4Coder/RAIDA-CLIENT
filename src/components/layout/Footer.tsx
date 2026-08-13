@@ -2,7 +2,8 @@ import { Link } from 'react-router-dom'
 import { Mail, MapPin, Phone, ChevronLeft, ArrowUp } from 'lucide-react'
 import { InstagramIcon, LinkedinIcon, YoutubeIcon } from '../ui/SocialIcons'
 import Logo from '../ui/Logo'
-import { navLinks } from '../../data/mockData'
+import Button from '../ui/Button'
+import { navLinks } from '../../data/nav'
 
 const explore = navLinks
 const community = [
@@ -14,8 +15,8 @@ const community = [
 const company = [
   { to: '/membership', label: 'العضوية' },
   { to: '/dashboard', label: 'لوحة التحكم' },
-  { href: '#', label: 'قصص النجاح' },
-  { href: '#', label: 'المساعدة' },
+  { to: '/#stories', label: 'قصص النجاح' },
+  { to: '/membership', label: 'المساعدة' },
 ]
 
 const socials = [
@@ -47,40 +48,22 @@ export default function Footer() {
             <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-6">
               <div className="max-w-md">
                 <p className="text-[12px] font-semibold tracking-[0.04em] text-rose-light/90 mb-2">
-                  النشرة المهنية
+                  العضوية
                 </p>
                 <h2 className="text-2xl sm:text-3xl font-extrabold tracking-[-0.02em] leading-snug">
-                  فرص وفعاليات تصلك كل أسبوع
+                  جاهزة للانضمام؟
                 </h2>
                 <p className="mt-2 text-sm text-white/50 leading-relaxed">
-                  انضمي لقائمة الرائدات واحصلي على أهم الأخبار والشراكات.
+                  أنشئي حسابكِ واختاري الخطة التي تناسب مرحلة نموكِ.
                 </p>
               </div>
 
-              <form
-                className="w-full lg:max-w-md flex flex-col sm:flex-row gap-2"
-                onSubmit={(e) => e.preventDefault()}
-              >
-                <label className="sr-only" htmlFor="footer-email">
-                  البريد الإلكتروني
-                </label>
-                <div className="relative flex-1">
-                  <Mail className="pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-white/35" />
-                  <input
-                    id="footer-email"
-                    type="email"
-                    placeholder="بريدكِ الإلكتروني"
-                    className="w-full h-12 pr-10 pl-4 rounded-[14px] bg-white/[0.06] border border-white/10 text-sm text-white placeholder:text-white/35 focus:outline-none focus:border-rose/50 focus:ring-2 focus:ring-rose/20 transition-shadow backdrop-blur-sm"
-                  />
-                </div>
-                <button
-                  type="submit"
-                  className="h-12 px-5 rounded-[14px] bg-rose text-navy text-sm font-semibold pressable hover:bg-rose-light transition-colors inline-flex items-center justify-center gap-1.5 shrink-0 shadow-sm"
-                >
-                  اشتركي
+              <div className="w-full lg:max-w-md">
+                <Button to="/membership" variant="gold" size="md" className="w-full sm:w-auto">
+                  انضمي إلى RAIDA
                   <ChevronLeft className="w-4 h-4 opacity-70" />
-                </button>
-              </form>
+                </Button>
+              </div>
             </div>
           </div>
 
@@ -98,14 +81,13 @@ export default function Footer() {
 
               <div className="mt-6 flex gap-2">
                 {socials.map(({ Icon, label }) => (
-                  <a
+                  <span
                     key={label}
-                    href="#"
                     aria-label={label}
-                    className="w-10 h-10 rounded-full bg-white/[0.06] ring-1 ring-white/10 hover:bg-rose/20 hover:ring-rose/30 flex items-center justify-center transition-colors pressable"
+                    className="w-10 h-10 rounded-full bg-white/[0.06] ring-1 ring-white/10 flex items-center justify-center"
                   >
                     <Icon className="w-4 h-4 text-white/75" />
-                  </a>
+                  </span>
                 ))}
               </div>
 
@@ -187,21 +169,12 @@ export default function Footer() {
               <ul className="space-y-2.5">
                 {company.map((link) => (
                   <li key={link.label}>
-                    {'to' in link && link.to ? (
-                      <Link
-                        to={link.to}
-                        className="text-[13px] text-white/45 hover:text-rose-light transition-colors pressable-soft inline-block"
-                      >
-                        {link.label}
-                      </Link>
-                    ) : (
-                      <a
-                        href={link.href}
-                        className="text-[13px] text-white/45 hover:text-rose-light transition-colors pressable-soft inline-block"
-                      >
-                        {link.label}
-                      </a>
-                    )}
+                    <Link
+                      to={link.to}
+                      className="text-[13px] text-white/45 hover:text-rose-light transition-colors pressable-soft inline-block"
+                    >
+                      {link.label}
+                    </Link>
                   </li>
                 ))}
               </ul>
@@ -214,10 +187,10 @@ export default function Footer() {
               © 2026 RAIDA رائدة. جميع الحقوق محفوظة.
             </p>
             <div className="flex items-center gap-5">
-              <a href="#" className="text-[11px] text-white/30 hover:text-white/65 transition-colors">
+              <a href="mailto:hello@raida.dz?subject=سياسة الخصوصية" className="text-[11px] text-white/30 hover:text-white/65 transition-colors">
                 سياسة الخصوصية
               </a>
-              <a href="#" className="text-[11px] text-white/30 hover:text-white/65 transition-colors">
+              <a href="mailto:hello@raida.dz?subject=شروط الاستخدام" className="text-[11px] text-white/30 hover:text-white/65 transition-colors">
                 شروط الاستخدام
               </a>
               <button

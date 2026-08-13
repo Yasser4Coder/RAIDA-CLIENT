@@ -1,24 +1,69 @@
 import { useParams, Link } from 'react-router-dom'
 import { Globe, ArrowRight, ExternalLink } from 'lucide-react'
 import { InstagramIcon, LinkedinIcon } from '../components/ui/SocialIcons'
-import { brands } from '../data/mockData'
 import Badge from '../components/ui/Badge'
 import Button from '../components/ui/Button'
+import { LoadingBlock, ErrorBlock } from '../components/ui/StateBlocks'
+import { useAsyncData } from '../hooks/useAsyncData'
+import { catalogApi } from '../lib/catalog'
+import { asArray } from '../lib/normalize'
+import { safeHref } from '../lib/safe'
+
+const logoFallback =
+  'https://images.unsplash.com/photo-1560179707-f14e90ef3623?w=200&h=200&fit=crop'
+const coverFallback =
+  'https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?w=1200&h=500&fit=crop'
+const imageFallback =
+  'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=400&h=400&fit=crop'
 
 export default function BrandPage() {
   const { id } = useParams()
-  const brand = brands.find((b) => b.id === Number(id)) || brands[0]
+
+  const {
+    data: brand,
+    loading,
+    error,
+    reload,
+  } = useAsyncData(() => catalogApi.brand(id!), [id])
+
+  if (loading) {
+    return (
+      <div className="pt-20 min-h-screen bg-ivory">
+        <LoadingBlock />
+      </div>
+    )
+  }
+
+  if (error || !brand) {
+    return (
+      <div className="pt-20 min-h-screen bg-ivory">
+        <ErrorBlock message={error || 'العلامة غير موجودة'} onRetry={reload} />
+      </div>
+    )
+  }
+
+  const logo = brand.logo || logoFallback
+  const cover = brand.cover || coverFallback
+  const founder = brand.founder
+  const products = asArray(brand.products)
+  const services = asArray(brand.services)
+  const news = asArray(brand.news)
+  const gallery = [
+    cover,
+    logo,
+    founder?.image || imageFallback,
+  ].filter(Boolean)
 
   return (
     <div className="pt-20 pb-16 min-h-screen bg-ivory">
       {/* Cover */}
       <div className="relative h-56 sm:h-72 lg:h-80 overflow-hidden">
-        <img src={brand.cover} alt={brand.name} className="w-full h-full object-cover" />
+        <img src={cover} alt={brand.name} className="w-full h-full object-cover" />
         <div className="absolute inset-0 bg-gradient-to-t from-navy via-navy/40 to-transparent" />
         <div className="absolute bottom-0 inset-x-0 p-6 sm:p-10 max-w-7xl mx-auto">
           <div className="flex items-end gap-5">
             <img
-              src={brand.logo}
+              src={logo}
               alt=""
               className="w-20 h-20 sm:w-28 sm:h-28 rounded-[18px] object-cover border-4 border-white shadow-elevated"
             />
@@ -37,45 +82,49 @@ export default function BrandPage() {
             {/* Story */}
             <section className="bg-white rounded-[18px] p-6 sm:p-8 border border-rose/10 shadow-soft">
               <h2 className="text-xl font-bold text-navy mb-4">قصة العلامة</h2>
-              <p className="text-muted leading-relaxed text-base">{brand.story}</p>
+              <p className="text-muted leading-relaxed text-base">{brand.story || brand.description}</p>
             </section>
 
             {/* Products */}
-            <section className="bg-white rounded-[18px] p-6 sm:p-8 border border-rose/10 shadow-soft">
-              <h2 className="text-xl font-bold text-navy mb-5">المنتجات</h2>
-              <div className="grid sm:grid-cols-3 gap-4">
-                {brand.products.map((p, i) => (
-                  <div key={p} className="group rounded-[16px] overflow-hidden border border-rose/10 card-hover">
-                    <div className="h-32 bg-gradient-to-br from-rose-soft to-blush overflow-hidden">
-                      <img
-                        src={`https://images.unsplash.com/photo-${['1596462502278-27bfdc403348', '1522335789203-aabd1fc54bc9', '1490481651871-ab68de25d43d'][i % 3]}?w=400&h=300&fit=crop`}
-                        alt={p}
-                        className="w-full h-full object-cover opacity-80 group-hover:scale-105 transition-transform duration-500"
-                      />
+            {products.length > 0 && (
+              <section className="bg-white rounded-[18px] p-6 sm:p-8 border border-rose/10 shadow-soft">
+                <h2 className="text-xl font-bold text-navy mb-5">المنتجات</h2>
+                <div className="grid sm:grid-cols-3 gap-4">
+                  {products.map((p, i) => (
+                    <div key={p} className="group rounded-[16px] overflow-hidden border border-rose/10 card-hover">
+                      <div className="h-32 bg-gradient-to-br from-rose-soft to-blush overflow-hidden">
+                        <img
+                          src={`https://images.unsplash.com/photo-${['1596462502278-27bfdc403348', '1522335789203-aabd1fc54bc9', '1490481651871-ab68de25d43d'][i % 3]}?w=400&h=300&fit=crop`}
+                          alt={p}
+                          className="w-full h-full object-cover opacity-80 group-hover:scale-105 transition-transform duration-500"
+                        />
+                      </div>
+                      <div className="p-4">
+                        <p className="font-semibold text-navy text-sm">{p}</p>
+                      </div>
                     </div>
-                    <div className="p-4">
-                      <p className="font-semibold text-navy text-sm">{p}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </section>
+                  ))}
+                </div>
+              </section>
+            )}
 
             {/* Services */}
-            <section className="bg-white rounded-[18px] p-6 sm:p-8 border border-rose/10 shadow-soft">
-              <h2 className="text-xl font-bold text-navy mb-4">الخدمات</h2>
-              <div className="flex flex-wrap gap-2">
-                {brand.services.map((s) => (
-                  <Badge key={s} variant="rose">{s}</Badge>
-                ))}
-              </div>
-            </section>
+            {services.length > 0 && (
+              <section className="bg-white rounded-[18px] p-6 sm:p-8 border border-rose/10 shadow-soft">
+                <h2 className="text-xl font-bold text-navy mb-4">الخدمات</h2>
+                <div className="flex flex-wrap gap-2">
+                  {services.map((s) => (
+                    <Badge key={s} variant="rose">{s}</Badge>
+                  ))}
+                </div>
+              </section>
+            )}
 
             {/* Gallery */}
             <section className="bg-white rounded-[18px] p-6 sm:p-8 border border-rose/10 shadow-soft">
               <h2 className="text-xl font-bold text-navy mb-5">المعرض</h2>
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                {[brand.cover, brand.logo, brand.founder.image, brands[1].cover, brands[2].cover, brands[3].logo].map((img, i) => (
+                {gallery.map((img, i) => (
                   <div key={i} className={`rounded-[14px] overflow-hidden ${i === 0 ? 'sm:col-span-2 sm:row-span-2' : ''} aspect-square sm:aspect-auto`}>
                     <img src={img} alt="" className="w-full h-full object-cover hover:scale-105 transition-transform duration-500 min-h-[120px]" />
                   </div>
@@ -84,50 +133,88 @@ export default function BrandPage() {
             </section>
 
             {/* News */}
-            <section className="bg-white rounded-[18px] p-6 sm:p-8 border border-rose/10 shadow-soft">
-              <h2 className="text-xl font-bold text-navy mb-4">الأخبار</h2>
-              <div className="space-y-3">
-                {brand.news.map((n) => (
-                  <div key={n} className="flex items-center gap-3 p-4 rounded-[12px] bg-rose-soft/40 border border-rose/10">
-                    <div className="w-2 h-2 rounded-full bg-rose shrink-0" />
-                    <p className="text-sm text-navy font-medium">{n}</p>
-                  </div>
-                ))}
-              </div>
-            </section>
+            {news.length > 0 && (
+              <section className="bg-white rounded-[18px] p-6 sm:p-8 border border-rose/10 shadow-soft">
+                <h2 className="text-xl font-bold text-navy mb-4">الأخبار</h2>
+                <div className="space-y-3">
+                  {news.map((n) => (
+                    <div key={n} className="flex items-center gap-3 p-4 rounded-[12px] bg-rose-soft/40 border border-rose/10">
+                      <div className="w-2 h-2 rounded-full bg-rose shrink-0" />
+                      <p className="text-sm text-navy font-medium">{n}</p>
+                    </div>
+                  ))}
+                </div>
+              </section>
+            )}
           </div>
 
           <aside className="space-y-6">
             {/* Founder */}
-            <div className="bg-white rounded-[18px] p-6 border border-rose/10 shadow-soft">
-              <h3 className="font-bold text-navy mb-4">المؤسسة</h3>
-              <Link to={`/members/${brand.founder.id}`} className="flex items-center gap-4 group">
-                <img src={brand.founder.image} alt={brand.founder.name} className="w-16 h-16 rounded-[14px] object-cover" />
-                <div>
-                  <p className="font-bold text-navy group-hover:text-gold-dark transition-colors">{brand.founder.name}</p>
-                  <p className="text-sm text-muted">{brand.founder.title}</p>
-                </div>
-              </Link>
-            </div>
+            {founder && (
+              <div className="bg-white rounded-[18px] p-6 border border-rose/10 shadow-soft">
+                <h3 className="font-bold text-navy mb-4">المؤسسة</h3>
+                <Link to={`/members/${founder.id}`} className="flex items-center gap-4 group">
+                  <img
+                    src={founder.image || imageFallback}
+                    alt={founder.name}
+                    className="w-16 h-16 rounded-[14px] object-cover"
+                  />
+                  <div>
+                    <p className="font-bold text-navy group-hover:text-gold-dark transition-colors">{founder.name}</p>
+                    <p className="text-sm text-muted">{founder.title}</p>
+                  </div>
+                </Link>
+              </div>
+            )}
 
             {/* Links */}
             <div className="bg-white rounded-[18px] p-6 border border-rose/10 shadow-soft">
               <h3 className="font-bold text-navy mb-4">الروابط</h3>
               <div className="space-y-3">
-                <a href="#" className="flex items-center gap-3 text-sm text-muted hover:text-gold-dark">
-                  <Globe className="w-4 h-4 text-rose" /> الموقع الإلكتروني
-                  <ExternalLink className="w-3 h-3 mr-auto" />
-                </a>
-                <a href="#" className="flex items-center gap-3 text-sm text-muted hover:text-gold-dark">
-                  <InstagramIcon className="w-4 h-4 text-rose" /> Instagram
-                </a>
-                <a href="#" className="flex items-center gap-3 text-sm text-muted hover:text-gold-dark">
-                  <LinkedinIcon className="w-4 h-4 text-rose" /> LinkedIn
-                </a>
+                {safeHref(founder?.website) && (
+                  <a
+                    href={safeHref(founder?.website)}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="flex items-center gap-3 text-sm text-muted hover:text-gold-dark"
+                  >
+                    <Globe className="w-4 h-4 text-rose" /> الموقع الإلكتروني
+                    <ExternalLink className="w-3 h-3 mr-auto" />
+                  </a>
+                )}
+                {safeHref(founder?.social?.instagram) && (
+                  <a
+                    href={safeHref(founder?.social?.instagram)}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="flex items-center gap-3 text-sm text-muted hover:text-gold-dark"
+                  >
+                    <InstagramIcon className="w-4 h-4 text-rose" /> Instagram
+                  </a>
+                )}
+                {safeHref(founder?.social?.linkedin) && (
+                  <a
+                    href={safeHref(founder?.social?.linkedin)}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="flex items-center gap-3 text-sm text-muted hover:text-gold-dark"
+                  >
+                    <LinkedinIcon className="w-4 h-4 text-rose" /> LinkedIn
+                  </a>
+                )}
+                {!safeHref(founder?.website) && !safeHref(founder?.social?.instagram) && !safeHref(founder?.social?.linkedin) && (
+                  <p className="text-sm text-muted">لا توجد روابط بعد.</p>
+                )}
               </div>
-              <Button variant="gold" size="md" className="w-full mt-5">
-                زيارة الموقع
-              </Button>
+              {founder?.website ? (
+                <Button href={founder.website} variant="gold" size="md" className="w-full mt-5">
+                  زيارة الموقع
+                </Button>
+              ) : founder ? (
+                <Button to={`/members/${founder.id}`} variant="gold" size="md" className="w-full mt-5">
+                  تواصلي مع المؤسسة
+                </Button>
+              ) : null}
             </div>
 
             <Link to="/brands" className="flex items-center gap-2 text-sm font-semibold text-navy hover:text-gold-dark">

@@ -3,6 +3,8 @@ import { Check, ChevronLeft, Play } from 'lucide-react'
 import { motion } from 'motion/react'
 import Button from '../ui/Button'
 import { springs, useMotionSafe } from '../../lib/motion'
+import { useAsyncData } from '../../hooks/useAsyncData'
+import { catalogApi } from '../../lib/catalog'
 
 const HERO_IMG =
   'https://images.unsplash.com/photo-1573164713714-d95e436ab8d6?w=1400&h=900&fit=crop&q=80'
@@ -23,6 +25,10 @@ const trust = [
 
 export default function Hero() {
   const { reduce, fadeUp, transition } = useMotionSafe()
+  const { data: eventsPayload } = useAsyncData(() => catalogApi.events({ limit: 1 }), [])
+  const { data: stats } = useAsyncData(() => catalogApi.stats(), [])
+  const featuredEvent = eventsPayload?.data[0]
+  const communityStat = stats?.find((s) => /عضو|رائد|عضوة/.test(s.label)) ?? stats?.[0]
 
   return (
     <section className="relative isolate overflow-hidden bg-ivory">
@@ -62,11 +68,11 @@ export default function Hero() {
           transition={{ ...transition, delay: reduce ? 0 : 0.04 }}
         >
           <Link
-            to="/events"
+            to={featuredEvent ? `/events/${featuredEvent.id}` : '/events'}
             className="inline-flex items-center gap-2 rounded-full bg-white/80 px-4 py-1.5 text-[13px] font-medium text-navy ring-1 ring-inset ring-rose/25 hover:bg-blush/80 hover:ring-rose/40 transition-colors pressable-soft mb-8 shadow-xs"
           >
             <span className="h-1.5 w-1.5 rounded-full bg-rose animate-pulse" />
-            ملتقى رائدات الأعمال 2026
+            {featuredEvent?.title || 'اكتشفي فعاليات المجتمع'}
             <ChevronLeft className="w-3.5 h-3.5 text-muted" />
           </Link>
         </motion.div>
@@ -156,7 +162,10 @@ export default function Hero() {
             ))}
           </div>
           <p className="text-sm text-muted">
-            <span className="font-semibold text-navy">+12,500</span> رائدة في المجتمع
+            <span className="font-semibold text-navy">
+              {communityStat ? `+${communityStat.value.toLocaleString('ar-DZ')}${communityStat.suffix || ''}` : 'مجتمع رائدات'}
+            </span>{' '}
+            {communityStat?.label || 'في المجتمع'}
           </p>
         </motion.div>
 

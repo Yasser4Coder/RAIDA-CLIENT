@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom'
 import type { ButtonHTMLAttributes, ReactNode } from 'react'
+import { safeHref } from '../../lib/safe'
 
 type Variant = 'primary' | 'secondary' | 'gold' | 'soft' | 'outline' | 'ghost' | 'glass'
 type Size = 'sm' | 'md' | 'lg'
@@ -9,7 +10,10 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   size?: Size
   children: ReactNode
   to?: string
+  href?: string
   className?: string
+  target?: string
+  rel?: string
 }
 
 const variants: Record<Variant, string> = {
@@ -33,17 +37,36 @@ export default function Button({
   size = 'md',
   children,
   to,
+  href,
   className = '',
   type = 'button',
+  target,
+  rel,
   ...props
 }: ButtonProps) {
   const classes = `inline-flex items-center justify-center font-medium select-none cursor-pointer pressable ${variants[variant]} ${sizes[size]} ${className}`
 
   if (to) {
     return (
-      <Link to={to} className={classes}>
+      <Link to={to} className={classes} target={target} rel={rel}>
         {children}
       </Link>
+    )
+  }
+
+  if (href) {
+    const safe = safeHref(href) || (href.startsWith('/') && !href.startsWith('//') ? href : undefined)
+    if (!safe) return null
+    const external = /^https?:/i.test(safe) || Boolean(target)
+    return (
+      <a
+        href={safe}
+        className={classes}
+        target={target ?? (external ? '_blank' : undefined)}
+        rel={rel ?? (external ? 'noreferrer' : undefined)}
+      >
+        {children}
+      </a>
     )
   }
 

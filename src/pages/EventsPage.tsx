@@ -1,18 +1,37 @@
 import { useMemo, useState } from 'react'
 import { Search, CalendarDays, Sparkles, X } from 'lucide-react'
 import { motion } from 'motion/react'
-import { events } from '../data/mockData'
 import EventCard from '../components/ui/EventCard'
 import Button from '../components/ui/Button'
 import Reveal, { Stagger, StaggerItem } from '../components/ui/Reveal'
+import { LoadingBlock, ErrorBlock } from '../components/ui/StateBlocks'
 import { springs, useMotionSafe } from '../lib/motion'
+import { useAsyncData } from '../hooks/useAsyncData'
+import { catalogApi } from '../lib/catalog'
 
 export default function EventsPage() {
   const [search, setSearch] = useState('')
   const [category, setCategory] = useState('')
   const { reduce } = useMotionSafe()
 
-  const categories = [...new Set(events.map((e) => e.category))]
+  const filtersKey = `${search}|${category}`
+
+  const { data: eventsPayload, loading, error, reload } = useAsyncData(
+    () =>
+      catalogApi.events({
+        limit: 100,
+        search: search.trim() || undefined,
+        category: category || undefined,
+      }),
+    [filtersKey],
+  )
+
+  const events = eventsPayload?.data ?? []
+
+  const categories = useMemo(
+    () => [...new Set(events.map((e) => e.category).filter(Boolean))],
+    [events],
+  )
 
   const filtered = useMemo(() => {
     return events.filter((e) => {
@@ -22,7 +41,7 @@ export default function EventsPage() {
       const matchCat = !category || e.category === category
       return matchSearch && matchCat
     })
-  }, [search, category])
+  }, [events, search, category])
 
   const featured = filtered[0]
   const rest = filtered.slice(1)
@@ -52,7 +71,9 @@ export default function EventsPage() {
             <div className="inline-flex items-center gap-2 rounded-full bg-white/70 px-3.5 py-1.5 text-[12px] font-semibold text-navy ring-1 ring-rose/25 shadow-xs mb-4">
               <CalendarDays className="w-3.5 h-3.5 text-rose" />
               الفعاليات
-              <span className="text-muted font-medium">· {events.length} قادمة</span>
+              <span className="text-muted font-medium">
+                · {(eventsPayload?.meta?.total ?? events.length).toLocaleString('ar-DZ')} قادمة
+              </span>
             </div>
 
             <h1 className="text-4xl sm:text-5xl font-extrabold tracking-tight text-navy leading-[1.15]">
@@ -153,7 +174,11 @@ export default function EventsPage() {
           })}
         </div>
 
-        {filtered.length > 0 ? (
+        {loading ? (
+          <LoadingBlock />
+        ) : error ? (
+          <ErrorBlock message={error} onRetry={reload} />
+        ) : filtered.length > 0 ? (
           <div className="space-y-4">
             {featured && (
               <Reveal>

@@ -1,10 +1,15 @@
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { Check, ChevronLeft, Sparkles, CreditCard, ChevronDown } from 'lucide-react'
 import { AnimatePresence, motion } from 'motion/react'
-import { pricingPlans } from '../data/mockData'
 import Button from '../components/ui/Button'
 import Reveal, { Stagger, StaggerItem } from '../components/ui/Reveal'
+import { LoadingBlock, ErrorBlock } from '../components/ui/StateBlocks'
 import { springs, useMotionSafe } from '../lib/motion'
+import { useAsyncData } from '../hooks/useAsyncData'
+import { useAuth } from '../context/AuthContext'
+import { catalogApi, meApi } from '../lib/catalog'
+import { asArray } from '../lib/normalize'
 
 const faqs = [
   {
@@ -30,6 +35,49 @@ const trust = ['إلغاء في أي وقت', 'بدون بطاقة للخطة ا
 export default function MembershipPage() {
   const { reduce } = useMotionSafe()
   const [openFaq, setOpenFaq] = useState<number | null>(0)
+  const { user, refreshMe } = useAuth()
+  const navigate = useNavigate()
+  const [busyPlan, setBusyPlan] = useState<string | null>(null)
+  const [planError, setPlanError] = useState<string | null>(null)
+
+  const {
+    data: pricingPlans,
+    loading,
+    error,
+    reload,
+  } = useAsyncData(() => catalogApi.plans(), [])
+
+  const plans = pricingPlans ?? []
+
+  const selectPlan = async (planName: string) => {
+    if (!user) {
+      navigate('/dashboard')
+      return
+    }
+    if (user.role === 'admin' || user.role === 'super_admin') {
+      navigate('/admin')
+      return
+    }
+    if (user.plan === planName) {
+      navigate('/dashboard')
+      return
+    }
+    if (planName !== 'FREE') {
+      setPlanError('ترقية الخطط المدفوعة تتم من خلال الإدارة بعد تأكيد الاشتراك.')
+      return
+    }
+    setBusyPlan(planName)
+    setPlanError(null)
+    try {
+      await meApi.updatePlan(planName)
+      await refreshMe()
+      navigate('/dashboard')
+    } catch (err) {
+      setPlanError(err instanceof Error ? err.message : 'تعذر تغيير الخطة')
+    } finally {
+      setBusyPlan(null)
+    }
+  }
 
   return (
     <div className="min-h-screen bg-ivory">
@@ -75,94 +123,120 @@ export default function MembershipPage() {
       </section>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-20">
-        {/* Pricing cards */}
-        <Stagger className="grid md:grid-cols-3 gap-4 lg:gap-5 max-w-5xl mx-auto items-stretch">
-          {pricingPlans.map((plan) => (
-            <StaggerItem key={plan.id}>
-              <motion.article
-                whileHover={reduce ? undefined : { y: -4 }}
-                whileTap={reduce ? undefined : { scale: 0.985 }}
-                transition={springs.snappy}
-                className={`relative h-full p-6 lg:p-7 rounded-[22px] flex flex-col ${
-                  plan.highlighted
-                    ? 'bg-navy text-white shadow-lg ring-1 ring-gold/40 z-[1]'
-                    : 'bg-white hairline shadow-sm'
-                }`}
-              >
-                {plan.highlighted && (
-                  <span className="absolute -top-3 left-1/2 -translate-x-1/2 inline-flex items-center gap-1 px-3.5 py-1 rounded-full bg-gold text-navy text-[11px] font-bold shadow-sm">
-                    <Sparkles className="w-3 h-3" />
-                    الأكثر شعبية
-                  </span>
-                )}
-
-                <p
-                  className={`text-[12px] font-semibold tracking-[0.02em] ${
-                    plan.highlighted ? 'text-gold' : 'text-rose'
+        {loading ? (
+          <LoadingBlock />
+        ) : error ? (
+          <ErrorBlock message={error} onRetry={reload} />
+        ) : (
+          <Stagger className="grid md:grid-cols-3 gap-4 lg:gap-5 max-w-5xl mx-auto items-stretch">
+            {plans.map((plan) => (
+              <StaggerItem key={plan.id}>
+                <motion.article
+                  whileHover={reduce ? undefined : { y: -4 }}
+                  whileTap={reduce ? undefined : { scale: 0.985 }}
+                  transition={springs.snappy}
+                  className={`relative h-full p-6 lg:p-7 rounded-[22px] flex flex-col ${
+                    plan.highlighted
+                      ? 'bg-navy text-white shadow-lg ring-1 ring-gold/40 z-[1]'
+                      : 'bg-white hairline shadow-sm'
                   }`}
                 >
-                  {plan.nameAr}
-                </p>
-                <p
-                  className={`text-[11px] mt-0.5 tracking-[0.06em] ${
-                    plan.highlighted ? 'text-white/40' : 'text-muted'
-                  }`}
-                >
-                  {plan.name}
-                </p>
-
-                <div className="mt-5 flex items-baseline gap-1.5">
-                  <span
-                    className={`text-4xl font-extrabold tracking-[-0.03em] tabular-nums ${
-                      plan.highlighted ? 'text-white' : 'text-navy'
-                    }`}
-                  >
-                    {plan.price}
-                  </span>
-                  {plan.price !== '0' && (
-                    <span className={`text-sm ${plan.highlighted ? 'text-white/45' : 'text-muted'}`}>
-                      دج
+                  {plan.highlighted && (
+                    <span className="absolute -top-3 left-1/2 -translate-x-1/2 inline-flex items-center gap-1 px-3.5 py-1 rounded-full bg-gold text-navy text-[11px] font-bold shadow-sm">
+                      <Sparkles className="w-3 h-3" />
+                      الأكثر شعبية
                     </span>
                   )}
-                </div>
-                <p className={`text-[11px] mt-1 ${plan.highlighted ? 'text-white/45' : 'text-muted'}`}>
-                  {plan.period}
-                </p>
-                <p
-                  className={`mt-4 text-sm leading-relaxed ${
-                    plan.highlighted ? 'text-white/70' : 'text-muted'
-                  }`}
-                >
-                  {plan.description}
-                </p>
 
-                <ul className="mt-6 space-y-2.5 flex-1">
-                  {plan.features.map((f) => (
-                    <li key={f} className="flex items-start gap-2.5 text-[13px]">
+                  <p
+                    className={`text-[12px] font-semibold tracking-[0.02em] ${
+                      plan.highlighted ? 'text-gold' : 'text-rose'
+                    }`}
+                  >
+                    {plan.nameAr}
+                  </p>
+                  <p
+                    className={`text-[11px] mt-0.5 tracking-[0.06em] ${
+                      plan.highlighted ? 'text-white/40' : 'text-muted'
+                    }`}
+                  >
+                    {plan.name}
+                  </p>
+
+                  <div className="mt-5 flex items-baseline gap-1.5">
+                    <span
+                      className={`text-4xl font-extrabold tracking-[-0.03em] tabular-nums ${
+                        plan.highlighted ? 'text-white' : 'text-navy'
+                      }`}
+                    >
+                      {plan.price}
+                    </span>
+                    {plan.price !== '0' && (
+                      <span className={`text-sm ${plan.highlighted ? 'text-white/45' : 'text-muted'}`}>
+                        دج
+                      </span>
+                    )}
+                  </div>
+                  <p className={`text-[11px] mt-1 ${plan.highlighted ? 'text-white/45' : 'text-muted'}`}>
+                    {plan.period}
+                  </p>
+                  <p
+                    className={`mt-4 text-sm leading-relaxed ${
+                      plan.highlighted ? 'text-white/70' : 'text-muted'
+                    }`}
+                  >
+                    {plan.description}
+                  </p>
+
+                  <ul className="mt-6 space-y-2.5 flex-1">
+                    {asArray(plan.features).map((f) => (
+                      <li key={f} className="flex items-start gap-2.5 text-[13px]">
+                        <Check
+                          className={`w-4 h-4 mt-0.5 shrink-0 ${
+                            plan.highlighted ? 'text-gold' : 'text-rose'
+                          }`}
+                          strokeWidth={2.5}
+                        />
+                        <span className={plan.highlighted ? 'text-white/80' : 'text-dark'}>{f}</span>
+                      </li>
+                    ))}
+                    <li className="flex items-start gap-2.5 text-[13px]">
                       <Check
                         className={`w-4 h-4 mt-0.5 shrink-0 ${
                           plan.highlighted ? 'text-gold' : 'text-rose'
                         }`}
                         strokeWidth={2.5}
                       />
-                      <span className={plan.highlighted ? 'text-white/80' : 'text-dark'}>{f}</span>
+                      <span className={plan.highlighted ? 'text-white/80' : 'text-dark'}>
+                        {plan.grantsAccess === false ? 'بدون دخول لوحة العضوة' : 'دخول لوحة العضوة'}
+                      </span>
                     </li>
-                  ))}
-                </ul>
+                  </ul>
 
-                <Button
-                  to="/dashboard"
-                  variant={plan.highlighted ? 'gold' : 'outline'}
-                  size="md"
-                  className={`w-full mt-7 ${plan.highlighted ? 'shadow-md shadow-gold/20' : ''}`}
-                >
-                  {plan.cta}
-                  <ChevronLeft className="w-4 h-4 opacity-70" />
-                </Button>
-              </motion.article>
-            </StaggerItem>
-          ))}
-        </Stagger>
+                  <Button
+                    variant={plan.highlighted ? 'gold' : 'outline'}
+                    size="md"
+                    className={`w-full mt-7 ${plan.highlighted ? 'shadow-md shadow-gold/20' : ''}`}
+                    disabled={busyPlan === plan.name}
+                    onClick={() => void selectPlan(plan.name)}
+                  >
+                    {user?.plan === plan.name
+                      ? 'خطتك الحالية'
+                      : busyPlan === plan.name
+                        ? 'جاري التفعيل...'
+                        : user
+                          ? plan.cta
+                          : 'ادخلي لاختيار الخطة'}
+                    <ChevronLeft className="w-4 h-4 opacity-70" />
+                  </Button>
+                </motion.article>
+              </StaggerItem>
+            ))}
+          </Stagger>
+        )}
+        {planError && (
+          <p className="text-center text-sm text-rose mt-4">{planError}</p>
+        )}
 
         {/* FAQ — accordion, interruptible */}
         <Reveal className="mt-20 max-w-2xl mx-auto">

@@ -1,18 +1,37 @@
 import { useMemo, useState } from 'react'
 import { Search, Sparkles, Building2, X } from 'lucide-react'
 import { motion } from 'motion/react'
-import { brands } from '../data/mockData'
 import BrandCard, { BrandRow } from '../components/ui/BrandCard'
 import Button from '../components/ui/Button'
 import Reveal, { Stagger, StaggerItem } from '../components/ui/Reveal'
+import { LoadingBlock, ErrorBlock } from '../components/ui/StateBlocks'
 import { springs, useMotionSafe } from '../lib/motion'
+import { useAsyncData } from '../hooks/useAsyncData'
+import { catalogApi } from '../lib/catalog'
 
 export default function BrandsPage() {
   const [search, setSearch] = useState('')
   const [category, setCategory] = useState('')
   const { reduce } = useMotionSafe()
 
-  const categories = [...new Set(brands.map((b) => b.category))]
+  const filtersKey = `${search}|${category}`
+
+  const { data: brandsPayload, loading, error, reload } = useAsyncData(
+    () =>
+      catalogApi.brands({
+        limit: 100,
+        search: search.trim() || undefined,
+        category: category || undefined,
+      }),
+    [filtersKey],
+  )
+
+  const brands = brandsPayload?.data ?? []
+
+  const categories = useMemo(
+    () => [...new Set(brands.map((b) => b.category).filter(Boolean))],
+    [brands],
+  )
 
   const filtered = useMemo(() => {
     return brands.filter((b) => {
@@ -25,7 +44,7 @@ export default function BrandsPage() {
       const matchCat = !category || b.category === category
       return matchSearch && matchCat
     })
-  }, [search, category])
+  }, [brands, search, category])
 
   const featured = filtered[0]
   const rest = filtered.slice(1)
@@ -55,7 +74,9 @@ export default function BrandsPage() {
             <div className="inline-flex items-center gap-2 rounded-full bg-white/70 px-3.5 py-1.5 text-[12px] font-semibold text-navy ring-1 ring-gold/30 shadow-xs mb-4">
               <Building2 className="w-3.5 h-3.5 text-gold-dark" />
               العلامات التجارية
-              <span className="text-muted font-medium">· {brands.length} علامة</span>
+              <span className="text-muted font-medium">
+                · {(brandsPayload?.meta?.total ?? brands.length).toLocaleString('ar-DZ')} علامة
+              </span>
             </div>
 
             <h1 className="text-4xl sm:text-5xl font-extrabold tracking-tight text-navy leading-[1.15]">
@@ -156,7 +177,11 @@ export default function BrandsPage() {
           })}
         </div>
 
-        {filtered.length > 0 ? (
+        {loading ? (
+          <LoadingBlock />
+        ) : error ? (
+          <ErrorBlock message={error} onRetry={reload} />
+        ) : filtered.length > 0 ? (
           <div className="space-y-4">
             {featured && (
               <Reveal>

@@ -1,10 +1,11 @@
 import { Link } from 'react-router-dom'
 import { ChevronLeft } from 'lucide-react'
 import { motion } from 'motion/react'
-import type { brands } from '../../data/mockData'
+import type { Brand } from '../../types/api'
 import { springs, useMotionSafe } from '../../lib/motion'
 
-type Brand = (typeof brands)[number]
+const placeholder =
+  'https://images.unsplash.com/photo-1560179707-f14e90ef3623?w=200&h=200&fit=crop'
 
 export default function BrandCard({
   brand,
@@ -34,7 +35,7 @@ export default function BrandCard({
           }`}
         >
           <img
-            src={brand.cover}
+            src={brand.cover || brand.logo || placeholder}
             alt=""
             className="absolute inset-0 h-full w-full object-cover transition-transform duration-700 ease-[var(--ease-out-apple)] group-hover:scale-[1.04]"
             loading="lazy"
@@ -47,7 +48,7 @@ export default function BrandCard({
 
           <div className="absolute bottom-3 right-3 left-3 flex items-end gap-3">
             <img
-              src={brand.logo}
+              src={brand.logo || placeholder}
               alt=""
               width={48}
               height={48}
@@ -79,7 +80,7 @@ export default function BrandCard({
             {brand.description}
           </p>
 
-          {brand.products?.length > 0 && (
+          {Array.isArray(brand.products) && brand.products.length > 0 && (
             <div className="mt-4 flex flex-wrap gap-1.5">
               {brand.products.slice(0, featured ? 3 : 2).map((p) => (
                 <span
@@ -112,7 +113,7 @@ export function BrandRow({ brand }: { brand: Brand }) {
       className="group flex items-center gap-4 p-3.5 rounded-[16px] bg-white hairline shadow-xs pressable-soft hover:shadow-sm transition-shadow"
     >
       <img
-        src={brand.logo}
+        src={brand.logo || placeholder}
         alt=""
         className="w-12 h-12 rounded-[12px] object-cover ring-1 ring-navy/5"
       />
