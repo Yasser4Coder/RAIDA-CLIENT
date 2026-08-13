@@ -71,7 +71,7 @@ export default function Footer() {
           <div className="py-12 grid grid-cols-2 md:grid-cols-4 lg:grid-cols-12 gap-8 lg:gap-6">
             {/* Brand */}
             <div className="col-span-2 lg:col-span-4">
-              <Logo variant="light" size="md" className="mb-4" />
+              <Logo variant="light" size="lg" className="mb-4" />
               <p className="text-sm text-white/55 leading-relaxed max-w-xs tracking-[0.01em]">
                 حيث تلتقي الطموحات بالخبرات والفرص
               </p>
