@@ -1,3 +1,5 @@
+import { getApiOrigin } from './api'
+
 const UPLOAD_PATH =
   /^\/uploads\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\.(jpg|jpeg|png|webp|gif)$/i
 
@@ -18,6 +20,9 @@ export function safeHref(value?: string | null): string | undefined {
 export function safeImageSrc(value?: string | null, fallback = ''): string {
   if (!value) return fallback
   const trimmed = value.trim()
-  if (UPLOAD_PATH.test(trimmed)) return trimmed
+  if (UPLOAD_PATH.test(trimmed)) {
+    // In production the API (and uploads) live on another host — prefix the API origin.
+    return `${getApiOrigin()}${trimmed}`
+  }
   return safeHref(trimmed) || fallback
 }

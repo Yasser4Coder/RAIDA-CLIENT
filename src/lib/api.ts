@@ -1,6 +1,6 @@
 import type { ApiError, ApiSuccess } from '../types/api'
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL || '/api/v1'
+const API_BASE = (import.meta.env.VITE_API_BASE_URL || '/api/v1').replace(/\/$/, '')
 const TOKEN_KEY = 'raida_access_token'
 
 export class ApiClientError extends Error {
@@ -26,6 +26,16 @@ export function setAccessToken(token: string | null) {
   else sessionStorage.removeItem(TOKEN_KEY)
 }
 
+/** Origin used for `/uploads/...` assets when API is on another host. */
+export function getApiOrigin(): string {
+  try {
+    const url = new URL(API_BASE, typeof window !== 'undefined' ? window.location.origin : 'http://localhost')
+    return url.origin
+  } catch {
+    return typeof window !== 'undefined' ? window.location.origin : ''
+  }
+}
+
 type RequestOptions = {
   method?: string
   body?: unknown
@@ -34,14 +44,17 @@ type RequestOptions = {
 }
 
 function buildUrl(path: string, query?: RequestOptions['query']) {
-  const url = new URL(`${API_BASE}${path}`, window.location.origin)
+  const normalizedPath = path.startsWith('/') ? path : `/${path}`
+  const url = new URL(`${API_BASE}${normalizedPath}`, window.location.origin)
   if (query) {
     for (const [key, value] of Object.entries(query)) {
       if (value === undefined || value === null || value === '') continue
       url.searchParams.set(key, String(value))
     }
   }
-  return `${url.pathname}${url.search}`
+  // Keep absolute URLs when VITE_API_BASE_URL is a full backend URL (production).
+  // Relative bases (e.g. /api/v1) stay same-origin for the Vite/dev proxy.
+  return url.href
 }
 
 export async function apiRequest<T>(path: string, options: RequestOptions = {}): Promise<T> {
