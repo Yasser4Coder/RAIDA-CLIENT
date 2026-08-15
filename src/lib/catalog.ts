@@ -197,8 +197,11 @@ export const adminApi = {
     apiRequest<void>(`/admin/partnership-tiers/${id}`, { method: 'DELETE' }),
 
   plans: () => apiRequest<PricingPlan[]>('/admin/plans'),
+  createPlan: (payload: Record<string, unknown>) =>
+    apiRequest<PricingPlan>('/admin/plans', { method: 'POST', body: payload }),
   updatePlan: (id: string, payload: Record<string, unknown>) =>
     apiRequest<PricingPlan>(`/admin/plans/${id}`, { method: 'PATCH', body: payload }),
+  deletePlan: (id: string) => apiRequest<void>(`/admin/plans/${id}`, { method: 'DELETE' }),
 
   stories: () => apiRequest<SuccessStory[]>('/admin/success-stories'),
   upsertStory: (payload: Record<string, unknown>) =>

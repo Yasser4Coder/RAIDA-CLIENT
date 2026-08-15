@@ -73,7 +73,7 @@ type Editor =
   | { kind: 'event'; item?: EventItem }
   | { kind: 'partner'; item?: Partner }
   | { kind: 'tier'; item?: PartnershipTier }
-  | { kind: 'plan'; item: PricingPlan }
+  | { kind: 'plan'; item?: PricingPlan }
   | { kind: 'story'; item?: SuccessStory }
   | { kind: 'card'; item?: CommunityCard }
   | { kind: 'stat'; item?: PlatformStat }
@@ -612,13 +612,28 @@ export default function AdminDashboardPage() {
     { name: 'sort_order', label: 'الترتيب', type: 'number' },
   ]
 
-  const planFields: AdminField[] = [
+  const planFields = (creating: boolean): AdminField[] => [
+    ...(creating
+      ? [
+          {
+            name: 'name',
+            label: 'مفتاح الخطة',
+            type: 'select' as const,
+            required: true,
+            options: [
+              { value: 'FREE', label: 'مجاني' },
+              { value: 'PROFESSIONAL', label: 'احترافي' },
+              { value: 'BUSINESS', label: 'أعمال' },
+            ],
+          },
+        ]
+      : []),
     { name: 'name_ar', label: 'الاسم بالعربية', required: true },
     { name: 'price', label: 'السعر', required: true },
-    { name: 'period', label: 'الفترة' },
+    { name: 'period', label: 'الفترة', required: true },
     { name: 'description', label: 'الوصف', type: 'textarea', required: true },
     { name: 'features', label: 'المزايا (سطر لكل ميزة)', type: 'lines' },
-    { name: 'cta', label: 'نص الزر' },
+    { name: 'cta', label: 'نص الزر', required: true },
     { name: 'highlighted', label: 'خطة مميزة', type: 'toggle' },
     { name: 'grants_access', label: 'تمنح دخول لوحة العضوة', type: 'toggle' },
     { name: 'is_active', label: 'ظاهرة في الموقع', type: 'toggle' },
@@ -734,21 +749,34 @@ export default function AdminDashboardPage() {
       }
     }
     if (editor.kind === 'plan') {
+      const creating = !editor.item
       return {
-        title: `تعديل خطة ${planLabel[editor.item.name] || editor.item.name}`,
-        fields: planFields,
-        initial: {
-          name_ar: editor.item.nameAr,
-          price: editor.item.price,
-          period: editor.item.period,
-          description: editor.item.description,
-          features: editor.item.features,
-          cta: editor.item.cta,
-          highlighted: editor.item.highlighted,
-          grants_access: editor.item.grantsAccess !== false,
-          is_active: editor.item.isActive !== false,
-        },
-        submit: (values: Record<string, unknown>) => adminApi.updatePlan(editor.item.id, values),
+        title: creating
+          ? 'إضافة خطة عضوية'
+          : `تعديل خطة ${planLabel[editor.item?.name || ''] || editor.item?.name}`,
+        fields: planFields(creating),
+        initial: editor.item
+          ? {
+              name_ar: editor.item.nameAr,
+              price: editor.item.price,
+              period: editor.item.period,
+              description: editor.item.description,
+              features: editor.item.features,
+              cta: editor.item.cta,
+              highlighted: editor.item.highlighted,
+              grants_access: editor.item.grantsAccess !== false,
+              is_active: editor.item.isActive !== false,
+            }
+          : {
+              name: 'FREE',
+              period: 'شهرياً',
+              cta: 'اشتركي',
+              highlighted: false,
+              grants_access: true,
+              is_active: true,
+            },
+        submit: (values: Record<string, unknown>) =>
+          creating ? adminApi.createPlan(values) : adminApi.updatePlan(editor.item!.id, values),
         reload: () => {
           reloadPlans()
           reloadOverview()
@@ -1273,7 +1301,13 @@ export default function AdminDashboardPage() {
               )}
 
               {active === 'plans' && (
-                <div className="grid md:grid-cols-3 gap-4 animate-fade-up">
+                <div className="space-y-4 animate-fade-up">
+                  <div className="flex justify-end">
+                    <Button variant="gold" size="sm" onClick={() => setEditor({ kind: 'plan' })}>
+                      <Plus className="w-4 h-4" /> إضافة خطة
+                    </Button>
+                  </div>
+                  <div className="grid md:grid-cols-3 gap-4">
                   {planList.map((p) => {
                     const members = planDistribution.find((row) => row.plan === p.name)?.count ?? 0
                     return (
@@ -1283,7 +1317,15 @@ export default function AdminDashboardPage() {
                             <h3 className="font-bold text-navy text-lg">{p.nameAr}</h3>
                             <p className="text-xs text-muted">{p.name}</p>
                           </div>
-                          <IconActions onEdit={() => setEditor({ kind: 'plan', item: p })} />
+                          <IconActions
+                            onEdit={() => setEditor({ kind: 'plan', item: p })}
+                            onDelete={async () => {
+                              if (!confirmDelete(p.nameAr || p.name)) return
+                              await adminApi.deletePlan(p.id)
+                              reloadPlans()
+                              reloadOverview()
+                            }}
+                          />
                         </div>
                         <p className="text-3xl font-extrabold text-navy mt-3">{p.price}</p>
                         <p className="text-xs text-muted">{p.period}</p>
@@ -1305,6 +1347,10 @@ export default function AdminDashboardPage() {
                       </div>
                     )
                   })}
+                  {planList.length === 0 && (
+                    <p className="text-sm text-muted col-span-3 text-center py-10">لا توجد خطط عضوية بعد</p>
+                  )}
+                  </div>
                 </div>
               )}
 
