@@ -52,6 +52,8 @@ export const authApi = {
     email: string
     password: string
     name: string
+    accountType: 'client' | 'member'
+    plan?: string
     title?: string
     specialty?: string
     city?: string
@@ -113,6 +115,8 @@ export const meApi = {
     apiRequest<Consultation>(`/me/consultations/${id}/read`, { method: 'PATCH', body: {} }),
   updatePlan: (plan: string) =>
     apiRequest<UserSafe>('/me/plan', { method: 'PATCH', body: { plan } }),
+  requestMembership: (plan: string) =>
+    apiRequest<UserSafe>('/me/membership', { method: 'POST', body: { plan } }),
   registerEvent: (eventId: string) =>
     apiRequest<{ registrationId: string; status: string }>(`/events/${eventId}/register`, {
       method: 'POST',

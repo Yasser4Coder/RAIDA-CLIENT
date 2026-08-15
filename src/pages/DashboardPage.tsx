@@ -12,21 +12,15 @@ import { LoadingBlock, ErrorBlock } from '../components/ui/StateBlocks'
 import { materialize, springs, useMotionSafe } from '../lib/motion'
 import { useAuth } from '../context/AuthContext'
 import { useAsyncData } from '../hooks/useAsyncData'
-import { meApi } from '../lib/catalog'
+import { PLAN_LABELS } from '../lib/plans'
+import { catalogApi, meApi } from '../lib/catalog'
 import { asArray } from '../lib/normalize'
 import type { Member } from '../types/api'
 import ImageUpload from '../components/ui/ImageUpload'
 import SeoHead from '../components/seo/SeoHead'
 import { routeSeo } from '../lib/seo'
 
-const planLabel: Record<string, string> = {
-  FREE: 'مجاني',
-  PROFESSIONAL: 'احترافي',
-  BUSINESS: 'أعمال',
-  free: 'مجاني',
-  professional: 'احترافي',
-  business: 'أعمال',
-}
+const planLabel = PLAN_LABELS
 
 const sidebarItems: {
   id: string
@@ -67,25 +61,48 @@ function Surface({ children, className = '' }: { children: ReactNode; className?
 }
 
 function LoginForm({
-  onSubmit,
+  onLogin,
+  onRegister,
   hint,
 }: {
-  onSubmit: (email: string, password: string) => Promise<void>
+  onLogin: (email: string, password: string) => Promise<void>
+  onRegister: (payload: {
+    email: string
+    password: string
+    name: string
+    accountType: 'client' | 'member'
+    plan?: string
+  }) => Promise<void>
   hint: string
 }) {
+  const [mode, setMode] = useState<'login' | 'register'>('login')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [name, setName] = useState('')
+  const [accountType, setAccountType] = useState<'client' | 'member'>('client')
+  const [plan, setPlan] = useState('BUSINESS')
   const [error, setError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
+  const { data: plans } = useAsyncData(() => catalogApi.plans(), [])
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
     setSubmitting(true)
     setError(null)
     try {
-      await onSubmit(email, password)
+      if (mode === 'login') {
+        await onLogin(email, password)
+      } else {
+        await onRegister({
+          email,
+          password,
+          name,
+          accountType,
+          plan: accountType === 'member' ? plan : undefined,
+        })
+      }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'فشل تسجيل الدخول')
+      setError(err instanceof Error ? err.message : mode === 'login' ? 'فشل تسجيل الدخول' : 'تعذر إنشاء الحساب')
     } finally {
       setSubmitting(false)
     }
@@ -97,8 +114,80 @@ function LoginForm({
         onSubmit={handleSubmit}
         className="w-full max-w-md rounded-[20px] bg-white hairline shadow-sm p-6 sm:p-8 space-y-4"
       >
-        <h1 className="text-xl font-extrabold text-navy tracking-[-0.02em]">تسجيل الدخول</h1>
-        <p className="text-[13px] text-muted">ادخلي إلى لوحة التحكم الخاصة بكِ.</p>
+        <div className="grid grid-cols-2 gap-1 p-1 rounded-full bg-ivory">
+          <button
+            type="button"
+            className={`h-9 rounded-full text-[13px] font-semibold ${mode === 'login' ? 'bg-navy text-white' : 'text-muted'}`}
+            onClick={() => setMode('login')}
+          >
+            دخول
+          </button>
+          <button
+            type="button"
+            className={`h-9 rounded-full text-[13px] font-semibold ${mode === 'register' ? 'bg-navy text-white' : 'text-muted'}`}
+            onClick={() => setMode('register')}
+          >
+            إنشاء حساب
+          </button>
+        </div>
+        <h1 className="text-xl font-extrabold text-navy tracking-[-0.02em]">
+          {mode === 'login' ? 'تسجيل الدخول' : 'إنشاء حساب'}
+        </h1>
+        <p className="text-[13px] text-muted">
+          {mode === 'login'
+            ? 'ادخلي إلى لوحة التحكم الخاصة بكِ.'
+            : 'اختاري حساب عميلة أو عضوية مدفوعة. العضوية تحتاج موافقة الإدارة.'}
+        </p>
+        {mode === 'register' && (
+          <>
+            <div>
+              <label className="block text-[11px] font-semibold text-muted mb-1.5">الاسم</label>
+              <input
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                required
+                minLength={2}
+                className="w-full h-11 px-4 rounded-[12px] border border-separator bg-ivory text-sm focus:outline-none focus:border-rose/40 focus:ring-2 focus:ring-rose/15"
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                className={`h-11 rounded-[12px] text-[13px] font-semibold border ${
+                  accountType === 'client' ? 'bg-navy text-white border-navy' : 'bg-ivory text-muted border-separator'
+                }`}
+                onClick={() => setAccountType('client')}
+              >
+                عميلة
+              </button>
+              <button
+                type="button"
+                className={`h-11 rounded-[12px] text-[13px] font-semibold border ${
+                  accountType === 'member' ? 'bg-navy text-white border-navy' : 'bg-ivory text-muted border-separator'
+                }`}
+                onClick={() => setAccountType('member')}
+              >
+                عضوة
+              </button>
+            </div>
+            {accountType === 'member' && (
+              <div>
+                <label className="block text-[11px] font-semibold text-muted mb-1.5">خطة العضوية</label>
+                <select
+                  value={plan}
+                  onChange={(e) => setPlan(e.target.value)}
+                  className="w-full h-11 px-4 rounded-[12px] border border-separator bg-ivory text-sm focus:outline-none focus:border-rose/40"
+                >
+                  {(plans ?? []).map((item) => (
+                    <option key={item.name} value={item.name}>
+                      {item.nameAr} — {item.launchPrice || item.price} دج
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+          </>
+        )}
         <div>
           <label className="block text-[11px] font-semibold text-muted mb-1.5">البريد الإلكتروني</label>
           <input
@@ -116,15 +205,86 @@ function LoginForm({
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
+            minLength={mode === 'register' ? 10 : 1}
             className="w-full h-11 px-4 rounded-[12px] border border-separator bg-ivory text-sm focus:outline-none focus:border-rose/40 focus:ring-2 focus:ring-rose/15"
           />
         </div>
         {error && <p className="text-sm text-rose">{error}</p>}
-        <p className="text-[11px] text-muted">تجريبي: {hint}</p>
+        {import.meta.env.DEV && <p className="text-[11px] text-muted">تجريبي: {hint}</p>}
         <Button type="submit" variant="gold" size="md" className="w-full" disabled={submitting}>
-          {submitting ? 'جاري الدخول...' : 'دخول'}
+          {submitting ? 'جاري الحفظ...' : mode === 'login' ? 'دخول' : 'إنشاء الحساب'}
         </Button>
       </form>
+    </div>
+  )
+}
+
+function MembershipAccessGate({
+  user,
+  onRefresh,
+  onLogout,
+}: {
+  user: { role: string; plan: string | null; membershipStatus?: string }
+  onRefresh: () => Promise<void>
+  onLogout: () => Promise<void>
+}) {
+  const { data: plans } = useAsyncData(() => catalogApi.plans(), [])
+  const [plan, setPlan] = useState(user.plan || 'BUSINESS')
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const pending = user.membershipStatus === 'pending'
+  const rejected = user.membershipStatus === 'rejected'
+
+  const apply = async () => {
+    setBusy(true)
+    setError(null)
+    try {
+      await meApi.requestMembership(plan)
+      await onRefresh()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'تعذر إرسال طلب العضوية')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <div className="pt-20 min-h-screen bg-ivory flex items-center justify-center px-4">
+      <Surface className="p-8 max-w-md text-center space-y-4">
+        <h2 className="text-lg font-bold text-navy">
+          {pending ? 'طلب العضوية قيد المراجعة' : rejected ? 'تم رفض طلب العضوية' : 'حساب عميلة'}
+        </h2>
+        <p className="text-sm text-muted leading-relaxed">
+          {pending
+            ? 'استلمنا طلب عضويتكِ. ستظهرين في دليل رائدة ولوحة العضوة بعد موافقة الإدارة.'
+            : rejected
+              ? 'يمكنكِ إعادة التقديم على عضوية مدفوعة ليراجعها فريق رائدة.'
+              : 'هذا حساب عميلة. للظهور في الدليل والحصول على مزايا العضوية، قدّمي طلب عضوية لإدارة رائدة.'}
+        </p>
+        {!pending && (
+          <select
+            value={plan}
+            onChange={(e) => setPlan(e.target.value)}
+            className="w-full h-11 px-4 rounded-[12px] border border-separator bg-ivory text-sm"
+          >
+            {(plans ?? []).map((item) => (
+              <option key={item.name} value={item.name}>
+                {item.nameAr} — {item.launchPrice || item.price} دج / {item.period}
+              </option>
+            ))}
+          </select>
+        )}
+        {error && <p className="text-sm text-rose">{error}</p>}
+        <div className="flex gap-2 justify-center flex-wrap">
+          {!pending && (
+            <Button variant="gold" size="sm" onClick={() => void apply()} disabled={busy}>
+              {busy ? 'جاري الإرسال...' : 'تقديم طلب عضوية'}
+            </Button>
+          )}
+          <Button to="/membership" variant="outline" size="sm">عرض الخطط</Button>
+          <Button variant="outline" size="sm" onClick={() => void onLogout()}>تسجيل الخروج</Button>
+        </div>
+      </Surface>
     </div>
   )
 }
@@ -419,7 +579,7 @@ function PublicProfileToggle({
 }
 
 export default function DashboardPage() {
-  const { user, profile: authProfile, loading: authLoading, login, logout, refreshMe } = useAuth()
+  const { user, profile: authProfile, loading: authLoading, login, register, logout, refreshMe } = useAuth()
   const [active, setActive] = useState('overview')
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const { reduce, transition } = useMotionSafe()
@@ -527,7 +687,8 @@ export default function DashboardPage() {
         {seo}
         <LoginForm
           hint={import.meta.env.DEV ? 'sara@raida.local / Password123!' : 'أدخلي بيانات حسابك'}
-          onSubmit={login}
+          onLogin={login}
+          onRegister={register}
         />
       </>
     )
@@ -538,21 +699,7 @@ export default function DashboardPage() {
   }
 
   if (user.hasAccess === false) {
-    return (
-      <div className="pt-20 min-h-screen bg-ivory flex items-center justify-center px-4">
-        <Surface className="p-8 max-w-md text-center space-y-4">
-          <h2 className="text-lg font-bold text-navy">الدخول غير مفعّل لهذه الخطة</h2>
-          <p className="text-sm text-muted leading-relaxed">
-            خطتك الحالية ({planLabel[user.plan] || user.plan}) لا تمنح دخول لوحة العضوة.
-            اختاري خطة تمنح الوصول، أو انتظري حتى تفعّل الإدارة هذه الميزة.
-          </p>
-          <div className="flex gap-2 justify-center">
-            <Button to="/membership" variant="gold" size="sm">عرض الخطط</Button>
-            <Button variant="outline" size="sm" onClick={() => logout()}>تسجيل الخروج</Button>
-          </div>
-        </Surface>
-      </div>
-    )
+    return <MembershipAccessGate user={user} onRefresh={refreshMe} onLogout={logout} />
   }
 
   if (dashLoading || notifLoading || (active === 'consultations' && consultLoading)) {
@@ -615,7 +762,7 @@ export default function DashboardPage() {
           <div className="min-w-0">
             <p className="font-bold text-navy text-[13px] truncate tracking-[-0.01em]">{member.name}</p>
             <Badge variant="gold" className="mt-1">
-              {planLabel[user.plan] || user.plan}
+              {planLabel[user.plan || ''] || user.plan || '—'}
             </Badge>
           </div>
         </div>
@@ -993,7 +1140,7 @@ export default function DashboardPage() {
                 <Surface className="p-6 sm:p-8 max-w-lg">
                   <Badge variant="gold">الخطة الحالية</Badge>
                   <h3 className="text-2xl font-extrabold text-navy mt-3 tracking-[-0.02em]">
-                    {planLabel[user.plan] || user.plan}
+                    {planLabel[user.plan || ''] || user.plan || '—'}
                   </h3>
                   <p className="text-muted mt-1 text-sm">{user.email}</p>
                   <div className="flex flex-wrap gap-2.5 mt-6">

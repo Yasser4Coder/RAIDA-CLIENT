@@ -112,7 +112,7 @@ export default function Navbar() {
                 to="/membership"
                 className="inline-flex items-center gap-1.5 h-10 px-5 rounded-full bg-navy text-white text-[13px] font-semibold pressable shadow-sm hover:bg-navy-light transition-colors ring-1 ring-gold/20"
               >
-                انضمي مجاناً
+                انضمي الآن
                 <ChevronLeft className="w-3.5 h-3.5 opacity-60" />
               </Link>
             </div>
@@ -220,7 +220,7 @@ export default function Navbar() {
                     </Button>
                   )}
                   <Button to="/membership" variant="gold" size="sm" className={`w-full !rounded-full ${isStaff || isAdminPath ? 'col-span-2' : ''}`}>
-                    انضمي مجاناً
+                    انضمي الآن
                   </Button>
                 </div>
               </div>

@@ -11,6 +11,7 @@ import AdminEditor, { confirmDelete, type AdminField } from '../components/admin
 import { useAuth } from '../context/AuthContext'
 import { useAsyncData } from '../hooks/useAsyncData'
 import { adminApi, catalogApi } from '../lib/catalog'
+import { PLAN_LABELS, ROLE_LABELS, MEMBERSHIP_STATUS_LABELS } from '../lib/plans'
 import { safeHref } from '../lib/safe'
 import type {
   AdminUser,
@@ -39,18 +40,8 @@ const adminNav = [
   { id: 'revenue', label: 'تحليلات الإيرادات', icon: DollarSign },
 ]
 
-const planLabel: Record<string, string> = {
-  FREE: 'مجاني',
-  PROFESSIONAL: 'احترافي',
-  BUSINESS: 'أعمال',
-}
-
-const roleLabel: Record<string, string> = {
-  member: 'عضوة',
-  moderator: 'مشرفة',
-  admin: 'مديرة',
-  super_admin: 'مديرة عليا',
-}
+const planLabel = PLAN_LABELS
+const roleLabel = ROLE_LABELS
 
 const imageFallback =
   'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=400&h=400&fit=crop'
@@ -542,15 +533,15 @@ export default function AdminDashboardPage() {
     { name: 'category', label: 'التصنيف' },
     { name: 'image', label: 'صورة الملف', type: 'image' },
     { name: 'cover', label: 'صورة الغلاف', type: 'image' },
-    ...(!currentRole || currentRole === 'member' || currentRole === 'moderator'
+    ...(!currentRole || currentRole === 'member' || currentRole === 'client'
       ? [
           {
             name: 'role',
             label: 'الدور',
             type: 'select' as const,
             options: [
+              { value: 'client', label: 'عميلة' },
               { value: 'member', label: 'عضوة' },
-              { value: 'moderator', label: 'مشرفة' },
             ],
           },
         ]
@@ -560,9 +551,20 @@ export default function AdminDashboardPage() {
       label: 'الخطة',
       type: 'select',
       options: [
-        { value: 'FREE', label: 'مجاني' },
-        { value: 'PROFESSIONAL', label: 'احترافي' },
-        { value: 'BUSINESS', label: 'أعمال' },
+        { value: 'BUSINESS', label: PLAN_LABELS.BUSINESS },
+        { value: 'EXPERT', label: PLAN_LABELS.EXPERT },
+        { value: 'ACADEMY', label: PLAN_LABELS.ACADEMY },
+      ],
+    },
+    {
+      name: 'membership_status',
+      label: 'حالة العضوية',
+      type: 'select',
+      options: [
+        { value: 'none', label: MEMBERSHIP_STATUS_LABELS.none },
+        { value: 'pending', label: MEMBERSHIP_STATUS_LABELS.pending },
+        { value: 'approved', label: MEMBERSHIP_STATUS_LABELS.approved },
+        { value: 'rejected', label: MEMBERSHIP_STATUS_LABELS.rejected },
       ],
     },
     { name: 'is_active', label: 'الحساب نشط', type: 'toggle' },
@@ -621,15 +623,18 @@ export default function AdminDashboardPage() {
             type: 'select' as const,
             required: true,
             options: [
-              { value: 'FREE', label: 'مجاني' },
-              { value: 'PROFESSIONAL', label: 'احترافي' },
-              { value: 'BUSINESS', label: 'أعمال' },
+              { value: 'BUSINESS', label: PLAN_LABELS.BUSINESS },
+              { value: 'EXPERT', label: PLAN_LABELS.EXPERT },
+              { value: 'ACADEMY', label: PLAN_LABELS.ACADEMY },
             ],
           },
         ]
       : []),
     { name: 'name_ar', label: 'الاسم بالعربية', required: true },
-    { name: 'price', label: 'السعر', required: true },
+    { name: 'price', label: 'سعر الإطلاق / الحالي', required: true },
+    { name: 'original_price', label: 'السعر الأصلي' },
+    { name: 'launch_price', label: 'سعر الإطلاق' },
+    { name: 'launch_savings', label: 'قيمة التوفير' },
     { name: 'period', label: 'الفترة', required: true },
     { name: 'description', label: 'الوصف', type: 'textarea', required: true },
     { name: 'features', label: 'المزايا (سطر لكل ميزة)', type: 'lines' },
@@ -690,9 +695,10 @@ export default function AdminDashboardPage() {
               cover: editor.item.profile?.cover,
               role: editor.item.role,
               plan: editor.item.plan,
+              membership_status: editor.item.membershipStatus || 'none',
               is_active: editor.item.isActive,
             }
-          : { role: 'member', plan: 'FREE', is_active: true },
+          : { role: 'client', plan: '', membership_status: 'none', is_active: true },
         submit: (values: Record<string, unknown>) =>
           creating ? adminApi.createUser(values) : adminApi.updateUser(editor.item!.id, values),
         reload: reloadUsers,
@@ -759,6 +765,9 @@ export default function AdminDashboardPage() {
           ? {
               name_ar: editor.item.nameAr,
               price: editor.item.price,
+              original_price: editor.item.originalPrice || '',
+              launch_price: editor.item.launchPrice || '',
+              launch_savings: editor.item.launchSavings || '',
               period: editor.item.period,
               description: editor.item.description,
               features: editor.item.features,
@@ -768,9 +777,9 @@ export default function AdminDashboardPage() {
               is_active: editor.item.isActive !== false,
             }
           : {
-              name: 'FREE',
-              period: 'شهرياً',
-              cta: 'اشتركي',
+              name: 'BUSINESS',
+              period: 'السنة',
+              cta: 'اطلبي العضوية',
               highlighted: false,
               grants_access: true,
               is_active: true,
@@ -983,9 +992,9 @@ export default function AdminDashboardPage() {
                         {(planDistribution.length
                           ? planDistribution
                           : [
-                              { plan: 'FREE', count: 0 },
-                              { plan: 'PROFESSIONAL', count: 0 },
                               { plan: 'BUSINESS', count: 0 },
+                              { plan: 'EXPERT', count: 0 },
+                              { plan: 'ACADEMY', count: 0 },
                             ]
                         ).map((p, i) => {
                           const pct = Math.round((Number(p.count) / totalPlanCount) * 100)
@@ -1035,7 +1044,7 @@ export default function AdminDashboardPage() {
                               <td className="py-3 text-muted">{m.city}</td>
                               <td className="py-3">
                                 <Badge variant={m.plan === 'BUSINESS' ? 'gold' : 'soft'}>
-                                  {planLabel[m.plan || ''] || m.plan || 'مجاني'}
+                                  {planLabel[m.plan || ''] || m.plan || '—'}
                                 </Badge>
                               </td>
                             </tr>
@@ -1071,6 +1080,7 @@ export default function AdminDashboardPage() {
                         <tr className="text-muted text-xs bg-ivory">
                           <th className="text-right p-4 font-semibold">العضوة</th>
                           <th className="text-right p-4 font-semibold">الدور</th>
+                          <th className="text-right p-4 font-semibold">حالة العضوية</th>
                           <th className="text-right p-4 font-semibold">الخطة</th>
                           <th className="text-right p-4 font-semibold">المدينة</th>
                           <th className="text-right p-4 font-semibold">الحالة</th>
@@ -1093,8 +1103,13 @@ export default function AdminDashboardPage() {
                               </td>
                               <td className="p-4 text-muted">{roleLabel[u.role] || u.role}</td>
                               <td className="p-4">
-                                <Badge variant={u.plan === 'BUSINESS' ? 'gold' : 'soft'}>
-                                  {planLabel[u.plan] || u.plan}
+                                <Badge variant={u.membershipStatus === 'approved' ? 'gold' : 'soft'}>
+                                  {MEMBERSHIP_STATUS_LABELS[u.membershipStatus || ''] || u.membershipStatus || '—'}
+                                </Badge>
+                              </td>
+                              <td className="p-4">
+                                <Badge variant={u.plan === 'ACADEMY' ? 'gold' : 'soft'}>
+                                  {planLabel[u.plan || ''] || u.plan || '—'}
                                 </Badge>
                               </td>
                               <td className="p-4 text-muted">{m?.city || '—'}</td>
@@ -1111,7 +1126,7 @@ export default function AdminDashboardPage() {
                         })}
                         {users.length === 0 && (
                           <tr>
-                            <td colSpan={6} className="p-8 text-center text-muted">لا توجد مستخدمات</td>
+                            <td colSpan={7} className="p-8 text-center text-muted">لا توجد مستخدمات</td>
                           </tr>
                         )}
                       </tbody>

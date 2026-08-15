@@ -88,6 +88,9 @@ export type PricingPlan = {
   name: string
   nameAr: string
   price: string
+  originalPrice?: string | null
+  launchPrice?: string | null
+  launchSavings?: string | null
   period: string
   description: string
   features: string[]
@@ -169,7 +172,8 @@ export type UserSafe = {
   id: string
   email: string
   role: string
-  plan: string
+  plan: string | null
+  membershipStatus?: string
   isActive: boolean
   isEmailVerified: boolean
   hasAccess?: boolean

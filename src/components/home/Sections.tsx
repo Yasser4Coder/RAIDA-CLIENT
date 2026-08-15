@@ -390,8 +390,8 @@ export function PricingSection() {
         <Reveal>
           <SectionHeader
             eyebrow="خطط العضوية"
-            title="اختاري الخطة المناسبة لك"
-            description="من البداية المجانية إلى الحضور الاحترافي والشراكات."
+            title="اختاري عضويتك السنوية"
+            description="ثلاث عضويات مدفوعة لرائدات الأعمال، المدربات والخبراء، والأكاديميات. الطلب يُراجع من الإدارة."
             centered
           />
         </Reveal>
@@ -410,24 +410,25 @@ export function PricingSection() {
                 >
                   {plan.highlighted && (
                     <span className="absolute -top-3 left-1/2 -translate-x-1/2 px-3.5 py-1 bg-gold text-navy text-[11px] font-bold rounded-full tracking-[0.01em]">
-                      الأكثر شعبية
+                      سعر الإطلاق
                     </span>
                   )}
                   <p className={`text-[12px] font-semibold ${plan.highlighted ? 'text-gold' : 'text-rose'}`}>
                     {plan.nameAr}
                   </p>
-                  <p className={`text-[11px] mt-0.5 tracking-[0.04em] ${plan.highlighted ? 'text-white/40' : 'text-muted'}`}>
-                    {plan.name}
-                  </p>
                   <div className="mt-5 flex items-baseline gap-1">
                     <span className={`text-4xl font-extrabold tracking-[-0.03em] ${plan.highlighted ? 'text-white' : 'text-navy'}`}>
-                      {plan.price}
+                      {plan.launchPrice || plan.price}
                     </span>
-                    {plan.price !== '0' && (
-                      <span className={`text-sm ${plan.highlighted ? 'text-white/45' : 'text-muted'}`}>دج</span>
-                    )}
+                    <span className={`text-sm ${plan.highlighted ? 'text-white/45' : 'text-muted'}`}>دج</span>
                   </div>
-                  <p className={`text-[11px] mt-1 ${plan.highlighted ? 'text-white/45' : 'text-muted'}`}>{plan.period}</p>
+                  {plan.originalPrice && (
+                    <p className={`text-[12px] mt-1 ${plan.highlighted ? 'text-white/45' : 'text-muted'}`}>
+                      <span className="line-through">{plan.originalPrice} دج</span>
+                      {plan.launchSavings ? ` — توفير ${plan.launchSavings} دج` : ''}
+                    </p>
+                  )}
+                  <p className={`text-[11px] mt-1 ${plan.highlighted ? 'text-white/45' : 'text-muted'}`}>/ {plan.period}</p>
                   <p className={`mt-4 text-sm ${plan.highlighted ? 'text-white/65' : 'text-muted'}`}>{plan.description}</p>
                   <ul className="mt-6 space-y-2.5 flex-1">
                     {(Array.isArray(plan.features) ? plan.features : []).map((f) => (
@@ -514,7 +515,7 @@ export function FinalCTA() {
             </Button>
           </div>
           <div className="mt-8 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-[13px] text-white/65">
-            {['مجاني للبداية', 'مجتمع موثوق', 'فرص شراكة حقيقية'].map((t) => (
+            {['عضوية سنوية', 'مجتمع موثوق', 'فرص شراكة حقيقية'].map((t) => (
               <span key={t} className="inline-flex items-center gap-1.5">
                 <Check className="w-4 h-4 text-rose-light shrink-0" strokeWidth={2.5} />
                 {t}
