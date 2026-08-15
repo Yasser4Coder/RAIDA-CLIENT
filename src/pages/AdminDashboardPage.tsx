@@ -507,7 +507,7 @@ export default function AdminDashboardPage() {
   const totalPlanCount = planDistribution.reduce((sum, p) => sum + Number(p.count), 0) || 1
   const maxRevenue = Math.max(1, ...(revenue?.breakdown.map((row) => row.monthlyRevenue) ?? [1]))
 
-  const userFields = (creating: boolean): AdminField[] => [
+  const userFields = (creating: boolean, currentRole?: string): AdminField[] => [
     ...(creating
       ? [
           { name: 'email', label: 'البريد الإلكتروني', type: 'email' as const, required: true },
@@ -522,16 +522,19 @@ export default function AdminDashboardPage() {
     { name: 'category', label: 'التصنيف' },
     { name: 'image', label: 'صورة الملف', type: 'image' },
     { name: 'cover', label: 'صورة الغلاف', type: 'image' },
-    {
-      name: 'role',
-      label: 'الدور',
-      type: 'select',
-      options: [
-        { value: 'member', label: 'عضوة' },
-        { value: 'moderator', label: 'مشرفة' },
-        { value: 'admin', label: 'مديرة' },
-      ],
-    },
+    ...(!currentRole || currentRole === 'member' || currentRole === 'moderator'
+      ? [
+          {
+            name: 'role',
+            label: 'الدور',
+            type: 'select' as const,
+            options: [
+              { value: 'member', label: 'عضوة' },
+              { value: 'moderator', label: 'مشرفة' },
+            ],
+          },
+        ]
+      : []),
     {
       name: 'plan',
       label: 'الخطة',
@@ -639,7 +642,7 @@ export default function AdminDashboardPage() {
       const creating = !editor.item
       return {
         title: creating ? 'إضافة عضوة' : 'تعديل عضوة',
-        fields: userFields(creating),
+        fields: userFields(creating, editor.item?.role),
         initial: editor.item
           ? {
               name: editor.item.profile?.name,
