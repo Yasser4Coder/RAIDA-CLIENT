@@ -8,6 +8,8 @@ import { LoadingBlock, ErrorBlock } from '../components/ui/StateBlocks'
 import { springs, useMotionSafe } from '../lib/motion'
 import { useAsyncData } from '../hooks/useAsyncData'
 import { catalogApi } from '../lib/catalog'
+import SeoHead from '../components/seo/SeoHead'
+import { breadcrumbJsonLd, routeSeo } from '../lib/seo'
 
 export default function EventsPage() {
   const [search, setSearch] = useState('')
@@ -54,6 +56,16 @@ export default function EventsPage() {
 
   return (
     <div className="min-h-screen bg-ivory">
+      <SeoHead
+        title={routeSeo.events.title}
+        description={routeSeo.events.description}
+        path={routeSeo.events.path}
+        keywords={[...routeSeo.events.keywords]}
+        jsonLd={breadcrumbJsonLd([
+          { name: 'الرئيسية', path: '/' },
+          { name: 'الفعاليات', path: '/events' },
+        ])}
+      />
       {/* Hero */}
       <section className="relative isolate overflow-hidden pt-28 pb-10 sm:pb-12">
         <div className="absolute inset-0 -z-10 pointer-events-none" aria-hidden>

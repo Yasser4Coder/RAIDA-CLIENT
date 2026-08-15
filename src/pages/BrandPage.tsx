@@ -8,6 +8,8 @@ import { useAsyncData } from '../hooks/useAsyncData'
 import { catalogApi } from '../lib/catalog'
 import { asArray } from '../lib/normalize'
 import { safeHref } from '../lib/safe'
+import SeoHead from '../components/seo/SeoHead'
+import { absoluteUrl, breadcrumbJsonLd } from '../lib/seo'
 
 const logoFallback =
   'https://images.unsplash.com/photo-1560179707-f14e90ef3623?w=200&h=200&fit=crop'
@@ -29,6 +31,7 @@ export default function BrandPage() {
   if (loading) {
     return (
       <div className="pt-20 min-h-screen bg-ivory">
+        <SeoHead title="جاري التحميل…" path={`/brands/${id || ''}`} noindex />
         <LoadingBlock />
       </div>
     )
@@ -37,6 +40,7 @@ export default function BrandPage() {
   if (error || !brand) {
     return (
       <div className="pt-20 min-h-screen bg-ivory">
+        <SeoHead title="العلامة غير موجودة" path={`/brands/${id || ''}`} noindex />
         <ErrorBlock message={error || 'العلامة غير موجودة'} onRetry={reload} />
       </div>
     )
@@ -53,12 +57,39 @@ export default function BrandPage() {
     logo,
     founder?.image || imageFallback,
   ].filter(Boolean)
+  const description =
+    brand.description?.slice(0, 160) ||
+    `تعرّفي على علامة ${brand.name} ضمن مجتمع RAIDA للرائدات.`
 
   return (
     <div className="pt-20 pb-16 min-h-screen bg-ivory">
+      <SeoHead
+        title={`${brand.name} | ${brand.category}`}
+        description={description}
+        path={`/brands/${brand.id}`}
+        image={cover || logo}
+        keywords={[brand.name, brand.category, 'علامة تجارية', 'RAIDA'].filter(Boolean)}
+        jsonLd={[
+          breadcrumbJsonLd([
+            { name: 'الرئيسية', path: '/' },
+            { name: 'العلامات التجارية', path: '/brands' },
+            { name: brand.name, path: `/brands/${brand.id}` },
+          ]),
+          {
+            '@context': 'https://schema.org',
+            '@type': 'Organization',
+            name: brand.name,
+            description,
+            image: absoluteUrl(cover),
+            logo: absoluteUrl(logo),
+            url: absoluteUrl(`/brands/${brand.id}`),
+            category: brand.category,
+          },
+        ]}
+      />
       {/* Cover */}
       <div className="relative h-56 sm:h-72 lg:h-80 overflow-hidden">
-        <img src={cover} alt={brand.name} className="w-full h-full object-cover" />
+        <img src={cover} alt={`غلاف ${brand.name}`} className="w-full h-full object-cover" />
         <div className="absolute inset-0 bg-gradient-to-t from-navy via-navy/40 to-transparent" />
         <div className="absolute bottom-0 inset-x-0 p-6 sm:p-10 max-w-7xl mx-auto">
           <div className="flex items-end gap-5">

@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom'
+﻿import { Link } from 'react-router-dom'
 import { Check, ChevronLeft, Play } from 'lucide-react'
 import { motion } from 'motion/react'
 import Button from '../ui/Button'
@@ -189,7 +189,7 @@ export default function Hero() {
               <span className="w-2.5 h-2.5 rounded-full bg-gold/50" />
               <span className="w-2.5 h-2.5 rounded-full bg-navy/15" />
               <span className="mr-3 flex-1 h-6 rounded-md bg-white/80 border border-separator text-[10px] text-muted flex items-center justify-center tracking-wide">
-                raida.dz
+                raaida.net
               </span>
             </div>
 

@@ -13,6 +13,8 @@ import { useAsyncData } from '../hooks/useAsyncData'
 import { catalogApi, publicApi } from '../lib/catalog'
 import { asArray } from '../lib/normalize'
 import { safeHref } from '../lib/safe'
+import SeoHead from '../components/seo/SeoHead'
+import { absoluteUrl, breadcrumbJsonLd } from '../lib/seo'
 
 const imageFallback =
   'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=400&h=400&fit=crop'
@@ -43,6 +45,7 @@ export default function MemberProfilePage() {
   if (loading) {
     return (
       <div className="pt-20 min-h-screen bg-ivory">
+        <SeoHead title="جاري التحميل…" path={`/members/${id || ''}`} noindex />
         <LoadingBlock />
       </div>
     )
@@ -51,6 +54,7 @@ export default function MemberProfilePage() {
   if (error || !member) {
     return (
       <div className="pt-20 min-h-screen bg-ivory">
+        <SeoHead title="العضوة غير موجودة" path={`/members/${id || ''}`} noindex />
         <ErrorBlock message={error || 'العضوة غير موجودة'} onRetry={reload} />
       </div>
     )
@@ -64,12 +68,43 @@ export default function MemberProfilePage() {
   const projects = asArray(member.projects)
   const achievements = asArray(member.achievements)
   const gallery = [cover, image, ...(related.map((m) => m.image || imageFallback))].slice(0, 6)
+  const description =
+    (member.bio && member.bio.slice(0, 160)) ||
+    `${member.name} — ${member.title}${member.specialty ? ` · ${member.specialty}` : ''}${member.city ? ` · ${member.city}` : ''}`
 
   return (
     <div className="pt-20 pb-16 min-h-screen bg-ivory">
+      <SeoHead
+        title={`${member.name} | ${member.title}`}
+        description={description}
+        path={`/members/${member.id}`}
+        image={image}
+        type="profile"
+        keywords={[member.name, member.title, member.specialty, member.city, 'رائدة', 'RAIDA'].filter(Boolean)}
+        jsonLd={[
+          breadcrumbJsonLd([
+            { name: 'الرئيسية', path: '/' },
+            { name: 'دليل الأعضاء', path: '/members' },
+            { name: member.name, path: `/members/${member.id}` },
+          ]),
+          {
+            '@context': 'https://schema.org',
+            '@type': 'Person',
+            name: member.name,
+            jobTitle: member.title,
+            description,
+            image: absoluteUrl(image),
+            url: absoluteUrl(`/members/${member.id}`),
+            address: member.city
+              ? { '@type': 'PostalAddress', addressLocality: member.city, addressCountry: 'DZ' }
+              : undefined,
+            knowsAbout: [member.specialty, ...services].filter(Boolean),
+          },
+        ]}
+      />
       {/* Cover */}
       <div className="relative h-48 sm:h-64 lg:h-72 overflow-hidden">
-        <img src={cover} alt="" className="w-full h-full object-cover" />
+        <img src={cover} alt={`غلاف ملف ${member.name}`} className="w-full h-full object-cover" />
         <div className="absolute inset-0 bg-gradient-to-t from-navy/80 via-navy/30 to-transparent" />
       </div>
 

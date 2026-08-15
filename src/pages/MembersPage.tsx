@@ -8,6 +8,8 @@ import { LoadingBlock, ErrorBlock } from '../components/ui/StateBlocks'
 import { materialize, springs, useMotionSafe } from '../lib/motion'
 import { useAsyncData } from '../hooks/useAsyncData'
 import { catalogApi } from '../lib/catalog'
+import SeoHead from '../components/seo/SeoHead'
+import { breadcrumbJsonLd, routeSeo } from '../lib/seo'
 
 export default function MembersPage() {
   const [search, setSearch] = useState('')
@@ -52,6 +54,16 @@ export default function MembersPage() {
 
   return (
     <div className="min-h-screen bg-ivory">
+      <SeoHead
+        title={routeSeo.members.title}
+        description={routeSeo.members.description}
+        path={routeSeo.members.path}
+        keywords={[...routeSeo.members.keywords]}
+        jsonLd={breadcrumbJsonLd([
+          { name: 'الرئيسية', path: '/' },
+          { name: 'دليل الأعضاء', path: '/members' },
+        ])}
+      />
       <section className="relative isolate overflow-hidden pt-28 pb-10 sm:pb-12">
         <div className="absolute inset-0 -z-10 pointer-events-none" aria-hidden>
           <div className="absolute inset-0 bg-gradient-to-b from-rose-soft/90 via-ivory to-ivory" />

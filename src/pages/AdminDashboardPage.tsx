@@ -25,6 +25,8 @@ import type {
   ServiceCategory,
   SuccessStory,
 } from '../types/api'
+import SeoHead from '../components/seo/SeoHead'
+import { routeSeo } from '../lib/seo'
 
 const adminNav = [
   { id: 'overview', label: 'نظرة عامة', icon: LayoutDashboard },
@@ -408,6 +410,12 @@ export default function AdminDashboardPage() {
   if (authLoading) {
     return (
       <AdminChrome>
+        <SeoHead
+          title={routeSeo.admin.title}
+          description={routeSeo.admin.description}
+          path={routeSeo.admin.path}
+          noindex
+        />
         <LoadingBlock />
       </AdminChrome>
     )
@@ -416,6 +424,12 @@ export default function AdminDashboardPage() {
   if (!user) {
     return (
       <AdminChrome>
+        <SeoHead
+          title={routeSeo.admin.title}
+          description={routeSeo.admin.description}
+          path={routeSeo.admin.path}
+          noindex
+        />
         <LoginForm hint={import.meta.env.DEV ? 'admin@raida.local / Password123!' : 'أدخلي بيانات حسابك الإداري'} onSubmit={login} />
       </AdminChrome>
     )
@@ -424,6 +438,12 @@ export default function AdminDashboardPage() {
   if (!isAdminRole(user.role)) {
     return (
       <AdminChrome onLogout={() => logout()} userEmail={user.email}>
+        <SeoHead
+          title={routeSeo.admin.title}
+          description={routeSeo.admin.description}
+          path={routeSeo.admin.path}
+          noindex
+        />
         <div className="h-full flex items-center justify-center px-4">
           <div className="bg-white rounded-[20px] p-8 hairline shadow-sm max-w-md text-center space-y-4">
             <h2 className="text-lg font-bold text-navy">غير مصرح</h2>
@@ -789,6 +809,12 @@ export default function AdminDashboardPage() {
         </button>
       }
     >
+      <SeoHead
+        title={routeSeo.admin.title}
+        description={routeSeo.admin.description}
+        path={routeSeo.admin.path}
+        noindex
+      />
       {editor && editorConfig && (
         <AdminEditor
           title={editorConfig.title}
