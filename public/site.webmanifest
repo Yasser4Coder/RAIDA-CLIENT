@@ -1,0 +1,29 @@
+{
+  "name": "RAIDA رائدة",
+  "short_name": "RAIDA",
+  "description": "منصة ومجتمع مهني يجمع رائدات الأعمال والخبراء والشركات والشركاء لبناء فرص حقيقية للنمو والتعاون.",
+  "lang": "ar",
+  "dir": "rtl",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#FAF8F4",
+  "theme_color": "#0A1328",
+  "icons": [
+    {
+      "src": "/favicon.png",
+      "sizes": "64x64",
+      "type": "image/png"
+    },
+    {
+      "src": "/raida-icon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/apple-touch-icon.png",
+      "sizes": "180x180",
+      "type": "image/png"
+    }
+  ]
+}

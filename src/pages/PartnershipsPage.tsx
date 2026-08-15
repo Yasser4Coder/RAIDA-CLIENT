@@ -13,6 +13,8 @@ import { useAsyncData } from '../hooks/useAsyncData'
 import { catalogApi, publicApi } from '../lib/catalog'
 import { asArray } from '../lib/normalize'
 import type { PartnershipTier } from '../types/api'
+import SeoHead from '../components/seo/SeoHead'
+import { breadcrumbJsonLd, routeSeo } from '../lib/seo'
 
 const tierIcons: Record<string, ElementType> = {
   'Strategic Partner': Building2,
@@ -74,6 +76,16 @@ export default function PartnershipsPage() {
 
   return (
     <div className="min-h-screen bg-ivory">
+      <SeoHead
+        title={routeSeo.partnerships.title}
+        description={routeSeo.partnerships.description}
+        path={routeSeo.partnerships.path}
+        keywords={[...routeSeo.partnerships.keywords]}
+        jsonLd={breadcrumbJsonLd([
+          { name: 'الرئيسية', path: '/' },
+          { name: 'الشراكات', path: '/partnerships' },
+        ])}
+      />
       {/* Hero — light mesh, consistent with discovery pages */}
       <section className="relative isolate overflow-hidden pt-28 pb-14 sm:pb-16">
         <div className="absolute inset-0 -z-10 pointer-events-none" aria-hidden>

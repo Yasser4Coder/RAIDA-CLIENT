@@ -1,9 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" fill="none" role="img" aria-label="RAIDA mark  Ascend Hex">
-  <!-- V6: Premium hex frame + ascending path -->
-  <rect width="100" height="100" rx="22" fill="#0A1328"/>
-  <polygon points="50,16 78,32 78,68 50,84 22,68 22,32" stroke="#C9A55C" stroke-width="2.4" fill="none" opacity="0.9"/>
-  <path d="M36 64 L50 40 L64 64" stroke="#E4A0B0" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
-  <circle cx="50" cy="40" r="5" fill="#C9A55C"/>
-  <circle cx="36" cy="64" r="3.5" fill="#E4A0B0"/>
-  <circle cx="64" cy="64" r="3.5" fill="#FAF8F4"/>
-</svg>

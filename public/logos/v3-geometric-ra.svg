@@ -1,9 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" fill="none" role="img" aria-label="RAIDA mark  Geometric Ra">
-  <!-- V3: Geometric Arabic 1 monogram -->
-  <rect width="100" height="100" rx="22" fill="#0A1328"/>
-  <!-- Stylized 1 as geometric strokes -->
-  <path d="M32 28 H62 C72 28 78 34 78 44 C78 54 72 60 62 60 H48" stroke="#C9A55C" stroke-width="7" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
-  <path d="M48 60 V74" stroke="#C9A55C" stroke-width="7" stroke-linecap="round"/>
-  <circle cx="34" cy="74" r="5" fill="#E4A0B0"/>
-  <circle cx="68" cy="28" r="3.5" fill="#E4A0B0"/>
-</svg>

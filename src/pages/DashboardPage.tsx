@@ -16,6 +16,8 @@ import { meApi } from '../lib/catalog'
 import { asArray } from '../lib/normalize'
 import type { Member } from '../types/api'
 import ImageUpload from '../components/ui/ImageUpload'
+import SeoHead from '../components/seo/SeoHead'
+import { routeSeo } from '../lib/seo'
 
 const planLabel: Record<string, string> = {
   FREE: 'مجاني',
@@ -501,9 +503,19 @@ export default function DashboardPage() {
     }
   }, [sidebarOpen])
 
+  const seo = (
+    <SeoHead
+      title={routeSeo.dashboard.title}
+      description={routeSeo.dashboard.description}
+      path={routeSeo.dashboard.path}
+      noindex
+    />
+  )
+
   if (authLoading) {
     return (
       <div className="pt-20 min-h-screen bg-ivory">
+        {seo}
         <LoadingBlock />
       </div>
     )
@@ -511,10 +523,13 @@ export default function DashboardPage() {
 
   if (!user) {
     return (
-      <LoginForm
-        hint={import.meta.env.DEV ? 'sara@raida.local / Password123!' : 'أدخلي بيانات حسابك'}
-        onSubmit={login}
-      />
+      <>
+        {seo}
+        <LoginForm
+          hint={import.meta.env.DEV ? 'sara@raida.local / Password123!' : 'أدخلي بيانات حسابك'}
+          onSubmit={login}
+        />
+      </>
     )
   }
 
@@ -652,6 +667,7 @@ export default function DashboardPage() {
 
   return (
     <div className="pt-20 min-h-screen bg-ivory">
+      {seo}
       <div className="max-w-[1400px] mx-auto flex">
         <aside className="hidden lg:flex sticky top-20 h-[calc(100vh-5rem)] w-[260px] shrink-0 flex-col border-l border-separator bg-white/80 backdrop-blur-xl">
           {SidebarNav}

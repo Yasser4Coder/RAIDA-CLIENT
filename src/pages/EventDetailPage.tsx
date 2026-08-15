@@ -9,6 +9,8 @@ import { useAuth } from '../context/AuthContext'
 import { catalogApi, meApi } from '../lib/catalog'
 import { ApiClientError } from '../lib/api'
 import { asArray } from '../lib/normalize'
+import SeoHead from '../components/seo/SeoHead'
+import { absoluteUrl, breadcrumbJsonLd } from '../lib/seo'
 
 const imageFallback =
   'https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=800&h=500&fit=crop'
@@ -33,6 +35,7 @@ export default function EventDetailPage() {
   if (loading) {
     return (
       <div className="pt-20 min-h-screen bg-ivory">
+        <SeoHead title="جاري التحميل…" path={`/events/${id || ''}`} noindex />
         <LoadingBlock />
       </div>
     )
@@ -41,6 +44,7 @@ export default function EventDetailPage() {
   if (error || !event) {
     return (
       <div className="pt-20 min-h-screen bg-ivory">
+        <SeoHead title="الفعالية غير موجودة" path={`/events/${id || ''}`} noindex />
         <ErrorBlock message={error || 'الفعالية غير موجودة'} onRetry={reload} />
       </div>
     )
@@ -50,6 +54,9 @@ export default function EventDetailPage() {
   const agenda = asArray(event.agenda)
   const speakers = asArray(event.speakers)
   const sponsors = asArray(event.sponsors)
+  const description =
+    event.description?.slice(0, 160) ||
+    `${event.title} — ${event.date} · ${event.location}`
 
   const handleRegister = async () => {
     if (!user) {
@@ -83,6 +90,55 @@ export default function EventDetailPage() {
 
   return (
     <div className="pt-20 pb-16 min-h-screen bg-ivory">
+      <SeoHead
+        title={event.title}
+        description={description}
+        path={`/events/${event.id}`}
+        image={image}
+        type="article"
+        keywords={[event.title, event.category, event.location, 'فعالية', 'RAIDA'].filter(Boolean)}
+        jsonLd={[
+          breadcrumbJsonLd([
+            { name: 'الرئيسية', path: '/' },
+            { name: 'الفعاليات', path: '/events' },
+            { name: event.title, path: `/events/${event.id}` },
+          ]),
+          {
+            '@context': 'https://schema.org',
+            '@type': 'Event',
+            name: event.title,
+            description,
+            image: absoluteUrl(image),
+            url: absoluteUrl(`/events/${event.id}`),
+            eventAttendanceMode: 'https://schema.org/OfflineEventAttendanceMode',
+            eventStatus: 'https://schema.org/EventScheduled',
+            startDate: event.startsAt || undefined,
+            location: {
+              '@type': 'Place',
+              name: event.location,
+              address: {
+                '@type': 'PostalAddress',
+                addressLocality: event.location,
+                addressCountry: 'DZ',
+              },
+            },
+            organizer: {
+              '@type': 'Organization',
+              name: 'RAIDA',
+              url: absoluteUrl('/'),
+            },
+            offers: event.price
+              ? {
+                  '@type': 'Offer',
+                  price: event.price.replace(/[^\d.]/g, '') || undefined,
+                  priceCurrency: 'DZD',
+                  availability: 'https://schema.org/InStock',
+                  url: absoluteUrl(`/events/${event.id}`),
+                }
+              : undefined,
+          },
+        ]}
+      />
       <div className="relative h-64 sm:h-80 lg:h-96 overflow-hidden">
         <img src={image} alt={event.title} className="w-full h-full object-cover" />
         <div className="absolute inset-0 bg-gradient-to-t from-navy via-navy/50 to-transparent" />

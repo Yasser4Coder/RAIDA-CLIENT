@@ -10,6 +10,8 @@ import { useAsyncData } from '../hooks/useAsyncData'
 import { useAuth } from '../context/AuthContext'
 import { catalogApi, meApi } from '../lib/catalog'
 import { asArray } from '../lib/normalize'
+import SeoHead from '../components/seo/SeoHead'
+import { breadcrumbJsonLd, routeSeo } from '../lib/seo'
 
 const faqs = [
   {
@@ -81,6 +83,16 @@ export default function MembershipPage() {
 
   return (
     <div className="min-h-screen bg-ivory">
+      <SeoHead
+        title={routeSeo.membership.title}
+        description={routeSeo.membership.description}
+        path={routeSeo.membership.path}
+        keywords={[...routeSeo.membership.keywords]}
+        jsonLd={breadcrumbJsonLd([
+          { name: 'الرئيسية', path: '/' },
+          { name: 'العضوية', path: '/membership' },
+        ])}
+      />
       {/* Hero */}
       <section className="relative isolate overflow-hidden pt-28 pb-12 sm:pb-14">
         <div className="absolute inset-0 -z-10 pointer-events-none" aria-hidden>
