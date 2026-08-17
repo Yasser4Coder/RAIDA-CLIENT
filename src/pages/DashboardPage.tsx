@@ -3,7 +3,7 @@ import { Link, Navigate } from 'react-router-dom'
 import {
   LayoutDashboard, User, Briefcase, Calendar, Handshake, Bell,
   BarChart3, CreditCard, Settings, ChevronLeft, Eye, Users,
-  TrendingUp, CalendarCheck, MessageSquare, Plus, Menu, X, Trash2,
+  TrendingUp, CalendarCheck, MessageSquare, Plus, Menu, X, Trash2, Sparkles,
 } from 'lucide-react'
 import { AnimatePresence, motion } from 'motion/react'
 import Badge from '../components/ui/Badge'
@@ -12,22 +12,25 @@ import { LoadingBlock, ErrorBlock } from '../components/ui/StateBlocks'
 import { materialize, springs, useMotionSafe } from '../lib/motion'
 import { useAuth } from '../context/AuthContext'
 import { useAsyncData } from '../hooks/useAsyncData'
-import { PLAN_LABELS } from '../lib/plans'
+import { PLAN_LABELS, ROLE_LABELS } from '../lib/plans'
 import { catalogApi, meApi } from '../lib/catalog'
 import { asArray } from '../lib/normalize'
 import type { Member } from '../types/api'
 import ImageUpload from '../components/ui/ImageUpload'
+import ConsultationRequestForm from '../components/ui/ConsultationRequestForm'
 import SeoHead from '../components/seo/SeoHead'
 import { routeSeo } from '../lib/seo'
 
 const planLabel = PLAN_LABELS
 
-const sidebarItems: {
+type SidebarItem = {
   id: string
   label: string
   icon: typeof LayoutDashboard
   badge?: number
-}[] = [
+}
+
+const memberSidebarItems: SidebarItem[] = [
   { id: 'overview', label: 'نظرة عامة', icon: LayoutDashboard },
   { id: 'consultations', label: 'الاستشارات', icon: MessageSquare },
   { id: 'profile', label: 'الملف الشخصي', icon: User },
@@ -38,6 +41,14 @@ const sidebarItems: {
   { id: 'analytics', label: 'التحليلات', icon: BarChart3 },
   { id: 'subscription', label: 'الاشتراك', icon: CreditCard },
   { id: 'settings', label: 'الإعدادات', icon: Settings },
+]
+
+const guestSidebarItems: SidebarItem[] = [
+  { id: 'overview', label: 'نظرة عامة', icon: LayoutDashboard },
+  { id: 'consultations', label: 'الاستشارات', icon: MessageSquare },
+  { id: 'profile', label: 'الملف الشخصي', icon: User },
+  { id: 'notifications', label: 'الإشعارات', icon: Bell },
+  { id: 'membership', label: 'الترقية للعضوية', icon: Sparkles },
 ]
 
 const toneClass: Record<string, string> = {
@@ -70,7 +81,7 @@ function LoginForm({
     email: string
     password: string
     name: string
-    accountType: 'client' | 'member'
+    accountType: 'guest' | 'member'
     plan?: string
   }) => Promise<void>
   hint: string
@@ -79,7 +90,7 @@ function LoginForm({
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [name, setName] = useState('')
-  const [accountType, setAccountType] = useState<'client' | 'member'>('client')
+  const [accountType, setAccountType] = useState<'guest' | 'member'>('guest')
   const [plan, setPlan] = useState('BUSINESS')
   const [error, setError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
@@ -136,7 +147,7 @@ function LoginForm({
         <p className="text-[13px] text-muted">
           {mode === 'login'
             ? 'ادخلي إلى لوحة التحكم الخاصة بكِ.'
-            : 'اختاري حساب عميلة أو عضوية مدفوعة. العضوية تحتاج موافقة الإدارة.'}
+            : 'اختاري حساب زائرة أو عضوية مدفوعة. العضوية تحتاج موافقة الإدارة.'}
         </p>
         {mode === 'register' && (
           <>
@@ -154,11 +165,11 @@ function LoginForm({
               <button
                 type="button"
                 className={`h-11 rounded-[12px] text-[13px] font-semibold border ${
-                  accountType === 'client' ? 'bg-navy text-white border-navy' : 'bg-ivory text-muted border-separator'
+                  accountType === 'guest' ? 'bg-navy text-white border-navy' : 'bg-ivory text-muted border-separator'
                 }`}
-                onClick={() => setAccountType('client')}
+                onClick={() => setAccountType('guest')}
               >
-                عميلة
+                زائرة
               </button>
               <button
                 type="button"
@@ -210,6 +221,11 @@ function LoginForm({
           />
         </div>
         {error && <p className="text-sm text-rose">{error}</p>}
+        {mode === 'login' && (
+          <Link to="/forgot-password" className="block text-[12px] text-rose font-semibold">
+            نسيتِ كلمة المرور أو رابط التأكيد؟
+          </Link>
+        )}
         {import.meta.env.DEV && <p className="text-[11px] text-muted">تجريبي: {hint}</p>}
         <Button type="submit" variant="gold" size="md" className="w-full" disabled={submitting}>
           {submitting ? 'جاري الحفظ...' : mode === 'login' ? 'دخول' : 'إنشاء الحساب'}
@@ -252,14 +268,14 @@ function MembershipAccessGate({
     <div className="pt-20 min-h-screen bg-ivory flex items-center justify-center px-4">
       <Surface className="p-8 max-w-md text-center space-y-4">
         <h2 className="text-lg font-bold text-navy">
-          {pending ? 'طلب العضوية قيد المراجعة' : rejected ? 'تم رفض طلب العضوية' : 'حساب عميلة'}
+          {pending ? 'طلب العضوية قيد المراجعة' : rejected ? 'تم رفض طلب العضوية' : 'حساب زائرة'}
         </h2>
         <p className="text-sm text-muted leading-relaxed">
           {pending
             ? 'استلمنا طلب عضويتكِ. ستظهرين في دليل رائدة ولوحة العضوة بعد موافقة الإدارة.'
             : rejected
               ? 'يمكنكِ إعادة التقديم على عضوية مدفوعة ليراجعها فريق رائدة.'
-              : 'هذا حساب عميلة. للظهور في الدليل والحصول على مزايا العضوية، قدّمي طلب عضوية لإدارة رائدة.'}
+              : 'هذا حساب زائرة. للظهور في الدليل والحصول على مزايا العضوية، قدّمي طلب عضوية لإدارة رائدة.'}
         </p>
         {!pending && (
           <select
@@ -289,15 +305,77 @@ function MembershipAccessGate({
   )
 }
 
+function GuestUpgradePanel({
+  onApplied,
+}: {
+  onApplied: () => Promise<void>
+}) {
+  const { data: plans } = useAsyncData(() => catalogApi.plans(), [])
+  const [plan, setPlan] = useState('BUSINESS')
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  const apply = async () => {
+    setBusy(true)
+    setError(null)
+    try {
+      await meApi.requestMembership(plan)
+      await onApplied()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'تعذر إرسال طلب العضوية')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <Surface className="p-5 sm:p-6 max-w-lg space-y-4">
+      <div className="flex items-start gap-3">
+        <div className="w-11 h-11 rounded-[12px] bg-gold/15 ring-1 ring-gold/25 flex items-center justify-center shrink-0">
+          <Sparkles className="w-5 h-5 text-gold-dark" />
+        </div>
+        <div>
+          <h3 className="font-bold text-navy">الترقية إلى عضوية رائدة</h3>
+          <p className="text-sm text-muted mt-1 leading-relaxed">
+            حساب الزائرة للاستشارات فقط. العضوية تُظهركِ في الدليل وتتيح الخدمات والمنتجات والملف العام بعد موافقة الإدارة.
+          </p>
+        </div>
+      </div>
+      <select
+        value={plan}
+        onChange={(e) => setPlan(e.target.value)}
+        className="w-full h-11 px-4 rounded-[12px] border border-separator bg-ivory text-sm"
+      >
+        {(plans ?? []).map((item) => (
+          <option key={item.name} value={item.name}>
+            {item.nameAr} — {item.launchPrice || item.price} دج / {item.period}
+          </option>
+        ))}
+      </select>
+      {error && <p className="text-sm text-rose">{error}</p>}
+      <div className="flex flex-wrap gap-2">
+        <Button variant="gold" size="sm" onClick={() => void apply()} disabled={busy}>
+          {busy ? 'جاري الإرسال...' : 'تقديم طلب عضوية'}
+        </Button>
+        <Button to="/membership" variant="outline" size="sm">
+          مقارنة الخطط
+        </Button>
+      </div>
+    </Surface>
+  )
+}
+
 const fieldClass =
   'w-full h-11 px-4 rounded-[12px] border border-separator bg-ivory text-sm focus:outline-none focus:border-rose/40 focus:ring-2 focus:ring-rose/15'
 
 function ProfileEditor({
   member,
   onSaved,
+  simple = false,
 }: {
   member: Member
   onSaved: () => Promise<void>
+  simple?: boolean
 }) {
   const [name, setName] = useState(member.name)
   const [title, setTitle] = useState(member.title)
@@ -332,21 +410,28 @@ function ProfileEditor({
     setError(null)
     setOk(false)
     try {
-      await meApi.updateProfile({
-        name,
-        title,
-        specialty,
-        city,
-        website: website.trim() || null,
-        bio: bio.trim() || null,
-        image: image || null,
-        cover: cover || null,
-        social: {
-          ...member.social,
-          instagram: instagram.trim(),
-          linkedin: linkedin.trim(),
-        },
-      })
+      if (simple) {
+        await meApi.updateProfile({
+          name,
+          city,
+        })
+      } else {
+        await meApi.updateProfile({
+          name,
+          title,
+          specialty,
+          city,
+          website: website.trim() || null,
+          bio: bio.trim() || null,
+          image: image || null,
+          cover: cover || null,
+          social: {
+            ...member.social,
+            instagram: instagram.trim(),
+            linkedin: linkedin.trim(),
+          },
+        })
+      }
       await onSaved()
       setOk(true)
     } catch (err) {
@@ -356,21 +441,36 @@ function ProfileEditor({
     }
   }
 
+  const simpleFields = [
+    { label: 'الاسم', value: name, set: setName },
+    { label: 'المدينة', value: city, set: setCity },
+  ]
+  const memberFields = [
+    { label: 'الاسم', value: name, set: setName },
+    { label: 'الصفة المهنية', value: title, set: setTitle },
+    { label: 'التخصص', value: specialty, set: setSpecialty },
+    { label: 'المدينة', value: city, set: setCity },
+    { label: 'الموقع', value: website, set: setWebsite },
+    { label: 'Instagram', value: instagram, set: setInstagram },
+    { label: 'LinkedIn', value: linkedin, set: setLinkedin },
+  ]
+
   return (
     <Surface className="p-5 sm:p-6 max-w-2xl">
-      <h3 className="font-bold text-navy mb-6">إدارة الملف الشخصي</h3>
-      <form onSubmit={handleSubmit} className="space-y-3.5">
-        <ImageUpload label="صورة الملف" value={image} onChange={setImage} />
-        <ImageUpload label="صورة الغلاف" value={cover} onChange={setCover} />
-        {[
-          { label: 'الاسم', value: name, set: setName },
-          { label: 'الصفة المهنية', value: title, set: setTitle },
-          { label: 'التخصص', value: specialty, set: setSpecialty },
-          { label: 'المدينة', value: city, set: setCity },
-          { label: 'الموقع', value: website, set: setWebsite },
-          { label: 'Instagram', value: instagram, set: setInstagram },
-          { label: 'LinkedIn', value: linkedin, set: setLinkedin },
-        ].map((f) => (
+      <h3 className="font-bold text-navy mb-2">{simple ? 'بياناتك' : 'إدارة الملف الشخصي'}</h3>
+      {simple && (
+        <p className="text-sm text-muted mb-6">
+          حساب زائرة بسيط: الاسم والصورة فقط. الخدمات والمنتجات والملف العام متاحة بعد الترقية للعضوية.
+        </p>
+      )}
+      <form onSubmit={handleSubmit} className={`space-y-3.5 ${simple ? '' : 'mt-4'}`}>
+        {!simple && (
+          <>
+            <ImageUpload label="صورة الملف" value={image} onChange={setImage} />
+            <ImageUpload label="صورة الغلاف" value={cover} onChange={setCover} />
+          </>
+        )}
+        {(simple ? simpleFields : memberFields).map((f) => (
           <div key={f.label}>
             <label className="block text-[11px] font-semibold text-muted mb-1.5 tracking-[0.01em]">
               {f.label}
@@ -382,15 +482,17 @@ function ProfileEditor({
             />
           </div>
         ))}
-        <div>
-          <label className="block text-[11px] font-semibold text-muted mb-1.5">نبذة تعريفية</label>
-          <textarea
-            value={bio}
-            onChange={(e) => setBio(e.target.value)}
-            rows={4}
-            className="w-full px-4 py-3 rounded-[12px] border border-separator bg-ivory text-sm focus:outline-none focus:border-rose/40 focus:ring-2 focus:ring-rose/15 resize-none"
-          />
-        </div>
+        {!simple && (
+          <div>
+            <label className="block text-[11px] font-semibold text-muted mb-1.5">نبذة تعريفية</label>
+            <textarea
+              value={bio}
+              onChange={(e) => setBio(e.target.value)}
+              rows={4}
+              className="w-full px-4 py-3 rounded-[12px] border border-separator bg-ivory text-sm focus:outline-none focus:border-rose/40 focus:ring-2 focus:ring-rose/15 resize-none"
+            />
+          </div>
+        )}
         {error && <p className="text-sm text-rose">{error}</p>}
         {ok && <p className="text-sm text-emerald-700">تم حفظ التغييرات</p>}
         <Button type="submit" variant="gold" size="md" disabled={saving}>
@@ -590,7 +692,7 @@ export default function DashboardPage() {
     error: dashError,
     reload: reloadDash,
   } = useAsyncData(
-    () => (user && user.hasAccess !== false ? meApi.dashboard() : Promise.resolve(null)),
+    () => (user ? meApi.dashboard() : Promise.resolve(null)),
     [user?.id, user?.hasAccess],
   )
 
@@ -600,7 +702,7 @@ export default function DashboardPage() {
     error: notifError,
     reload: reloadNotifs,
   } = useAsyncData(
-    () => (user && user.hasAccess !== false ? meApi.notifications() : Promise.resolve({ data: [] })),
+    () => (user ? meApi.notifications() : Promise.resolve({ data: [] })),
     [user?.id, user?.hasAccess],
   )
 
@@ -611,12 +713,14 @@ export default function DashboardPage() {
     reload: reloadConsults,
   } = useAsyncData(
     () =>
-      user && user.hasAccess !== false && active === 'consultations'
-        ? meApi.consultations()
+      user && active === 'consultations'
+        ? meApi.consultations({ limit: 100 })
         : Promise.resolve({ data: [] }),
     [user?.id, user?.hasAccess, active],
   )
 
+  const isGuest = user?.role === 'guest'
+  const sidebarItems = isGuest ? guestSidebarItems : memberSidebarItems
   const member = dashboard?.profile || authProfile
   const notifications = notificationsPayload?.data ?? []
   const consultations = consultationsPayload?.data ?? []
@@ -625,36 +729,53 @@ export default function DashboardPage() {
   const upcomingEvents = dashboard?.upcomingEvents ?? []
   const activeItem = sidebarItems.find((i) => i.id === active)
 
-  const overviewStats = [
-    {
-      label: 'مشاهدات الملف',
-      value: String(dashboard?.stats.profileViews ?? member?.profileViews ?? 0),
-      change: '',
-      icon: Eye,
-      tone: 'rose',
-    },
-    {
-      label: 'استشارات جديدة',
-      value: String(unreadConsultations),
-      change: '',
-      icon: Users,
-      tone: 'gold',
-    },
-    {
-      label: 'فعاليات قادمة',
-      value: String(dashboard?.stats.upcomingEvents ?? upcomingEvents.length),
-      change: '',
-      icon: CalendarCheck,
-      tone: 'mauve',
-    },
-    {
-      label: 'إشعارات',
-      value: String(dashboard?.stats.unreadNotifications ?? unreadCount),
-      change: '',
-      icon: MessageSquare,
-      tone: 'navy',
-    },
-  ]
+  const overviewStats = isGuest
+    ? [
+        {
+          label: 'استشارات',
+          value: String(unreadConsultations),
+          change: '',
+          icon: MessageSquare,
+          tone: 'gold',
+        },
+        {
+          label: 'إشعارات',
+          value: String(dashboard?.stats.unreadNotifications ?? unreadCount),
+          change: '',
+          icon: Bell,
+          tone: 'navy',
+        },
+      ]
+    : [
+        {
+          label: 'مشاهدات الملف',
+          value: String(dashboard?.stats.profileViews ?? member?.profileViews ?? 0),
+          change: '',
+          icon: Eye,
+          tone: 'rose',
+        },
+        {
+          label: 'استشارات جديدة',
+          value: String(unreadConsultations),
+          change: '',
+          icon: Users,
+          tone: 'gold',
+        },
+        {
+          label: 'فعاليات قادمة',
+          value: String(dashboard?.stats.upcomingEvents ?? upcomingEvents.length),
+          change: '',
+          icon: CalendarCheck,
+          tone: 'mauve',
+        },
+        {
+          label: 'إشعارات',
+          value: String(dashboard?.stats.unreadNotifications ?? unreadCount),
+          change: '',
+          icon: MessageSquare,
+          tone: 'navy',
+        },
+      ]
 
   useEffect(() => {
     document.body.style.overflow = sidebarOpen ? 'hidden' : ''
@@ -662,6 +783,13 @@ export default function DashboardPage() {
       document.body.style.overflow = ''
     }
   }, [sidebarOpen])
+
+  useEffect(() => {
+    if (!isGuest) return
+    if (!guestSidebarItems.some((item) => item.id === active)) {
+      setActive('overview')
+    }
+  }, [isGuest, active])
 
   const seo = (
     <SeoHead
@@ -698,7 +826,8 @@ export default function DashboardPage() {
     return <Navigate to="/admin" replace />
   }
 
-  if (user.hasAccess === false) {
+  // Pending/rejected membership applications stay on the gate; guests get the dashboard inbox.
+  if (user.role === 'member' && user.hasAccess === false) {
     return <MembershipAccessGate user={user} onRefresh={refreshMe} onLogout={logout} />
   }
 
@@ -762,7 +891,9 @@ export default function DashboardPage() {
           <div className="min-w-0">
             <p className="font-bold text-navy text-[13px] truncate tracking-[-0.01em]">{member.name}</p>
             <Badge variant="gold" className="mt-1">
-              {planLabel[user.plan || ''] || user.plan || '—'}
+              {isGuest
+                ? ROLE_LABELS.guest
+                : planLabel[user.plan || ''] || user.plan || ROLE_LABELS.member}
             </Badge>
           </div>
         </div>
@@ -874,10 +1005,12 @@ export default function DashboardPage() {
                 مرحباً بعودتك، {member.name.split(' ')[0]}
               </p>
             </div>
-            <Button to={`/members/${member.id}`} variant="outline" size="sm" className="shrink-0 !rounded-full">
-              <Eye className="w-4 h-4" />
-              <span className="hidden sm:inline">عرض الملف</span>
-            </Button>
+            {!isGuest && (
+              <Button to={`/members/${member.id}`} variant="outline" size="sm" className="shrink-0 !rounded-full">
+                <Eye className="w-4 h-4" />
+                <span className="hidden sm:inline">عرض الملف</span>
+              </Button>
+            )}
           </div>
 
           <AnimatePresence mode="wait">
@@ -890,7 +1023,7 @@ export default function DashboardPage() {
             >
               {active === 'overview' && (
                 <div className="space-y-4">
-                  <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+                  <div className={`grid grid-cols-2 ${isGuest ? '' : 'lg:grid-cols-4'} gap-3`}>
                     {overviewStats.map((s) => {
                       const Icon = s.icon
                       return (
@@ -912,7 +1045,57 @@ export default function DashboardPage() {
                     })}
                   </div>
 
-                  <div className="grid lg:grid-cols-2 gap-4">
+                  {isGuest && (
+                    <GuestUpgradePanel
+                      onApplied={async () => {
+                        await refreshMe()
+                        reloadDash()
+                      }}
+                    />
+                  )}
+
+                  <Surface className="p-5">
+                    <div className="flex items-center justify-between mb-3">
+                      <h3 className="font-bold text-navy tracking-[-0.01em]">
+                        {isGuest ? 'استشاراتك' : 'استكشفي المنصة'}
+                      </h3>
+                      {isGuest && (
+                        <button
+                          type="button"
+                          onClick={() => select('consultations')}
+                          className="text-[12px] text-rose font-semibold pressable-soft"
+                        >
+                          فتح الصندوق
+                        </button>
+                      )}
+                    </div>
+                    {isGuest ? (
+                      <p className="text-sm text-muted leading-relaxed">
+                        اطلبي استشارة من إدارة رائدة أو خبيرة، وتابعي الردود من هنا. لا يمكن إضافة خدمات أو منتجات على حساب الزائرة.
+                      </p>
+                    ) : (
+                      <div className="flex flex-wrap gap-2">
+                        {[
+                          { to: '/programs', label: 'البرامج' },
+                          { to: '/experts', label: 'الخبيرات' },
+                          { to: '/opportunities', label: 'الفرص' },
+                          { to: '/sos-store', label: 'SOS Store' },
+                          { to: '/benefits', label: 'المزايا' },
+                          { to: '/membership', label: 'العضوية' },
+                        ].map((link) => (
+                          <Link
+                            key={link.to}
+                            to={link.to}
+                            className="rounded-full bg-rose-soft/70 px-3.5 py-1.5 text-[12px] font-semibold text-navy hover:bg-blush"
+                          >
+                            {link.label}
+                          </Link>
+                        ))}
+                      </div>
+                    )}
+                  </Surface>
+
+                  <div className={`grid ${isGuest ? '' : 'lg:grid-cols-2'} gap-4`}>
                     <Surface className="p-5">
                       <div className="flex items-center justify-between mb-4">
                         <h3 className="font-bold text-navy tracking-[-0.01em]">آخر الإشعارات</h3>
@@ -953,82 +1136,128 @@ export default function DashboardPage() {
                       </div>
                     </Surface>
 
-                    <Surface className="p-5">
-                      <h3 className="font-bold text-navy tracking-[-0.01em] mb-4">فعالياتك القادمة</h3>
-                      <div className="space-y-2">
-                        {upcomingEvents.slice(0, 3).map((e) => (
-                          <Link
-                            key={e.id}
-                            to={`/events/${e.id}`}
-                            className="flex items-center gap-3 p-3 rounded-[12px] bg-ivory hover:bg-blush/70 transition-colors pressable-soft"
-                          >
-                            <img src={e.image || eventImageFallback} alt="" className="w-11 h-11 rounded-[10px] object-cover" />
-                            <div className="min-w-0 flex-1">
-                              <p className="text-[13px] font-semibold text-navy truncate">{e.title}</p>
-                              <p className="text-[11px] text-muted">{e.date}</p>
-                            </div>
-                            <ChevronLeft className="w-4 h-4 text-muted shrink-0" />
-                          </Link>
-                        ))}
-                        {upcomingEvents.length === 0 && (
-                          <p className="text-sm text-muted py-4 text-center">لا توجد فعاليات قادمة</p>
-                        )}
-                      </div>
-                    </Surface>
+                    {!isGuest && (
+                      <Surface className="p-5">
+                        <h3 className="font-bold text-navy tracking-[-0.01em] mb-4">فعالياتك القادمة</h3>
+                        <div className="space-y-2">
+                          {upcomingEvents.slice(0, 3).map((e) => (
+                            <Link
+                              key={e.id}
+                              to={`/events/${e.id}`}
+                              className="flex items-center gap-3 p-3 rounded-[12px] bg-ivory hover:bg-blush/70 transition-colors pressable-soft"
+                            >
+                              <img src={e.image || eventImageFallback} alt="" className="w-11 h-11 rounded-[10px] object-cover" />
+                              <div className="min-w-0 flex-1">
+                                <p className="text-[13px] font-semibold text-navy truncate">{e.title}</p>
+                                <p className="text-[11px] text-muted">{e.date}</p>
+                              </div>
+                              <ChevronLeft className="w-4 h-4 text-muted shrink-0" />
+                            </Link>
+                          ))}
+                          {upcomingEvents.length === 0 && (
+                            <p className="text-sm text-muted py-4 text-center">لا توجد فعاليات قادمة</p>
+                          )}
+                        </div>
+                      </Surface>
+                    )}
                   </div>
 
-                  <Surface className="p-5">
-                    <div className="flex items-center justify-between mb-2">
-                      <h3 className="font-bold text-navy tracking-[-0.01em]">مشاهدات الملف</h3>
-                      <TrendingUp className="w-5 h-5 text-gold" />
-                    </div>
-                    <p className="text-3xl font-extrabold text-navy tracking-[-0.03em] tabular-nums">
-                      {dashboard?.stats.profileViews ?? member.profileViews ?? 0}
-                    </p>
-                    <p className="text-[12px] text-muted mt-1">إجمالي المشاهدات منذ نشر الملف</p>
-                  </Surface>
+                  {!isGuest && (
+                    <Surface className="p-5">
+                      <div className="flex items-center justify-between mb-2">
+                        <h3 className="font-bold text-navy tracking-[-0.01em]">مشاهدات الملف</h3>
+                        <TrendingUp className="w-5 h-5 text-gold" />
+                      </div>
+                      <p className="text-3xl font-extrabold text-navy tracking-[-0.03em] tabular-nums">
+                        {dashboard?.stats.profileViews ?? member.profileViews ?? 0}
+                      </p>
+                      <p className="text-[12px] text-muted mt-1">إجمالي المشاهدات منذ نشر الملف</p>
+                    </Surface>
+                  )}
                 </div>
               )}
 
               {active === 'consultations' && (
-                <Surface className="divide-y divide-separator overflow-hidden">
-                  {consultations.map((item) => (
-                    <button
-                      key={item.id}
-                      type="button"
-                      onClick={async () => {
-                        if (item.status === 'new') {
-                          await meApi.markConsultationRead(item.id)
-                          reloadConsults()
-                          reloadDash()
-                        }
+                <div className="space-y-4">
+                  <Surface className="p-5">
+                    <h3 className="font-bold text-navy mb-2">اطلبي استشارة من إدارة رائدة أو خبيرة</h3>
+                    <p className="text-sm text-muted mb-4">
+                      المجال → الخبيرة/رائدة → الوقت → Online/حضوري → الدفع → الجلسة
+                    </p>
+                    <ConsultationRequestForm
+                      target="choose"
+                      compact
+                      onSent={() => {
+                        reloadConsults()
+                        reloadDash()
                       }}
-                      className={`w-full text-right p-4 sm:p-5 ${item.status === 'new' ? 'bg-rose-soft/35' : ''}`}
-                    >
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="min-w-0">
-                          <p className="text-[13px] font-bold text-navy">{item.subject}</p>
-                          <p className="text-[12px] text-muted mt-0.5">
-                            {item.guestName} · {item.guestEmail}
-                            {item.guestPhone ? ` · ${item.guestPhone}` : ''}
-                          </p>
-                          <p className="text-[13px] text-navy mt-2 leading-relaxed">{item.message}</p>
-                        </div>
-                        <Badge variant={item.status === 'new' ? 'rose' : 'soft'}>
-                          {item.status === 'new' ? 'جديدة' : 'مقروءة'}
-                        </Badge>
-                      </div>
-                    </button>
-                  ))}
-                  {consultations.length === 0 && (
-                    <p className="p-8 text-center text-sm text-muted">لا توجد استشارات بعد. ستظهر هنا رسائل الزوار من صفحتك العامة.</p>
-                  )}
-                </Surface>
+                    />
+                  </Surface>
+                  <Surface className="divide-y divide-separator overflow-hidden">
+                    {consultations.map((item) => {
+                      const isSent = item.direction === 'sent'
+                      return (
+                        <button
+                          key={item.id}
+                          type="button"
+                          onClick={async () => {
+                            if (!isSent && item.status === 'new') {
+                              await meApi.markConsultationRead(item.id)
+                              reloadConsults()
+                              reloadDash()
+                            }
+                          }}
+                          className={`w-full text-right p-4 sm:p-5 ${
+                            !isSent && item.status === 'new' ? 'bg-rose-soft/35' : ''
+                          }`}
+                        >
+                          <div className="flex items-start justify-between gap-3">
+                            <div className="min-w-0">
+                              <p className="text-[13px] font-bold text-navy">{item.subject}</p>
+                              <p className="text-[12px] text-muted mt-0.5">
+                                {isSent
+                                  ? `إلى: ${item.consultantName || (item.targetType === 'raida' ? 'إدارة رائدة' : 'خبيرة')}`
+                                  : `${item.guestName} · ${item.guestEmail}${item.guestPhone ? ` · ${item.guestPhone}` : ''}`}
+                              </p>
+                              <p className="text-[12px] text-muted mt-1">
+                                {[item.field, item.consultationType, item.mode === 'online' ? 'Online' : item.mode === 'in_person' ? 'حضوري' : null]
+                                  .filter(Boolean)
+                                  .join(' · ')}
+                                {item.preferredAt
+                                  ? ` · ${new Date(item.preferredAt).toLocaleString('ar-DZ')}`
+                                  : ''}
+                              </p>
+                              <p className="text-[13px] text-navy mt-2 leading-relaxed">{item.message}</p>
+                              {item.adminReply && (
+                                <div className="mt-3 rounded-[12px] bg-navy/[0.04] p-3 text-[13px] text-navy">
+                                  <p className="text-[11px] font-bold text-rose mb-1">رد رائدة</p>
+                                  {item.adminReply}
+                                </div>
+                              )}
+                            </div>
+                            <div className="flex flex-col gap-1 items-end shrink-0">
+                              <Badge variant={isSent ? 'soft' : item.status === 'new' ? 'rose' : 'soft'}>
+                                {isSent ? 'مرسَلة' : item.status === 'new' ? 'جديدة' : 'مقروءة'}
+                              </Badge>
+                              {item.adminReply && <Badge variant="gold">يوجد رد</Badge>}
+                            </div>
+                          </div>
+                        </button>
+                      )
+                    })}
+                    {consultations.length === 0 && (
+                      <p className="p-8 text-center text-sm text-muted">
+                        صندوق الاستشارات فارغ. أرسلي طلبًا أعلاه أو من صفحة خبيرة.
+                      </p>
+                    )}
+                  </Surface>
+                </div>
               )}
 
               {active === 'profile' && (
                 <ProfileEditor
                   member={member}
+                  simple={isGuest}
                   onSaved={async () => {
                     await refreshMe()
                     reloadDash()
@@ -1036,7 +1265,7 @@ export default function DashboardPage() {
                 />
               )}
 
-              {active === 'services' && (
+              {!isGuest && active === 'services' && (
                 <ServicesEditor
                   member={member}
                   onSaved={async () => {
@@ -1046,7 +1275,7 @@ export default function DashboardPage() {
                 />
               )}
 
-              {active === 'events' && (
+              {!isGuest && active === 'events' && (
                 <div className="space-y-2.5">
                   {upcomingEvents.map((e) => (
                     <Link key={e.id} to={`/events/${e.id}`}>
@@ -1069,7 +1298,7 @@ export default function DashboardPage() {
                 </div>
               )}
 
-              {active === 'partnerships' && (
+              {!isGuest && active === 'partnerships' && (
                 <Surface className="p-8 sm:p-10 text-center max-w-lg mx-auto">
                   <div className="mx-auto w-14 h-14 rounded-[16px] bg-gold/15 ring-1 ring-gold/25 flex items-center justify-center mb-4">
                     <Handshake className="w-6 h-6 text-gold-dark" />
@@ -1113,7 +1342,7 @@ export default function DashboardPage() {
                 </Surface>
               )}
 
-              {active === 'analytics' && (
+              {!isGuest && active === 'analytics' && (
                 <div className="space-y-4">
                   <div className="grid sm:grid-cols-3 gap-3">
                     {[
@@ -1136,7 +1365,16 @@ export default function DashboardPage() {
                 </div>
               )}
 
-              {active === 'subscription' && (
+              {active === 'membership' && isGuest && (
+                <GuestUpgradePanel
+                  onApplied={async () => {
+                    await refreshMe()
+                    reloadDash()
+                  }}
+                />
+              )}
+
+              {!isGuest && active === 'subscription' && (
                 <Surface className="p-6 sm:p-8 max-w-lg">
                   <Badge variant="gold">الخطة الحالية</Badge>
                   <h3 className="text-2xl font-extrabold text-navy mt-3 tracking-[-0.02em]">
@@ -1151,7 +1389,7 @@ export default function DashboardPage() {
                 </Surface>
               )}
 
-              {active === 'settings' && (
+              {!isGuest && active === 'settings' && (
                 <PublicProfileToggle
                   isPublic={member.isPublic !== false}
                   onSaved={async () => {

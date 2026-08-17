@@ -117,7 +117,7 @@ export default function Hero() {
             <ChevronLeft className="w-5 h-5 opacity-70" />
           </Button>
           <Button
-            to="/members"
+            to="/community"
             variant="ghost"
             size="lg"
             className="w-full sm:w-auto text-navy/70 hover:text-navy hover:bg-white/70"

@@ -36,6 +36,9 @@ export const catalogApi = {
   communityCards: () => apiRequest<CommunityCard[]>('/community-cards', { auth: false }),
   stats: () => apiRequest<PlatformStat[]>('/stats', { auth: false }),
   wilayas: () => apiRequest<string[]>('/wilayas', { auth: false }),
+  programs: () => apiRequest<import('../types/api').CmsProgram[]>('/programs', { auth: false }),
+  opportunities: () =>
+    apiRequest<import('../types/api').CmsOpportunity[]>('/opportunities', { auth: false }),
 }
 
 export const authApi = {
@@ -52,7 +55,7 @@ export const authApi = {
     email: string
     password: string
     name: string
-    accountType: 'client' | 'member'
+    accountType: 'guest' | 'member'
     plan?: string
     title?: string
     specialty?: string
@@ -63,9 +66,11 @@ export const authApi = {
     const data = await apiRequest<{
       user: UserSafe
       profile: Member | null
-      accessToken: string
+      accessToken: string | null
+      requiresEmailVerification?: boolean
     }>('/auth/register', { method: 'POST', body: payload, auth: false })
-    setAccessToken(data.accessToken)
+    if (data.accessToken) setAccessToken(data.accessToken)
+    else setAccessToken(null)
     return data
   },
   async me() {
@@ -87,6 +92,30 @@ export const authApi = {
       setAccessToken(null)
     }
   },
+  verifyEmail: (token: string) =>
+    apiRequest<{ verified: boolean }>('/auth/verify-email', {
+      method: 'POST',
+      body: { token },
+      auth: false,
+    }),
+  resendVerification: (email: string) =>
+    apiRequest<{ sent: boolean }>('/auth/resend-verification', {
+      method: 'POST',
+      body: { email },
+      auth: false,
+    }),
+  forgotPassword: (email: string) =>
+    apiRequest<{ sent: boolean }>('/auth/forgot-password', {
+      method: 'POST',
+      body: { email },
+      auth: false,
+    }),
+  resetPassword: (token: string, password: string) =>
+    apiRequest<{ reset: boolean }>('/auth/reset-password', {
+      method: 'POST',
+      body: { token, password },
+      auth: false,
+    }),
   isAuthenticated() {
     return Boolean(getAccessToken())
   },
@@ -110,7 +139,8 @@ export const meApi = {
     apiRequest<NotificationItem>(`/me/notifications/${id}/read`, { method: 'PATCH', body: {} }),
   updateProfile: (payload: Partial<Member>) =>
     apiRequest<Member>('/me/profile', { method: 'PATCH', body: payload }),
-  consultations: () => apiList<Consultation>('/me/consultations'),
+  consultations: (query?: Record<string, string | number | undefined>) =>
+    apiList<Consultation>('/me/consultations', query),
   markConsultationRead: (id: string) =>
     apiRequest<Consultation>(`/me/consultations/${id}/read`, { method: 'PATCH', body: {} }),
   updatePlan: (plan: string) =>
@@ -131,12 +161,38 @@ export const uploadApi = {
 export const publicApi = {
   sendConsultation: (
     memberId: string,
-    payload: { name: string; email: string; phone?: string; subject?: string; message: string },
+    payload: {
+      name: string
+      email: string
+      phone?: string
+      field: string
+      consultationType: string
+      mode: 'online' | 'in_person'
+      preferredAt: string
+      wilaya?: string
+      subject?: string
+      message: string
+    },
   ) =>
     apiRequest<{ received: boolean; id: string }>(`/members/${memberId}/consultations`, {
       method: 'POST',
       body: payload,
-      auth: false,
+    }),
+  sendRaidaConsultation: (payload: {
+    name: string
+    email: string
+    phone?: string
+    field: string
+    consultationType: string
+    mode: 'online' | 'in_person'
+    preferredAt: string
+    wilaya?: string
+    subject?: string
+    message: string
+  }) =>
+    apiRequest<{ received: boolean; id: string }>('/consultations/raida', {
+      method: 'POST',
+      body: payload,
     }),
   sendPartnershipInquiry: (payload: {
     name: string
@@ -229,4 +285,36 @@ export const adminApi = {
     apiRequest<ServiceCategory>('/admin/service-categories', { method: 'POST', body: payload }),
   deleteServiceCategory: (id: string) =>
     apiRequest<void>(`/admin/service-categories/${id}`, { method: 'DELETE' }),
+
+  consultations: (query?: Record<string, string | number | undefined>) =>
+    apiList<Consultation>('/admin/consultations', query),
+  replyConsultation: (id: string, reply: string) =>
+    apiRequest<Consultation>(`/admin/consultations/${id}/reply`, {
+      method: 'PATCH',
+      body: { reply },
+    }),
+  updateConsultationStatus: (id: string, status: string) =>
+    apiRequest<Consultation>(`/admin/consultations/${id}/status`, {
+      method: 'PATCH',
+      body: { status },
+    }),
+  deleteConsultation: (id: string) =>
+    apiRequest<void>(`/admin/consultations/${id}`, { method: 'DELETE' }),
+
+  programs: () => apiRequest<import('../types/api').CmsProgram[]>('/admin/programs'),
+  upsertProgram: (payload: Record<string, unknown>) =>
+    apiRequest<import('../types/api').CmsProgram>('/admin/programs', {
+      method: 'POST',
+      body: payload,
+    }),
+  deleteProgram: (id: string) => apiRequest<void>(`/admin/programs/${id}`, { method: 'DELETE' }),
+
+  opportunities: () => apiRequest<import('../types/api').CmsOpportunity[]>('/admin/opportunities'),
+  upsertOpportunity: (payload: Record<string, unknown>) =>
+    apiRequest<import('../types/api').CmsOpportunity>('/admin/opportunities', {
+      method: 'POST',
+      body: payload,
+    }),
+  deleteOpportunity: (id: string) =>
+    apiRequest<void>(`/admin/opportunities/${id}`, { method: 'DELETE' }),
 }

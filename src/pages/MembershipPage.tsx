@@ -12,15 +12,20 @@ import { catalogApi, meApi } from '../lib/catalog'
 import { asArray } from '../lib/normalize'
 import SeoHead from '../components/seo/SeoHead'
 import { breadcrumbJsonLd, routeSeo } from '../lib/seo'
+import { freeCommunityBenefits, joinSteps } from '../data/platformContent'
 
 const faqs = [
   {
-    q: 'ما الفرق بين العميلة والعضوة؟',
-    a: 'العميلة حساب عادي للتصفح والتسجيل في الفعاليات. العضوة اشتراك مدفوع سنوي يظهر في دليل رائدة ويحتاج موافقة الإدارة.',
+    q: 'هل الانضمام إلى المجتمع مجاني؟',
+    a: 'نعم. يمكنكِ إنشاء حساب مجاني لمتابعة المحتوى والفرص والفعاليات. العضويات المهنية (أعمال، خبيرة، أكاديمية) اختيارية ومدفوعة سنويًا بعد موافقة الإدارة.',
   },
   {
-    q: 'كيف أطلب عضوية؟',
-    a: 'أنشئي حساب عضوة واختاري إحدى الخطط الثلاث، أو قدّمي الطلب من لوحة التحكم إن كان لديكِ حساب عميلة. تراجع الإدارة الطلب ثم تفعّل العضوية.',
+    q: 'ما الفرق بين الزائرة والعضوة؟',
+    a: 'الزائرة حساب عادي للتصفح والتسجيل في الفعاليات. العضوة اشتراك مدفوع سنوي يظهر في دليل رائدة ويحتاج موافقة الإدارة.',
+  },
+  {
+    q: 'كيف أطلب عضوية مهنية؟',
+    a: 'أنشئي حساب عضوة واختاري إحدى الخطط الثلاث، أو قدّمي الطلب من لوحة التحكم إن كان لديكِ حساب زائرة. بعد القبول تُحدد جلسة Online ثم تُفعَّل العضوية.',
   },
   {
     q: 'كم مدة عرض الإطلاق؟',
@@ -115,7 +120,7 @@ export default function MembershipPage() {
               </span>
             </h1>
             <p className="mt-4 text-lg sm:text-xl text-muted max-w-2xl mx-auto leading-relaxed">
-              ثلاث عضويات سنوية مدفوعة لرائدات الأعمال، المدربات والخبراء، والأكاديميات. الطلب يُراجع من الإدارة.
+              المجتمع مفتوح ومجانٍ للجميع. العضويات المهنية السنوية لرائدات الأعمال والمدربات والأكاديميات — بعد موافقة الإدارة.
             </p>
 
             <div className="mt-7 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-[13px] text-muted">
@@ -126,11 +131,51 @@ export default function MembershipPage() {
                 </span>
               ))}
             </div>
+            <div className="mt-6">
+              <Button to="/dashboard" variant="outline" size="md">
+                انضمي مجانًا أولًا
+                <ChevronLeft className="w-4 h-4 opacity-70" />
+              </Button>
+            </div>
           </motion.div>
         </div>
       </section>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-20">
+        <Reveal className="mb-12">
+          <div className="rounded-[20px] bg-white hairline shadow-xs p-6 sm:p-8">
+            <p className="text-[12px] font-semibold text-rose">مجتمع مفتوح</p>
+            <h2 className="mt-1 text-xl font-extrabold text-navy">ماذا يوفّر الحساب المجاني؟</h2>
+            <ul className="mt-4 grid sm:grid-cols-2 lg:grid-cols-3 gap-2">
+              {freeCommunityBenefits.map((b) => (
+                <li key={b} className="text-sm text-muted flex gap-2 items-center">
+                  <Check className="w-4 h-4 text-rose shrink-0" strokeWidth={2.5} />
+                  {b}
+                </li>
+              ))}
+            </ul>
+          </div>
+        </Reveal>
+
+        <Reveal className="mb-14">
+          <div className="text-center mb-8">
+            <p className="text-[12px] font-semibold text-rose">كيفية الانضمام</p>
+            <h2 className="mt-1 text-2xl sm:text-3xl font-extrabold text-navy">4 مراحل بسيطة</h2>
+            <p className="mt-2 text-sm text-muted">
+              طلب الانضمام → دراسة الطلب → جلسة عمل Online → تفعيل العضوية
+            </p>
+          </div>
+          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {joinSteps.map((step) => (
+              <div key={step.step} className="rounded-[18px] bg-white hairline p-5 shadow-xs">
+                <span className="text-[11px] font-bold text-gold-dark tracking-wider">{step.step}</span>
+                <h3 className="mt-2 font-bold text-navy">{step.title}</h3>
+                <p className="mt-2 text-sm text-muted leading-relaxed">{step.body}</p>
+              </div>
+            ))}
+          </div>
+        </Reveal>
+
         {loading ? (
           <LoadingBlock />
         ) : error ? (

@@ -87,6 +87,67 @@ export const routeSeo = {
     path: '/membership',
     keywords: ['عضوية', 'اشتراك', 'خطط RAIDA'],
   },
+  about: {
+    title: `عن رائدة | ${SITE_NAME}`,
+    description: 'تعرّفي على مجتمع رائدة: شبكة مهنية تجمع المشاريع والخبيرات والأكاديميات والعلامات.',
+    path: '/about',
+    keywords: ['عن رائدة', 'RAIDA', 'مجتمع نسائي'],
+  },
+  community: {
+    title: `مجتمع رائدة | ${SITE_NAME}`,
+    description: 'الانضمام إلى مجتمع رائدة مجاني — تابعي الفرص والمحتوى وتعرّفي على الشبكة المهنية.',
+    path: '/community',
+    keywords: ['مجتمع رائدة', 'انضمام مجاني', 'RAIDA'],
+  },
+  experts: {
+    title: `خبيرات رائدة | ${SITE_NAME}`,
+    description: 'دليل المدربات والمستشارات في رائدة — تواصلي واطلبي استشارة أو برنامجًا تدريبيًا.',
+    path: '/experts',
+    keywords: ['خبيرات', 'مدربات', 'استشارات', 'RAIDA'],
+  },
+  programs: {
+    title: `برامج رائدة | ${SITE_NAME}`,
+    description: 'برامج تدريبية سنوية ومتخصصة لرائدات الأعمال — 4 دورات مجانية للأعضاء سنويًا.',
+    path: '/programs',
+    keywords: ['برامج تدريبية', 'دورات', 'أكاديمية رائدة'],
+  },
+  services: {
+    title: `دليل الخدمات | ${SITE_NAME}`,
+    description: 'ابحثي عن خدمات تطوير المشاريع والتسويق والقانون والتقنية والتجارة الإلكترونية.',
+    path: '/services',
+    keywords: ['دليل الخدمات', 'خبيرات', 'RAIDA'],
+  },
+  academies: {
+    title: `الأكاديميات | ${SITE_NAME}`,
+    description: 'دليل أكاديميات ومراكز تدريب رائدة — برامج وتعاون داخل المجتمع.',
+    path: '/academies',
+    keywords: ['أكاديميات', 'مراكز تدريب', 'RAIDA'],
+  },
+  sosStore: {
+    title: `SOS Store | ${SITE_NAME}`,
+    description: 'قدّمي لفتح متجر على SOS Store عبر عضوية رائدة — عرض منتجاتكِ واستقبال الطلبات.',
+    path: '/sos-store',
+    keywords: ['SOS Store', 'متجر إلكتروني', 'RAIDA'],
+  },
+  opportunities: {
+    title: `الفرص | ${SITE_NAME}`,
+    description: 'معارض ومسابقات وتمويل وشراكات ودعوات مشاركة لأعضاء مجتمع رائدة.',
+    path: '/opportunities',
+    keywords: ['فرص', 'معارض', 'تمويل', 'RAIDA'],
+  },
+  consultations: {
+    title: `الاستشارات | ${SITE_NAME}`,
+    description:
+      'اطلبي استشارة من إدارة رائدة أو خبيرة معتمدة — المجال، النوع، الوقت، Online أو حضوري.',
+    path: '/consultations',
+    keywords: ['استشارات', 'خبيرات رائدة', 'RAIDA'],
+  },
+  benefits: {
+    title: `مزايا العضوية | ${SITE_NAME}`,
+    description: 'من الحساب المجاني إلى العضوية المهنية — دورات واستشارات وتخفيضات وأولوية الفرص.',
+    path: '/benefits',
+    keywords: ['مزايا', 'عضوية رائدة', 'RAIDA'],
+  },
   dashboard: {
     title: `لوحة التحكم | ${SITE_NAME}`,
     description: 'إدارة ملفكِ الشخصي وخدماتكِ وإشعاراتكِ على منصة RAIDA.',
@@ -97,6 +158,24 @@ export const routeSeo = {
     title: `لوحة الإدارة | ${SITE_NAME}`,
     description: 'إدارة محتوى منصة RAIDA.',
     path: '/admin',
+    noindex: true,
+  },
+  verifyEmail: {
+    title: `تأكيد البريد | ${SITE_NAME}`,
+    description: 'تأكيد البريد الإلكتروني لحساب RAIDA.',
+    path: '/verify-email',
+    noindex: true,
+  },
+  forgotPassword: {
+    title: `استعادة الحساب | ${SITE_NAME}`,
+    description: 'استعادة كلمة المرور أو إعادة إرسال رابط التأكيد.',
+    path: '/forgot-password',
+    noindex: true,
+  },
+  resetPassword: {
+    title: `كلمة مرور جديدة | ${SITE_NAME}`,
+    description: 'تعيين كلمة مرور جديدة لحساب RAIDA.',
+    path: '/reset-password',
     noindex: true,
   },
 } as const

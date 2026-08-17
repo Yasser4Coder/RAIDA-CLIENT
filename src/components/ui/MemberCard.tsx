@@ -3,6 +3,7 @@ import { MapPin, ChevronLeft } from 'lucide-react'
 import { motion } from 'motion/react'
 import type { Member } from '../../types/api'
 import { springs, useMotionSafe } from '../../lib/motion'
+import SafeImg from './SafeImg'
 
 const placeholder =
   'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=400&h=400&fit=crop'
@@ -23,8 +24,9 @@ export default function MemberCard({ member }: { member: Member }) {
       >
         {/* Cover */}
         <div className="relative h-[5.5rem] overflow-hidden">
-          <img
-            src={member.cover || member.image || placeholder}
+          <SafeImg
+            src={member.cover || member.image}
+            fallback={placeholder}
             alt=""
             className="h-full w-full object-cover transition-transform duration-700 ease-[var(--ease-out-apple)] group-hover:scale-105"
             loading="lazy"
@@ -33,8 +35,9 @@ export default function MemberCard({ member }: { member: Member }) {
         </div>
 
         <div className="relative flex flex-1 flex-col px-5 pb-5 -mt-10">
-          <img
-            src={member.image || placeholder}
+          <SafeImg
+            src={member.image}
+            fallback={placeholder}
             alt={member.name}
             width={80}
             height={80}
@@ -74,7 +77,7 @@ export function MemberCardCompact({ member }: { member: Member }) {
       to={`/members/${member.id}`}
       className="flex items-center gap-3.5 p-3.5 bg-white rounded-[16px] hairline shadow-xs pressable-soft hover:shadow-sm transition-shadow"
     >
-      <img src={member.image || placeholder} alt={member.name} className="w-12 h-12 rounded-[12px] object-cover" />
+      <SafeImg src={member.image} fallback={placeholder} alt={member.name} className="w-12 h-12 rounded-[12px] object-cover" />
       <div className="flex-1 min-w-0">
         <h4 className="font-semibold text-[15px] text-navy truncate tracking-[-0.01em]">{member.name}</h4>
         <p className="caption text-muted truncate">{member.specialty}</p>

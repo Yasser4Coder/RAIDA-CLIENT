@@ -1,5 +1,5 @@
 import { useParams, Link } from 'react-router-dom'
-import { useState, type FormEvent } from 'react'
+import { useState } from 'react'
 import {
   MapPin, Globe, Mail, QrCode,
   Award, Briefcase, FolderKanban, GraduationCap, ArrowRight, Share2,
@@ -10,11 +10,13 @@ import Button from '../components/ui/Button'
 import { MemberCardCompact } from '../components/ui/MemberCard'
 import { LoadingBlock, ErrorBlock } from '../components/ui/StateBlocks'
 import { useAsyncData } from '../hooks/useAsyncData'
-import { catalogApi, publicApi } from '../lib/catalog'
+import { catalogApi } from '../lib/catalog'
 import { asArray } from '../lib/normalize'
 import { safeHref } from '../lib/safe'
+import SafeImg from '../components/ui/SafeImg'
 import SeoHead from '../components/seo/SeoHead'
 import { absoluteUrl, breadcrumbJsonLd } from '../lib/seo'
+import ConsultationRequestForm from '../components/ui/ConsultationRequestForm'
 
 const imageFallback =
   'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=400&h=400&fit=crop'
@@ -104,7 +106,7 @@ export default function MemberProfilePage() {
       />
       {/* Cover */}
       <div className="relative h-48 sm:h-64 lg:h-72 overflow-hidden">
-        <img src={cover} alt={`غلاف ملف ${member.name}`} className="w-full h-full object-cover" />
+        <SafeImg src={cover} fallback={imageFallback} alt={`غلاف ملف ${member.name}`} className="w-full h-full object-cover" />
         <div className="absolute inset-0 bg-gradient-to-t from-navy/80 via-navy/30 to-transparent" />
       </div>
 
@@ -113,8 +115,9 @@ export default function MemberProfilePage() {
         <div className="relative -mt-16 sm:-mt-20 mb-8">
           <div className="bg-white rounded-[20px] shadow-card border border-rose/10 p-5 sm:p-8">
             <div className="flex flex-col sm:flex-row gap-5 sm:gap-8">
-              <img
+              <SafeImg
                 src={image}
+                fallback={imageFallback}
                 alt={member.name}
                 className="w-28 h-28 sm:w-36 sm:h-36 rounded-[20px] object-cover border-4 border-white shadow-elevated ring-2 ring-rose/30 -mt-16 sm:-mt-20"
               />
@@ -252,7 +255,7 @@ export default function MemberProfilePage() {
             <div id="consultation" className="bg-white rounded-[18px] p-6 border border-rose/10 shadow-soft">
               <h3 className="font-bold text-navy mb-2">اطلبي استشارة</h3>
               <p className="text-[12px] text-muted mb-4">
-                يمكنكِ إرسال طلب استشارة دون إنشاء حساب. ستصله الرسالة في صندوق استشاراتها.
+                المجال → الوقت → Online/حضوري → الجلسة. الطلب يصل للخبيرة ولصندوقكِ إن كنتِ مسجّلة.
               </p>
               {(safeHref(member.website) || safeHref(member.social?.linkedin) || safeHref(member.social?.instagram)) && (
                 <div className="space-y-2 mb-4 pb-4 border-b border-rose/10">
@@ -273,7 +276,12 @@ export default function MemberProfilePage() {
                   )}
                 </div>
               )}
-              <ConsultationForm memberId={member.id} />
+              <ConsultationRequestForm
+                target="expert"
+                fixedMemberId={member.id}
+                fixedMemberName={member.name}
+                compact
+              />
             </div>
 
             {/* QR Code */}
@@ -348,69 +356,5 @@ function QrProfileButton({ name }: { name: string }) {
       <QrCode className="w-4 h-4" /> QR
       <span className="sr-only">{name}</span>
     </Button>
-  )
-}
-
-function ConsultationForm({ memberId }: { memberId: string }) {
-  const [name, setName] = useState('')
-  const [email, setEmail] = useState('')
-  const [phone, setPhone] = useState('')
-  const [subject, setSubject] = useState('')
-  const [message, setMessage] = useState('')
-  const [error, setError] = useState<string | null>(null)
-  const [done, setDone] = useState(false)
-  const [submitting, setSubmitting] = useState(false)
-
-  const handleSubmit = async (event: FormEvent) => {
-    event.preventDefault()
-    setSubmitting(true)
-    setError(null)
-    try {
-      await publicApi.sendConsultation(memberId, {
-        name,
-        email,
-        phone: phone || undefined,
-        subject: subject || undefined,
-        message,
-      })
-      setDone(true)
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'تعذر إرسال الاستشارة')
-    } finally {
-      setSubmitting(false)
-    }
-  }
-
-  if (done) {
-    return (
-      <p className="text-sm text-navy bg-rose-soft/60 rounded-[12px] p-4">
-        تم إرسال استشارتكِ. ستتواصل معكِ العضوة عبر البريد الذي أدخلته.
-      </p>
-    )
-  }
-
-  const fieldClass =
-    'w-full h-11 px-3 rounded-[12px] border border-rose/20 bg-ivory text-sm focus:outline-none focus:border-gold'
-
-  return (
-    <form onSubmit={handleSubmit} className="space-y-3">
-      <input required value={name} onChange={(e) => setName(e.target.value)} placeholder="الاسم" className={fieldClass} />
-      <input required type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="البريد الإلكتروني" className={fieldClass} />
-      <input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="الهاتف (اختياري)" className={fieldClass} />
-      <input value={subject} onChange={(e) => setSubject(e.target.value)} placeholder="الموضوع (اختياري)" className={fieldClass} />
-      <textarea
-        required
-        minLength={10}
-        value={message}
-        onChange={(e) => setMessage(e.target.value)}
-        placeholder="نص الاستشارة"
-        rows={4}
-        className="w-full px-3 py-3 rounded-[12px] border border-rose/20 bg-ivory text-sm focus:outline-none focus:border-gold resize-none"
-      />
-      {error && <p className="text-sm text-rose">{error}</p>}
-      <Button type="submit" variant="gold" size="md" className="w-full" disabled={submitting}>
-        {submitting ? 'جاري الإرسال...' : 'إرسال الاستشارة'}
-      </Button>
-    </form>
   )
 }

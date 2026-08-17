@@ -2,10 +2,10 @@ import { useState, useEffect } from 'react'
 import { Link, NavLink, useLocation } from 'react-router-dom'
 import {
   Menu, X, LayoutDashboard, Users, Building2, Calendar,
-  Handshake, CreditCard, Home, ChevronLeft,
+  Briefcase, BookOpen, GraduationCap, Home, ChevronLeft, School, MessageSquare,
 } from 'lucide-react'
 import { AnimatePresence, motion } from 'motion/react'
-import { navLinks } from '../../data/nav'
+import { navLinks, secondaryLinks } from '../../data/nav'
 import Button from '../ui/Button'
 import Logo from '../ui/Logo'
 import { springs, useMotionSafe } from '../../lib/motion'
@@ -13,11 +13,14 @@ import { useAuth } from '../../context/AuthContext'
 
 const linkIcons: Record<string, typeof Home> = {
   '/': Home,
-  '/members': Users,
+  '/community': Users,
+  '/experts': GraduationCap,
+  '/programs': BookOpen,
+  '/services': Briefcase,
   '/brands': Building2,
+  '/academies': School,
+  '/consultations': MessageSquare,
   '/events': Calendar,
-  '/partnerships': Handshake,
-  '/membership': CreditCard,
 }
 
 export default function Navbar() {
@@ -72,7 +75,7 @@ export default function Navbar() {
                     key={link.to}
                     to={link.to}
                     end={link.to === '/'}
-                    className="relative px-3.5 py-2 text-[13px] font-medium tracking-[-0.01em] pressable-soft rounded-full"
+                    className="relative px-2.5 xl:px-3.5 py-2 text-[12px] xl:text-[13px] font-medium tracking-[-0.01em] pressable-soft rounded-full"
                   >
                     {({ isActive }) => (
                       <>
@@ -109,10 +112,10 @@ export default function Navbar() {
                 </Link>
               )}
               <Link
-                to="/membership"
+                to="/dashboard"
                 className="inline-flex items-center gap-1.5 h-10 px-5 rounded-full bg-navy text-white text-[13px] font-semibold pressable shadow-sm hover:bg-navy-light transition-colors ring-1 ring-gold/20"
               >
-                انضمي الآن
+                انضمي مجانًا
                 <ChevronLeft className="w-3.5 h-3.5 opacity-60" />
               </Link>
             </div>
@@ -212,15 +215,29 @@ export default function Navbar() {
                   )
                 })}
 
+                <div className="mt-1 px-2 pb-1">
+                  <p className="px-1.5 py-2 text-[11px] font-semibold text-muted">المزيد</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {secondaryLinks.map((link) => (
+                      <Link
+                        key={link.to}
+                        to={link.to}
+                        className="rounded-full bg-navy/[0.04] px-3 py-1.5 text-[12px] font-medium text-navy hover:bg-blush"
+                      >
+                        {link.label}
+                      </Link>
+                    ))}
+                  </div>
+                </div>
+
                 <div className="mt-2 pt-2.5 border-t border-navy/[0.06] grid grid-cols-2 gap-2 px-1 pb-1">
                   {!isStaff && !isAdminPath && (
-                    <Button to="/dashboard" variant="outline" size="sm" className="w-full !rounded-full">
-                      <LayoutDashboard className="w-4 h-4" />
-                      لوحتي
+                    <Button to="/membership" variant="outline" size="sm" className="w-full !rounded-full">
+                      العضوية
                     </Button>
                   )}
-                  <Button to="/membership" variant="gold" size="sm" className={`w-full !rounded-full ${isStaff || isAdminPath ? 'col-span-2' : ''}`}>
-                    انضمي الآن
+                  <Button to="/dashboard" variant="gold" size="sm" className={`w-full !rounded-full ${isStaff || isAdminPath ? 'col-span-2' : ''}`}>
+                    انضمي مجانًا
                   </Button>
                 </div>
               </div>

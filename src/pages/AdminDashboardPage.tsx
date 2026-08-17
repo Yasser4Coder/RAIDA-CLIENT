@@ -2,7 +2,7 @@ import { useEffect, useState, type FormEvent, type ReactNode } from 'react'
 import {
   Users, Building2, Calendar, Handshake, CreditCard, FileText,
   DollarSign, LayoutDashboard, TrendingUp, ArrowUpRight, Search,
-  Pencil, Trash2, Plus, ExternalLink, LogOut, Menu, X,
+  Pencil, Trash2, Plus, ExternalLink, LogOut, Menu, X, MessageSquare,
 } from 'lucide-react'
 import Badge from '../components/ui/Badge'
 import Button from '../components/ui/Button'
@@ -16,7 +16,10 @@ import { safeHref } from '../lib/safe'
 import type {
   AdminUser,
   Brand,
+  CmsOpportunity,
+  CmsProgram,
   CommunityCard,
+  Consultation,
   EventItem,
   Partner,
   PartnershipInquiry,
@@ -35,6 +38,7 @@ const adminNav = [
   { id: 'brands', label: 'العلامات', icon: Building2 },
   { id: 'events', label: 'الفعاليات', icon: Calendar },
   { id: 'partnerships', label: 'الشراكات', icon: Handshake },
+  { id: 'consultations', label: 'الاستشارات', icon: MessageSquare },
   { id: 'plans', label: 'خطط العضوية', icon: CreditCard },
   { id: 'content', label: 'إدارة المحتوى', icon: FileText },
   { id: 'revenue', label: 'تحليلات الإيرادات', icon: DollarSign },
@@ -69,6 +73,8 @@ type Editor =
   | { kind: 'card'; item?: CommunityCard }
   | { kind: 'stat'; item?: PlatformStat }
   | { kind: 'category'; item?: ServiceCategory }
+  | { kind: 'program'; item?: CmsProgram }
+  | { kind: 'opportunity'; item?: CmsOpportunity }
   | null
 
 function LoginForm({
@@ -125,7 +131,7 @@ function LoginForm({
           />
         </div>
         {error && <p className="text-sm text-rose">{error}</p>}
-        <p className="text-[11px] text-muted">تجريبي: {hint}</p>
+        {import.meta.env.DEV && <p className="text-[11px] text-muted">تجريبي: {hint}</p>}
         <Button type="submit" variant="gold" size="md" className="w-full" disabled={submitting}>
           {submitting ? 'جاري الدخول...' : 'دخول'}
         </Button>
@@ -398,6 +404,41 @@ export default function AdminDashboardPage() {
     [user?.id, user?.role, active],
   )
 
+  const {
+    data: cmsPrograms,
+    loading: programsLoading,
+    error: programsError,
+    reload: reloadPrograms,
+  } = useAsyncData(
+    () => (allowed && active === 'content' ? adminApi.programs() : Promise.resolve([])),
+    [user?.id, user?.role, active],
+  )
+
+  const {
+    data: cmsOpportunities,
+    loading: opportunitiesLoading,
+    error: opportunitiesError,
+    reload: reloadOpportunities,
+  } = useAsyncData(
+    () => (allowed && active === 'content' ? adminApi.opportunities() : Promise.resolve([])),
+    [user?.id, user?.role, active],
+  )
+
+  const {
+    data: consultationsPayload,
+    loading: consultationsLoading,
+    error: consultationsError,
+    reload: reloadConsultations,
+  } = useAsyncData(
+    () =>
+      allowed && active === 'consultations'
+        ? adminApi.consultations({ limit: 100 })
+        : Promise.resolve({ data: [] as Consultation[] }),
+    [user?.id, user?.role, active],
+  )
+
+  const [replyDrafts, setReplyDrafts] = useState<Record<string, string>>({})
+
   if (authLoading) {
     return (
       <AdminChrome>
@@ -457,6 +498,9 @@ export default function AdminDashboardPage() {
   const cardList = cards ?? []
   const statList = stats ?? []
   const categoryList = categories ?? []
+  const programList = cmsPrograms ?? []
+  const opportunityList = cmsOpportunities ?? []
+  const consultationList = consultationsPayload?.data ?? []
   const memberOptions = (membersPayload?.data ?? []).map((m) => ({ value: m.id, label: m.name }))
   const recentMembers = overview?.recentMembers ?? []
   const planDistribution = overview?.planDistribution ?? []
@@ -468,7 +512,14 @@ export default function AdminDashboardPage() {
     (active === 'brands' && brandsLoading) ||
     (active === 'events' && eventsLoading) ||
     (active === 'partnerships' && (partnersLoading || tiersLoading || inquiriesLoading)) ||
-    (active === 'content' && (storiesLoading || cardsLoading || statsLoading || categoriesLoading)) ||
+    (active === 'consultations' && consultationsLoading) ||
+    (active === 'content' &&
+      (storiesLoading ||
+        cardsLoading ||
+        statsLoading ||
+        categoriesLoading ||
+        programsLoading ||
+        opportunitiesLoading)) ||
     (active === 'revenue' && revenueLoading)
 
   const tabError =
@@ -477,7 +528,9 @@ export default function AdminDashboardPage() {
     (active === 'brands' && brandsError) ||
     (active === 'events' && eventsError) ||
     (active === 'partnerships' && (partnersError || tiersError || inquiriesError)) ||
-    (active === 'content' && (storiesError || cardsError || statsError || categoriesError)) ||
+    (active === 'consultations' && consultationsError) ||
+    (active === 'content' &&
+      (storiesError || cardsError || statsError || categoriesError || programsError || opportunitiesError)) ||
     (active === 'revenue' && revenueError) ||
     null
 
@@ -495,6 +548,7 @@ export default function AdminDashboardPage() {
       reloadTiers()
       reloadInquiries()
     }
+    if (active === 'consultations') reloadConsultations()
     if (active === 'plans') {
       reloadOverview()
       reloadPlans()
@@ -504,6 +558,8 @@ export default function AdminDashboardPage() {
       reloadCards()
       reloadStats()
       reloadCategories()
+      reloadPrograms()
+      reloadOpportunities()
     }
     if (active === 'revenue') reloadRevenue()
   }
@@ -533,14 +589,14 @@ export default function AdminDashboardPage() {
     { name: 'category', label: 'التصنيف' },
     { name: 'image', label: 'صورة الملف', type: 'image' },
     { name: 'cover', label: 'صورة الغلاف', type: 'image' },
-    ...(!currentRole || currentRole === 'member' || currentRole === 'client'
+    ...(!currentRole || currentRole === 'member' || currentRole === 'guest'
       ? [
           {
             name: 'role',
             label: 'الدور',
             type: 'select' as const,
             options: [
-              { value: 'client', label: 'عميلة' },
+              { value: 'guest', label: 'زائرة' },
               { value: 'member', label: 'عضوة' },
             ],
           },
@@ -676,6 +732,39 @@ export default function AdminDashboardPage() {
     { name: 'sort_order', label: 'الترتيب', type: 'number' },
   ]
 
+  const programFields: AdminField[] = [
+    {
+      name: 'kind',
+      label: 'النوع',
+      type: 'select',
+      options: [
+        { value: 'annual', label: 'سنوي' },
+        { value: 'specialized', label: 'متخصص' },
+      ],
+    },
+    { name: 'number', label: 'الرقم' },
+    { name: 'title', label: 'العنوان', required: true },
+    { name: 'description', label: 'الوصف', type: 'textarea' },
+    { name: 'trainer', label: 'المدربة' },
+    { name: 'duration', label: 'المدة' },
+    { name: 'mode', label: 'النمط' },
+    { name: 'level', label: 'المستوى' },
+    { name: 'member_price', label: 'سعر العضوات' },
+    { name: 'public_price', label: 'السعر العام' },
+    { name: 'field', label: 'المجال' },
+    { name: 'month', label: 'الشهر' },
+    { name: 'sort_order', label: 'الترتيب', type: 'number' },
+    { name: 'is_published', label: 'منشور', type: 'toggle' },
+  ]
+
+  const opportunityFields: AdminField[] = [
+    { name: 'type', label: 'النوع', required: true },
+    { name: 'title', label: 'العنوان', required: true },
+    { name: 'description', label: 'الوصف', type: 'textarea', required: true },
+    { name: 'sort_order', label: 'الترتيب', type: 'number' },
+    { name: 'is_published', label: 'منشور', type: 'toggle' },
+  ]
+
   const editorConfig = (() => {
     if (!editor) return null
     if (editor.kind === 'user') {
@@ -698,7 +787,7 @@ export default function AdminDashboardPage() {
               membership_status: editor.item.membershipStatus || 'none',
               is_active: editor.item.isActive,
             }
-          : { role: 'client', plan: '', membership_status: 'none', is_active: true },
+          : { role: 'guest', plan: '', membership_status: 'none', is_active: true },
         submit: (values: Record<string, unknown>) =>
           creating ? adminApi.createUser(values) : adminApi.updateUser(editor.item!.id, values),
         reload: reloadUsers,
@@ -822,6 +911,40 @@ export default function AdminDashboardPage() {
         submit: (values: Record<string, unknown>) =>
           adminApi.upsertStat(editor.item ? { id: editor.item.id, ...values } : values),
         reload: reloadStats,
+      }
+    }
+    if (editor.kind === 'program') {
+      return {
+        title: editor.item ? 'تعديل برنامج' : 'إضافة برنامج',
+        fields: programFields,
+        initial: editor.item
+          ? {
+              ...editor.item,
+              member_price: editor.item.memberPrice,
+              public_price: editor.item.publicPrice,
+              sort_order: editor.item.sortOrder,
+              is_published: editor.item.isPublished !== false,
+            }
+          : { kind: 'specialized', is_published: true },
+        submit: (values: Record<string, unknown>) =>
+          adminApi.upsertProgram(editor.item ? { id: editor.item.id, ...values } : values),
+        reload: reloadPrograms,
+      }
+    }
+    if (editor.kind === 'opportunity') {
+      return {
+        title: editor.item ? 'تعديل فرصة' : 'إضافة فرصة',
+        fields: opportunityFields,
+        initial: editor.item
+          ? {
+              ...editor.item,
+              sort_order: editor.item.sortOrder,
+              is_published: editor.item.isPublished !== false,
+            }
+          : { is_published: true },
+        submit: (values: Record<string, unknown>) =>
+          adminApi.upsertOpportunity(editor.item ? { id: editor.item.id, ...values } : values),
+        reload: reloadOpportunities,
       }
     }
     return {
@@ -1315,6 +1438,104 @@ export default function AdminDashboardPage() {
                 </div>
               )}
 
+              {active === 'consultations' && (
+                <div className="space-y-4 animate-fade-up">
+                  <div className="bg-white rounded-[16px] border border-rose/10 shadow-soft divide-y divide-rose/10 overflow-hidden">
+                    {consultationList.map((item) => (
+                      <div key={item.id} className={`p-4 sm:p-5 ${item.status === 'new' ? 'bg-rose-soft/25' : ''}`}>
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="min-w-0">
+                            <p className="text-[13px] font-bold text-navy">{item.subject}</p>
+                            <p className="text-[12px] text-muted mt-0.5">
+                              {item.guestName} · {item.guestEmail}
+                              {item.guestPhone ? ` · ${item.guestPhone}` : ''}
+                            </p>
+                            <p className="text-[12px] text-muted mt-1">
+                              إلى:{' '}
+                              {item.targetType === 'raida'
+                                ? 'إدارة رائدة'
+                                : item.consultantName || item.memberName || 'خبيرة'}
+                            </p>
+                            <p className="text-[12px] text-muted mt-1">
+                              {[item.field, item.consultationType, item.mode === 'online' ? 'Online' : item.mode === 'in_person' ? 'حضوري' : null]
+                                .filter(Boolean)
+                                .join(' · ')}
+                              {item.preferredAt
+                                ? ` · ${new Date(item.preferredAt).toLocaleString('ar-DZ')}`
+                                : ''}
+                              {item.wilaya ? ` · ${item.wilaya}` : ''}
+                            </p>
+                            <p className="text-[13px] text-navy mt-2 leading-relaxed">{item.message}</p>
+                            {item.adminReply && (
+                              <p className="mt-3 text-[13px] text-navy bg-navy/[0.04] rounded-[12px] p-3">
+                                <span className="font-bold text-rose text-[11px] block mb-1">الرد الحالي</span>
+                                {item.adminReply}
+                              </p>
+                            )}
+                            <div className="mt-3 flex flex-col sm:flex-row gap-2">
+                              <textarea
+                                value={replyDrafts[item.id] ?? ''}
+                                onChange={(e) =>
+                                  setReplyDrafts((prev) => ({ ...prev, [item.id]: e.target.value }))
+                                }
+                                placeholder="اكتبي رد رائدة..."
+                                rows={2}
+                                className="flex-1 px-3 py-2 rounded-[12px] border border-separator text-sm bg-ivory"
+                              />
+                              <div className="flex gap-2">
+                                <Button
+                                  variant="gold"
+                                  size="sm"
+                                  onClick={async () => {
+                                    const reply = (replyDrafts[item.id] || '').trim()
+                                    if (reply.length < 2) return
+                                    await adminApi.replyConsultation(item.id, reply)
+                                    setReplyDrafts((prev) => ({ ...prev, [item.id]: '' }))
+                                    reloadConsultations()
+                                  }}
+                                >
+                                  رد
+                                </Button>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={async () => {
+                                    await adminApi.updateConsultationStatus(
+                                      item.id,
+                                      item.status === 'archived' ? 'read' : 'archived',
+                                    )
+                                    reloadConsultations()
+                                  }}
+                                >
+                                  {item.status === 'archived' ? 'إلغاء الأرشفة' : 'أرشفة'}
+                                </Button>
+                                <Button
+                                  variant="soft"
+                                  size="sm"
+                                  onClick={async () => {
+                                    if (!confirmDelete(item.subject)) return
+                                    await adminApi.deleteConsultation(item.id)
+                                    reloadConsultations()
+                                  }}
+                                >
+                                  حذف
+                                </Button>
+                              </div>
+                            </div>
+                          </div>
+                          <Badge variant={item.status === 'new' ? 'rose' : 'soft'}>
+                            {item.status === 'new' ? 'جديدة' : item.status === 'archived' ? 'مؤرشفة' : 'مقروءة'}
+                          </Badge>
+                        </div>
+                      </div>
+                    ))}
+                    {consultationList.length === 0 && (
+                      <p className="text-sm text-muted text-center py-10">لا توجد استشارات بعد</p>
+                    )}
+                  </div>
+                </div>
+              )}
+
               {active === 'plans' && (
                 <div className="space-y-4 animate-fade-up">
                   <div className="flex justify-end">
@@ -1446,6 +1667,46 @@ export default function AdminDashboardPage() {
                           if (!confirmDelete(item.name)) return
                           await adminApi.deleteServiceCategory(item.id)
                           reloadCategories()
+                        }}
+                      />
+                    ))}
+                  </ContentSection>
+
+                  <ContentSection
+                    title="برامج رائدة"
+                    onAdd={() => setEditor({ kind: 'program' })}
+                    addLabel="إضافة برنامج"
+                  >
+                    {programList.map((item) => (
+                      <ContentRow
+                        key={item.id}
+                        title={item.title}
+                        subtitle={`${item.kind === 'annual' ? 'سنوي' : 'متخصص'}${item.field ? ` — ${item.field}` : ''}`}
+                        onEdit={() => setEditor({ kind: 'program', item })}
+                        onDelete={async () => {
+                          if (!confirmDelete(item.title)) return
+                          await adminApi.deleteProgram(item.id)
+                          reloadPrograms()
+                        }}
+                      />
+                    ))}
+                  </ContentSection>
+
+                  <ContentSection
+                    title="الفرص"
+                    onAdd={() => setEditor({ kind: 'opportunity' })}
+                    addLabel="إضافة فرصة"
+                  >
+                    {opportunityList.map((item) => (
+                      <ContentRow
+                        key={item.id}
+                        title={item.title}
+                        subtitle={item.type}
+                        onEdit={() => setEditor({ kind: 'opportunity', item })}
+                        onDelete={async () => {
+                          if (!confirmDelete(item.title)) return
+                          await adminApi.deleteOpportunity(item.id)
+                          reloadOpportunities()
                         }}
                       />
                     ))}

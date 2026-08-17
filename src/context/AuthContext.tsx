@@ -12,7 +12,7 @@ type AuthState = {
     email: string
     password: string
     name: string
-    accountType: 'client' | 'member'
+    accountType: 'guest' | 'member'
     plan?: string
   }) => Promise<void>
   logout: () => Promise<void>
@@ -66,10 +66,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       email: string
       password: string
       name: string
-      accountType: 'client' | 'member'
+      accountType: 'guest' | 'member'
       plan?: string
     }) => {
       const result = await authApi.register(payload)
+      if (result.requiresEmailVerification || !result.accessToken) {
+        setUser(null)
+        setProfile(null)
+        throw new Error('تحققِ من بريدكِ لتفعيل الحساب قبل تسجيل الدخول')
+      }
       setUser(result.user)
       setProfile(result.profile)
     },

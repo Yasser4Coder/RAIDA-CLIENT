@@ -5,7 +5,8 @@ export const PLAN_LABELS: Record<string, string> = {
 }
 
 export const ROLE_LABELS: Record<string, string> = {
-  client: 'عميلة',
+  guest: 'زائرة',
+  client: 'زائرة',
   member: 'عضوة',
   moderator: 'مشرفة',
   admin: 'مديرة',
