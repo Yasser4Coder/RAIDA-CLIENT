@@ -10,7 +10,8 @@ import { catalogApi, meApi } from '../lib/catalog'
 import { ApiClientError } from '../lib/api'
 import { asArray } from '../lib/normalize'
 import SeoHead from '../components/seo/SeoHead'
-import { absoluteUrl, breadcrumbJsonLd } from '../lib/seo'
+import SafeImg from '../components/ui/SafeImg'
+import { absoluteImage, absoluteUrl, breadcrumbJsonLd } from '../lib/seo'
 
 const imageFallback =
   'https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=800&h=500&fit=crop'
@@ -50,7 +51,7 @@ export default function EventDetailPage() {
     )
   }
 
-  const image = event.image || imageFallback
+  const image = event.image
   const agenda = asArray(event.agenda)
   const speakers = asArray(event.speakers)
   const sponsors = asArray(event.sponsors)
@@ -108,7 +109,7 @@ export default function EventDetailPage() {
             '@type': 'Event',
             name: event.title,
             description,
-            image: absoluteUrl(image),
+            image: absoluteImage(image, imageFallback),
             url: absoluteUrl(`/events/${event.id}`),
             eventAttendanceMode: 'https://schema.org/OfflineEventAttendanceMode',
             eventStatus: 'https://schema.org/EventScheduled',
@@ -140,7 +141,7 @@ export default function EventDetailPage() {
         ]}
       />
       <div className="relative h-64 sm:h-80 lg:h-96 overflow-hidden">
-        <img src={image} alt={event.title} className="w-full h-full object-cover" />
+        <SafeImg src={image} fallback={imageFallback} alt={event.title} className="w-full h-full object-cover" />
         <div className="absolute inset-0 bg-gradient-to-t from-navy via-navy/50 to-transparent" />
         <div className="absolute bottom-0 inset-x-0 p-6 sm:p-10 max-w-7xl mx-auto">
           <Badge variant="gold">{event.category}</Badge>
@@ -188,7 +189,7 @@ export default function EventDetailPage() {
                 <div className="grid sm:grid-cols-2 gap-4">
                   {speakers.map((s, i) => (
                     <div key={i} className="flex items-center gap-4 p-4 rounded-[14px] bg-rose-soft/40 border border-rose/10">
-                      <img src={s.image || speakerFallback} alt={s.name} className="w-14 h-14 rounded-[12px] object-cover" />
+                      <SafeImg src={s.image} fallback={speakerFallback} alt={s.name} className="w-14 h-14 rounded-[12px] object-cover" />
                       <div>
                         <p className="font-bold text-navy">{s.name}</p>
                         <p className="text-sm text-muted">{s.title}</p>

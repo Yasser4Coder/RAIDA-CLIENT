@@ -8,8 +8,9 @@ import { useAsyncData } from '../hooks/useAsyncData'
 import { catalogApi } from '../lib/catalog'
 import { asArray } from '../lib/normalize'
 import { safeHref } from '../lib/safe'
+import SafeImg from '../components/ui/SafeImg'
 import SeoHead from '../components/seo/SeoHead'
-import { absoluteUrl, breadcrumbJsonLd } from '../lib/seo'
+import { absoluteImage, absoluteUrl, breadcrumbJsonLd } from '../lib/seo'
 
 const logoFallback =
   'https://images.unsplash.com/photo-1560179707-f14e90ef3623?w=200&h=200&fit=crop'
@@ -46,17 +47,13 @@ export default function BrandPage() {
     )
   }
 
-  const logo = brand.logo || logoFallback
-  const cover = brand.cover || coverFallback
+  const logo = brand.logo
+  const cover = brand.cover
   const founder = brand.founder
   const products = asArray(brand.products)
   const services = asArray(brand.services)
   const news = asArray(brand.news)
-  const gallery = [
-    cover,
-    logo,
-    founder?.image || imageFallback,
-  ].filter(Boolean)
+  const gallery = [cover, logo, founder?.image].filter(Boolean)
   const description =
     brand.description?.slice(0, 160) ||
     `تعرّفي على علامة ${brand.name} ضمن مجتمع RAIDA للرائدات.`
@@ -80,8 +77,8 @@ export default function BrandPage() {
             '@type': 'Organization',
             name: brand.name,
             description,
-            image: absoluteUrl(cover),
-            logo: absoluteUrl(logo),
+            image: absoluteImage(cover, coverFallback),
+            logo: absoluteImage(logo, logoFallback),
             url: absoluteUrl(`/brands/${brand.id}`),
             category: brand.category,
           },
@@ -89,12 +86,13 @@ export default function BrandPage() {
       />
       {/* Cover */}
       <div className="relative h-56 sm:h-72 lg:h-80 overflow-hidden">
-        <img src={cover} alt={`غلاف ${brand.name}`} className="w-full h-full object-cover" />
+        <SafeImg src={cover} fallback={coverFallback} alt={`غلاف ${brand.name}`} className="w-full h-full object-cover" />
         <div className="absolute inset-0 bg-gradient-to-t from-navy via-navy/40 to-transparent" />
         <div className="absolute bottom-0 inset-x-0 p-6 sm:p-10 max-w-7xl mx-auto">
           <div className="flex items-end gap-5">
-            <img
+            <SafeImg
               src={logo}
+              fallback={logoFallback}
               alt=""
               className="w-20 h-20 sm:w-28 sm:h-28 rounded-[18px] object-cover border-4 border-white shadow-elevated"
             />
@@ -157,7 +155,7 @@ export default function BrandPage() {
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                 {gallery.map((img, i) => (
                   <div key={i} className={`rounded-[14px] overflow-hidden ${i === 0 ? 'sm:col-span-2 sm:row-span-2' : ''} aspect-square sm:aspect-auto`}>
-                    <img src={img} alt="" className="w-full h-full object-cover hover:scale-105 transition-transform duration-500 min-h-[120px]" />
+                    <SafeImg src={img} fallback={imageFallback} alt="" className="w-full h-full object-cover hover:scale-105 transition-transform duration-500 min-h-[120px]" />
                   </div>
                 ))}
               </div>
@@ -185,8 +183,9 @@ export default function BrandPage() {
               <div className="bg-white rounded-[18px] p-6 border border-rose/10 shadow-soft">
                 <h3 className="font-bold text-navy mb-4">المؤسسة</h3>
                 <Link to={`/members/${founder.id}`} className="flex items-center gap-4 group">
-                  <img
-                    src={founder.image || imageFallback}
+                  <SafeImg
+                    src={founder.image}
+                    fallback={imageFallback}
                     alt={founder.name}
                     className="w-16 h-16 rounded-[14px] object-cover"
                   />

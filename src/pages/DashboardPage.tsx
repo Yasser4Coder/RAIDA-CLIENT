@@ -17,6 +17,7 @@ import { catalogApi, meApi } from '../lib/catalog'
 import { asArray } from '../lib/normalize'
 import type { Member } from '../types/api'
 import ImageUpload from '../components/ui/ImageUpload'
+import SafeImg from '../components/ui/SafeImg'
 import ConsultationRequestForm from '../components/ui/ConsultationRequestForm'
 import SeoHead from '../components/seo/SeoHead'
 import { routeSeo } from '../lib/seo'
@@ -883,8 +884,9 @@ export default function DashboardPage() {
     <>
       <div className="p-4 border-b border-separator">
         <div className="flex items-center gap-3">
-          <img
-            src={member.image || imageFallback}
+          <SafeImg
+            src={member.image}
+            fallback={imageFallback}
             alt=""
             className="w-10 h-10 rounded-[12px] object-cover ring-1 ring-rose/20"
           />
@@ -1146,7 +1148,7 @@ export default function DashboardPage() {
                               to={`/events/${e.id}`}
                               className="flex items-center gap-3 p-3 rounded-[12px] bg-ivory hover:bg-blush/70 transition-colors pressable-soft"
                             >
-                              <img src={e.image || eventImageFallback} alt="" className="w-11 h-11 rounded-[10px] object-cover" />
+                              <SafeImg src={e.image} fallback={eventImageFallback} alt="" className="w-11 h-11 rounded-[10px] object-cover" />
                               <div className="min-w-0 flex-1">
                                 <p className="text-[13px] font-semibold text-navy truncate">{e.title}</p>
                                 <p className="text-[11px] text-muted">{e.date}</p>
@@ -1280,7 +1282,7 @@ export default function DashboardPage() {
                   {upcomingEvents.map((e) => (
                     <Link key={e.id} to={`/events/${e.id}`}>
                       <Surface className="p-3.5 sm:p-4 flex flex-col sm:flex-row items-start sm:items-center gap-3.5">
-                        <img src={e.image || eventImageFallback} alt="" className="w-full sm:w-20 h-28 sm:h-14 rounded-[12px] object-cover" />
+                        <SafeImg src={e.image} fallback={eventImageFallback} alt="" className="w-full sm:w-20 h-28 sm:h-14 rounded-[12px] object-cover" />
                         <div className="flex-1 min-w-0">
                           <p className="font-bold text-navy text-[14px] tracking-[-0.01em]">{e.title}</p>
                           <p className="text-[12px] text-muted mt-0.5">{e.date} — {e.location}</p>

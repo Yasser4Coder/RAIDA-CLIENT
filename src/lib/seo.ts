@@ -6,6 +6,8 @@ export const SITE_TAGLINE = 'حيث تلتقي الطموحات بالخبرات
 export const DEFAULT_DESCRIPTION =
   'منصة ومجتمع مهني يجمع رائدات الأعمال والخبراء والشركات والشركاء في الجزائر لبناء فرص حقيقية للنمو والتعاون.'
 
+import { safeImageSrc } from './safe'
+
 /** Public site origin — set VITE_SITE_URL in production (no trailing slash). */
 export function getSiteUrl(): string {
   const fromEnv = (import.meta.env.VITE_SITE_URL as string | undefined)?.replace(/\/$/, '')
@@ -22,7 +24,9 @@ export function absoluteUrl(path = '/'): string {
 }
 
 export function absoluteImage(path?: string | null, fallback = '/raida-icon.png'): string {
-  return absoluteUrl(path || fallback)
+  const resolved = safeImageSrc(path, '')
+  if (resolved) return resolved
+  return absoluteUrl(fallback)
 }
 
 export type SeoProps = {

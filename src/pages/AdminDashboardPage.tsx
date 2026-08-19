@@ -13,6 +13,7 @@ import { useAsyncData } from '../hooks/useAsyncData'
 import { adminApi, catalogApi } from '../lib/catalog'
 import { PLAN_LABELS, ROLE_LABELS, MEMBERSHIP_STATUS_LABELS } from '../lib/plans'
 import { safeHref } from '../lib/safe'
+import SafeImg from '../components/ui/SafeImg'
 import type {
   AdminUser,
   Brand,
@@ -1159,7 +1160,7 @@ export default function AdminDashboardPage() {
                             <tr key={m.id} className="border-b border-rose/5 hover:bg-blush/50">
                               <td className="py-3">
                                 <div className="flex items-center gap-3">
-                                  <img src={m.image || imageFallback} alt="" className="w-8 h-8 rounded-full object-cover" />
+                                  <SafeImg src={m.image} fallback={imageFallback} alt="" className="w-8 h-8 rounded-full object-cover" />
                                   <span className="font-medium text-navy">{m.name}</span>
                                 </div>
                               </td>
@@ -1217,7 +1218,7 @@ export default function AdminDashboardPage() {
                             <tr key={u.id} className="border-t border-rose/5 hover:bg-blush/30">
                               <td className="p-4">
                                 <div className="flex items-center gap-3">
-                                  <img src={m?.image || imageFallback} alt="" className="w-9 h-9 rounded-[8px] object-cover" />
+                                  <SafeImg src={m?.image} fallback={imageFallback} alt="" className="w-9 h-9 rounded-[8px] object-cover" />
                                   <div>
                                     <p className="font-semibold text-navy">{m?.name || u.email}</p>
                                     <p className="text-xs text-muted">{u.email}</p>
@@ -1268,7 +1269,7 @@ export default function AdminDashboardPage() {
                   <div className="grid sm:grid-cols-2 gap-4">
                     {brands.map((b) => (
                       <div key={b.id} className="bg-white rounded-[16px] p-5 border border-rose/10 shadow-soft flex items-center gap-4">
-                        <img src={b.logo || brandFallback} alt="" className="w-14 h-14 rounded-[12px] object-cover" />
+                        <SafeImg src={b.logo} fallback={brandFallback} alt="" className="w-14 h-14 rounded-[12px] object-cover" />
                         <div className="flex-1 min-w-0">
                           <p className="font-bold text-navy">{b.name}</p>
                           <p className="text-xs text-muted">{b.category}</p>
@@ -1302,7 +1303,7 @@ export default function AdminDashboardPage() {
                   </div>
                   {events.map((e) => (
                     <div key={e.id} className="bg-white rounded-[16px] p-5 border border-rose/10 shadow-soft flex flex-col sm:flex-row items-start sm:items-center gap-4">
-                      <img src={e.image || eventFallback} alt="" className="w-full sm:w-20 h-28 sm:h-14 rounded-[10px] object-cover" />
+                      <SafeImg src={e.image} fallback={eventFallback} alt="" className="w-full sm:w-20 h-28 sm:h-14 rounded-[10px] object-cover" />
                       <div className="flex-1">
                         <p className="font-bold text-navy">{e.title}</p>
                         <p className="text-xs text-muted">{e.date} — {e.category}</p>

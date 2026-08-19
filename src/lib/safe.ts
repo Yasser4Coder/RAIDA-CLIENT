@@ -3,6 +3,19 @@ import { getApiOrigin } from './api'
 const UPLOAD_PATH =
   /^\/uploads\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\.(jpg|jpeg|png|webp|gif)$/i
 
+function normalizeUploadPath(value: string): string {
+  const trimmed = value.trim()
+  return trimmed.startsWith('/') ? trimmed : `/${trimmed}`
+}
+
+function isUploadPath(value: string): boolean {
+  return UPLOAD_PATH.test(normalizeUploadPath(value))
+}
+
+function uploadUrl(path: string): string {
+  return `${getApiOrigin()}${normalizeUploadPath(path)}`
+}
+
 export function safeHref(value?: string | null): string | undefined {
   if (!value) return undefined
   const trimmed = value.trim()
@@ -17,12 +30,28 @@ export function safeHref(value?: string | null): string | undefined {
   }
 }
 
+/** Resolve API upload paths and external image URLs for `<img src>`. */
 export function safeImageSrc(value?: string | null, fallback = ''): string {
   if (!value) return fallback
   const trimmed = value.trim()
-  if (UPLOAD_PATH.test(trimmed)) {
-    // In production the API (and uploads) live on another host — prefix the API origin.
-    return `${getApiOrigin()}${trimmed}`
+  if (isUploadPath(trimmed)) {
+    return uploadUrl(trimmed)
   }
-  return safeHref(trimmed) || fallback
+
+  const href = safeHref(trimmed)
+  if (href) {
+    try {
+      const url = new URL(href)
+      if (isUploadPath(url.pathname)) {
+        return uploadUrl(url.pathname)
+      }
+      return href
+    } catch {
+      return fallback
+    }
+  }
+
+  return fallback
 }
+
+export const resolveMediaUrl = safeImageSrc

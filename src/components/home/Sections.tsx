@@ -7,6 +7,7 @@ import EventCard from '../ui/EventCard'
 import Button from '../ui/Button'
 import Badge from '../ui/Badge'
 import Reveal, { Stagger, StaggerItem } from '../ui/Reveal'
+import SafeImg from '../ui/SafeImg'
 import { LoadingBlock, ErrorBlock } from '../ui/StateBlocks'
 import { useAsyncData } from '../../hooks/useAsyncData'
 import { catalogApi } from '../../lib/catalog'
@@ -281,7 +282,7 @@ export function SuccessStories() {
             <Reveal className="lg:col-span-3" delay={1}>
               <article className="group relative rounded-[24px] overflow-hidden shadow-md min-h-[340px] h-full">
                 {featured.image ? (
-                  <img
+                  <SafeImg
                     src={featured.image}
                     alt={featured.title}
                     className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
@@ -306,7 +307,7 @@ export function SuccessStories() {
                 <Reveal key={story.id} delay={i + 2}>
                   <article className="group flex gap-3.5 p-3.5 rounded-[18px] bg-white hairline shadow-xs pressable-soft hover:shadow-sm transition-shadow">
                     {story.image ? (
-                      <img src={story.image} alt="" className="w-24 h-24 rounded-[14px] object-cover shrink-0" />
+                      <SafeImg src={story.image} alt="" className="w-24 h-24 rounded-[14px] object-cover shrink-0" />
                     ) : (
                       <div className="w-24 h-24 rounded-[14px] bg-rose-soft shrink-0" />
                     )}

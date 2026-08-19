@@ -29,11 +29,23 @@ export function setAccessToken(token: string | null) {
 /** Origin used for `/uploads/...` assets when API is on another host. */
 export function getApiOrigin(): string {
   try {
-    const url = new URL(API_BASE, typeof window !== 'undefined' ? window.location.origin : 'http://localhost')
-    return url.origin
+    if (/^https?:\/\//i.test(API_BASE)) {
+      return new URL(API_BASE).origin
+    }
   } catch {
-    return typeof window !== 'undefined' ? window.location.origin : ''
+    /* fall through */
   }
+
+  if (typeof window !== 'undefined') {
+    const { hostname } = window.location
+    // Production SPA on raaida.net; uploads are served from the API host.
+    if (hostname === 'raaida.net' || hostname === 'www.raaida.net') {
+      return 'https://api-raida.sosgroupdz.com'
+    }
+    return window.location.origin
+  }
+
+  return ''
 }
 
 type RequestOptions = {

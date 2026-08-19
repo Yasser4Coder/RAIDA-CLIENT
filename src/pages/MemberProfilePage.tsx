@@ -15,7 +15,7 @@ import { asArray } from '../lib/normalize'
 import { safeHref } from '../lib/safe'
 import SafeImg from '../components/ui/SafeImg'
 import SeoHead from '../components/seo/SeoHead'
-import { absoluteUrl, breadcrumbJsonLd } from '../lib/seo'
+import { absoluteImage, absoluteUrl, breadcrumbJsonLd } from '../lib/seo'
 import ConsultationRequestForm from '../components/ui/ConsultationRequestForm'
 
 const imageFallback =
@@ -62,14 +62,14 @@ export default function MemberProfilePage() {
     )
   }
 
-  const image = member.image || imageFallback
-  const cover = member.cover || coverFallback
+  const image = member.image
+  const cover = member.cover
   const services = asArray(member.services)
   const products = asArray(member.products)
   const programs = asArray(member.programs)
   const projects = asArray(member.projects)
   const achievements = asArray(member.achievements)
-  const gallery = [cover, image, ...(related.map((m) => m.image || imageFallback))].slice(0, 6)
+  const gallery = [cover, image, ...related.map((m) => m.image)].filter(Boolean).slice(0, 6)
   const description =
     (member.bio && member.bio.slice(0, 160)) ||
     `${member.name} — ${member.title}${member.specialty ? ` · ${member.specialty}` : ''}${member.city ? ` · ${member.city}` : ''}`
@@ -95,7 +95,7 @@ export default function MemberProfilePage() {
             name: member.name,
             jobTitle: member.title,
             description,
-            image: absoluteUrl(image),
+            image: absoluteImage(image, imageFallback),
             url: absoluteUrl(`/members/${member.id}`),
             address: member.city
               ? { '@type': 'PostalAddress', addressLocality: member.city, addressCountry: 'DZ' }
@@ -106,7 +106,7 @@ export default function MemberProfilePage() {
       />
       {/* Cover */}
       <div className="relative h-48 sm:h-64 lg:h-72 overflow-hidden">
-        <SafeImg src={cover} fallback={imageFallback} alt={`غلاف ملف ${member.name}`} className="w-full h-full object-cover" />
+        <SafeImg src={cover} fallback={coverFallback} alt={`غلاف ملف ${member.name}`} className="w-full h-full object-cover" />
         <div className="absolute inset-0 bg-gradient-to-t from-navy/80 via-navy/30 to-transparent" />
       </div>
 
@@ -242,7 +242,7 @@ export default function MemberProfilePage() {
               <div className="grid grid-cols-3 gap-3">
                 {gallery.map((img, i) => (
                   <div key={i} className="aspect-square rounded-[12px] overflow-hidden">
-                    <img src={img} alt="" className="w-full h-full object-cover hover:scale-110 transition-transform duration-500" />
+                    <SafeImg src={img} fallback={imageFallback} alt="" className="w-full h-full object-cover hover:scale-110 transition-transform duration-500" />
                   </div>
                 ))}
               </div>
