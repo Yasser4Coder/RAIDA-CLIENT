@@ -9,7 +9,7 @@ import {
   Users, Building2, Calendar, Handshake, CreditCard, FileText,
   DollarSign, LayoutDashboard, TrendingUp, ArrowUpRight, Search,
   Pencil, Trash2, Plus, ExternalLink, LogOut, Menu, X, Shield,
-  Inbox, MessageSquare,
+  Inbox, MessageSquare, UserCheck, Clock,
 } from 'lucide-react'
 import { AnimatePresence, motion } from 'motion/react'
 import Badge from '../components/ui/Badge'
@@ -399,9 +399,9 @@ export default function AdminDashboardPage() {
   } = useAsyncData(
     () =>
       allowed && active === 'users'
-        ? adminApi.users({ limit: 100, search: userSearch.trim() || undefined })
+        ? adminApi.users({ limit: 100 })
         : Promise.resolve({ data: [] }),
-    [user?.id, user?.role, active, userSearch],
+    [user?.id, user?.role, active],
   )
 
   const {
@@ -602,7 +602,15 @@ export default function AdminDashboardPage() {
     )
   }
 
-  const users = usersPayload?.data ?? []
+  const allUsers = usersPayload?.data ?? []
+  const userQuery = userSearch.trim().toLowerCase()
+  const users = !userQuery
+    ? allUsers
+    : allUsers.filter((u) => {
+        const name = u.profile?.name?.toLowerCase() ?? ''
+        const email = u.email?.toLowerCase() ?? ''
+        return name.includes(userQuery) || email.includes(userQuery)
+      })
   const brands = brandsPayload?.data ?? []
   const events = eventsPayload?.data ?? []
   const partnerList = partners ?? []
@@ -685,6 +693,35 @@ export default function AdminDashboardPage() {
     { label: 'الشركاء', value: String(kpis?.partners ?? '—'), change: '', icon: Handshake },
     { label: 'فعاليات نشطة', value: String(kpis?.activeEvents ?? '—'), change: '', icon: Calendar },
   ]
+
+  const userStatCards = [
+    {
+      label: 'إجمالي المستخدمات',
+      value: String(allUsers.length),
+      icon: Users,
+    },
+    {
+      label: 'حسابات نشطة',
+      value: String(allUsers.filter((u) => u.isActive).length),
+      icon: UserCheck,
+    },
+    {
+      label: 'بانتظار الموافقة',
+      value: String(allUsers.filter((u) => u.membershipStatus === 'pending').length),
+      icon: Clock,
+    },
+    {
+      label: 'عضوية مقبولة',
+      value: String(allUsers.filter((u) => u.membershipStatus === 'approved').length),
+      icon: CreditCard,
+    },
+  ]
+
+  const userPlanStats = (['BUSINESS', 'EXPERT', 'ACADEMY'] as const).map((plan) => ({
+    plan,
+    count: allUsers.filter((u) => u.plan === plan).length,
+  }))
+  const userPlanTotal = userPlanStats.reduce((sum, p) => sum + p.count, 0) || 1
 
   const totalPlanCount = planDistribution.reduce((sum, p) => sum + Number(p.count), 0) || 1
   const maxRevenue = Math.max(1, ...(revenue?.breakdown.map((row) => row.monthlyRevenue) ?? [1]))
@@ -1412,79 +1449,131 @@ export default function AdminDashboardPage() {
               )}
 
               {active === 'users' && (
-                <Panel className="animate-fade-up">
-                  <ActionBar onAdd={() => setEditor({ kind: 'user' })} addLabel="إضافة عضوة">
-                    <div className="relative max-w-sm">
-                      <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted" />
-                      <input
-                        placeholder="بحث بالاسم أو البريد..."
-                        value={userSearch}
-                        onChange={(e) => setUserSearch(e.target.value)}
-                        className="pr-10 pl-4 py-2.5 rounded-[12px] border border-navy/10 bg-white text-sm w-full focus:outline-none focus:border-gold/50 focus:ring-2 focus:ring-gold/15 transition"
-                      />
+                <div className="space-y-5 animate-fade-up">
+                  <div className="grid grid-cols-2 xl:grid-cols-4 gap-3 sm:gap-4">
+                    {userStatCards.map((k) => {
+                      const Icon = k.icon
+                      return (
+                        <Panel key={k.label} className="relative p-4 sm:p-5">
+                          <div className="absolute top-0 inset-x-0 h-0.5 bg-gradient-to-l from-gold via-rose/80 to-transparent" />
+                          <div className="w-10 h-10 rounded-[12px] bg-navy/[0.04] ring-1 ring-navy/8 flex items-center justify-center">
+                            <Icon className="w-[18px] h-[18px] text-navy" />
+                          </div>
+                          <p className="mt-3 text-2xl sm:text-[1.65rem] font-extrabold text-navy tracking-[-0.03em] tabular-nums">
+                            {k.value}
+                          </p>
+                          <p className="text-[11px] text-muted mt-1">{k.label}</p>
+                        </Panel>
+                      )
+                    })}
+                  </div>
+
+                  <Panel className="p-5 sm:p-6">
+                    <div className="flex items-center justify-between mb-5 gap-3">
+                      <div>
+                        <h3 className="font-bold text-navy tracking-[-0.01em]">توزيع الخطط</h3>
+                        <p className="text-[12px] text-muted mt-0.5">عدد المستخدمات حسب نوع العضوية</p>
+                      </div>
+                      <div className="w-10 h-10 rounded-[12px] bg-gold/15 ring-1 ring-gold/25 flex items-center justify-center shrink-0">
+                        <CreditCard className="w-5 h-5 text-gold-dark" />
+                      </div>
                     </div>
-                  </ActionBar>
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-sm">
-                      <thead>
-                        <tr className="text-muted text-[11px] bg-ivory/70 border-b border-navy/[0.05]">
-                          <th className="text-right p-4 font-semibold">العضوة</th>
-                          <th className="text-right p-4 font-semibold">الدور</th>
-                          <th className="text-right p-4 font-semibold">حالة العضوية</th>
-                          <th className="text-right p-4 font-semibold">الخطة</th>
-                          <th className="text-right p-4 font-semibold">المدينة</th>
-                          <th className="text-right p-4 font-semibold">الحالة</th>
-                          <th className="text-right p-4 font-semibold"></th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {users.map((u) => {
-                          const m = u.profile
-                          return (
-                            <tr key={u.id} className="border-t border-navy/[0.04] hover:bg-blush/35 transition-colors">
-                              <td className="p-4">
-                                <div className="flex items-center gap-3">
-                                  <SafeImg src={m?.image} fallback={imageFallback} alt="" className="w-9 h-9 rounded-[10px] object-cover ring-1 ring-navy/8" />
-                                  <div className="min-w-0">
-                                    <p className="font-semibold text-navy truncate">{m?.name || u.email}</p>
-                                    <p className="text-[11px] text-muted truncate">{u.email}</p>
+                    <div className="grid sm:grid-cols-3 gap-4">
+                      {userPlanStats.map((p, i) => {
+                        const pct = Math.round((p.count / userPlanTotal) * 100)
+                        const color = ['bg-navy/30', 'bg-rose', 'bg-gold'][i % 3]
+                        return (
+                          <div key={p.plan} className="rounded-[14px] bg-ivory/80 ring-1 ring-navy/5 p-4">
+                            <div className="flex justify-between text-[13px] mb-2 gap-2">
+                              <span className="text-navy font-medium leading-snug">
+                                {planLabel[p.plan] || p.plan}
+                              </span>
+                              <span className="text-navy font-extrabold tabular-nums shrink-0">{p.count}</span>
+                            </div>
+                            <div className="h-2 rounded-full bg-white overflow-hidden ring-1 ring-navy/5">
+                              <div className={`h-full rounded-full ${color}`} style={{ width: `${pct}%` }} />
+                            </div>
+                            <p className="mt-2 text-[11px] text-muted tabular-nums">{pct}%</p>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  </Panel>
+
+                  <Panel>
+                    <ActionBar onAdd={() => setEditor({ kind: 'user' })} addLabel="إضافة عضوة">
+                      <div className="relative max-w-sm">
+                        <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted" />
+                        <input
+                          placeholder="بحث بالاسم أو البريد..."
+                          value={userSearch}
+                          onChange={(e) => setUserSearch(e.target.value)}
+                          className="pr-10 pl-4 py-2.5 rounded-[12px] border border-navy/10 bg-white text-sm w-full focus:outline-none focus:border-gold/50 focus:ring-2 focus:ring-gold/15 transition"
+                        />
+                      </div>
+                    </ActionBar>
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-sm">
+                        <thead>
+                          <tr className="text-muted text-[11px] bg-ivory/70 border-b border-navy/[0.05]">
+                            <th className="text-right p-4 font-semibold">العضوة</th>
+                            <th className="text-right p-4 font-semibold">الدور</th>
+                            <th className="text-right p-4 font-semibold">حالة العضوية</th>
+                            <th className="text-right p-4 font-semibold">الخطة</th>
+                            <th className="text-right p-4 font-semibold">المدينة</th>
+                            <th className="text-right p-4 font-semibold">الحالة</th>
+                            <th className="text-right p-4 font-semibold"></th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {users.map((u) => {
+                            const m = u.profile
+                            return (
+                              <tr key={u.id} className="border-t border-navy/[0.04] hover:bg-blush/35 transition-colors">
+                                <td className="p-4">
+                                  <div className="flex items-center gap-3">
+                                    <SafeImg src={m?.image} fallback={imageFallback} alt="" className="w-9 h-9 rounded-[10px] object-cover ring-1 ring-navy/8" />
+                                    <div className="min-w-0">
+                                      <p className="font-semibold text-navy truncate">{m?.name || u.email}</p>
+                                      <p className="text-[11px] text-muted truncate">{u.email}</p>
+                                    </div>
                                   </div>
-                                </div>
-                              </td>
-                              <td className="p-4 text-muted">{roleLabel[u.role] || u.role}</td>
-                              <td className="p-4">
-                                <Badge variant={u.membershipStatus === 'approved' ? 'gold' : 'soft'}>
-                                  {MEMBERSHIP_STATUS_LABELS[u.membershipStatus || ''] || u.membershipStatus || '—'}
-                                </Badge>
-                              </td>
-                              <td className="p-4">
-                                <Badge variant={u.plan === 'ACADEMY' ? 'gold' : 'soft'}>
-                                  {planLabel[u.plan || ''] || u.plan || '—'}
-                                </Badge>
-                              </td>
-                              <td className="p-4 text-muted">{m?.city || '—'}</td>
-                              <td className="p-4">
-                                <Badge variant={u.isActive ? 'rose' : 'soft'}>
-                                  {u.isActive ? 'نشطة' : 'موقوفة'}
-                                </Badge>
-                              </td>
-                              <td className="p-4">
-                                <IconActions onEdit={() => setEditor({ kind: 'user', item: u })} />
+                                </td>
+                                <td className="p-4 text-muted">{roleLabel[u.role] || u.role}</td>
+                                <td className="p-4">
+                                  <Badge variant={u.membershipStatus === 'approved' ? 'gold' : 'soft'}>
+                                    {MEMBERSHIP_STATUS_LABELS[u.membershipStatus || ''] || u.membershipStatus || '—'}
+                                  </Badge>
+                                </td>
+                                <td className="p-4">
+                                  <Badge variant={u.plan === 'ACADEMY' ? 'gold' : 'soft'}>
+                                    {planLabel[u.plan || ''] || u.plan || '—'}
+                                  </Badge>
+                                </td>
+                                <td className="p-4 text-muted">{m?.city || '—'}</td>
+                                <td className="p-4">
+                                  <Badge variant={u.isActive ? 'rose' : 'soft'}>
+                                    {u.isActive ? 'نشطة' : 'موقوفة'}
+                                  </Badge>
+                                </td>
+                                <td className="p-4">
+                                  <IconActions onEdit={() => setEditor({ kind: 'user', item: u })} />
+                                </td>
+                              </tr>
+                            )
+                          })}
+                          {users.length === 0 && (
+                            <tr>
+                              <td colSpan={7}>
+                                <EmptyState title="لا توجد مستخدمات" hint="أضيفي عضوة جديدة أو عدّلي كلمات البحث." />
                               </td>
                             </tr>
-                          )
-                        })}
-                        {users.length === 0 && (
-                          <tr>
-                            <td colSpan={7}>
-                              <EmptyState title="لا توجد مستخدمات" hint="أضيفي عضوة جديدة أو عدّلي كلمات البحث." />
-                            </td>
-                          </tr>
-                        )}
-                      </tbody>
-                    </table>
-                  </div>
-                </Panel>
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+                  </Panel>
+                </div>
               )}
 
               {active === 'brands' && (
