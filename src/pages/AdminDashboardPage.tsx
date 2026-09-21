@@ -1,17 +1,27 @@
-import { useEffect, useState, type FormEvent, type ReactNode } from 'react'
+import {
+  useEffect,
+  useState,
+  Children,
+  type FormEvent,
+  type ReactNode,
+} from 'react'
 import {
   Users, Building2, Calendar, Handshake, CreditCard, FileText,
   DollarSign, LayoutDashboard, TrendingUp, ArrowUpRight, Search,
-  Pencil, Trash2, Plus, ExternalLink, LogOut, Menu, X,
+  Pencil, Trash2, Plus, ExternalLink, LogOut, Menu, X, Shield,
+  Inbox,
 } from 'lucide-react'
+import { AnimatePresence, motion } from 'motion/react'
 import Badge from '../components/ui/Badge'
 import Button from '../components/ui/Button'
+import { RaidaMark } from '../components/ui/Logo'
 import { LoadingBlock, ErrorBlock } from '../components/ui/StateBlocks'
 import AdminEditor, { confirmDelete, type AdminField } from '../components/admin/AdminEditor'
 import { useAuth } from '../context/AuthContext'
 import { useAsyncData } from '../hooks/useAsyncData'
 import { adminApi, catalogApi } from '../lib/catalog'
 import { safeHref } from '../lib/safe'
+import { springs, useMotionSafe } from '../lib/motion'
 import type {
   AdminUser,
   Brand,
@@ -28,16 +38,40 @@ import type {
 import SeoHead from '../components/seo/SeoHead'
 import { routeSeo } from '../lib/seo'
 
-const adminNav = [
-  { id: 'overview', label: 'نظرة عامة', icon: LayoutDashboard },
-  { id: 'users', label: 'المستخدمات', icon: Users },
-  { id: 'brands', label: 'العلامات', icon: Building2 },
-  { id: 'events', label: 'الفعاليات', icon: Calendar },
-  { id: 'partnerships', label: 'الشراكات', icon: Handshake },
-  { id: 'plans', label: 'خطط العضوية', icon: CreditCard },
-  { id: 'content', label: 'إدارة المحتوى', icon: FileText },
-  { id: 'revenue', label: 'تحليلات الإيرادات', icon: DollarSign },
+type NavItem = {
+  id: string
+  label: string
+  icon: typeof LayoutDashboard
+  hint: string
+}
+
+const navGroups: { label: string; items: NavItem[] }[] = [
+  {
+    label: 'المنصة',
+    items: [
+      { id: 'overview', label: 'نظرة عامة', icon: LayoutDashboard, hint: 'ملخص الأداء والنشاط الأخير' },
+      { id: 'users', label: 'المستخدمات', icon: Users, hint: 'إدارة الحسابات والأدوار والخطط' },
+      { id: 'brands', label: 'العلامات', icon: Building2, hint: 'العلامات التجارية المعروضة في الدليل' },
+      { id: 'events', label: 'الفعاليات', icon: Calendar, hint: 'إنشاء ونشر وإدارة الفعاليات' },
+    ],
+  },
+  {
+    label: 'النمو',
+    items: [
+      { id: 'partnerships', label: 'الشراكات', icon: Handshake, hint: 'الشركاء والطلبات ومستويات الرعاية' },
+      { id: 'plans', label: 'خطط العضوية', icon: CreditCard, hint: 'الأسعار والمزايا وصلاحيات الدخول' },
+    ],
+  },
+  {
+    label: 'المحتوى والتحليل',
+    items: [
+      { id: 'content', label: 'المحتوى', icon: FileText, hint: 'قصص النجاح والإحصائيات والتصنيفات' },
+      { id: 'revenue', label: 'الإيرادات', icon: DollarSign, hint: 'تحليل الاشتراكات والإيرادات التقديرية' },
+    ],
+  },
 ]
+
+const adminNav = navGroups.flatMap((g) => g.items)
 
 const planLabel: Record<string, string> = {
   FREE: 'مجاني',
@@ -106,38 +140,66 @@ function LoginForm({
   }
 
   return (
-    <div className="h-full flex items-center justify-center px-4">
+    <div className="h-full relative flex items-center justify-center px-4 py-10 overflow-hidden">
+      <div className="pointer-events-none absolute inset-0" aria-hidden>
+        <div className="absolute inset-0 bg-gradient-to-b from-navy/[0.04] via-transparent to-rose-soft/40" />
+        <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[min(90vw,520px)] h-[320px] rounded-full bg-gold/10 blur-3xl" />
+      </div>
+
       <form
         onSubmit={handleSubmit}
-        className="w-full max-w-[420px] rounded-[24px] bg-white hairline shadow-md p-7 sm:p-8 space-y-4"
+        className="relative w-full max-w-[420px] rounded-[24px] bg-white/95 backdrop-blur-xl hairline shadow-md p-7 sm:p-8 space-y-5"
       >
-        <h2 className="text-xl font-extrabold text-navy tracking-[-0.03em]">دخول الإدارة</h2>
-        <p className="text-[13px] text-muted">يتطلب صلاحيات إدارية.</p>
-        <div>
-          <label className="block text-[11px] font-semibold text-muted mb-1.5">البريد الإلكتروني</label>
-          <input
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-            className="w-full h-11 px-4 rounded-[12px] border border-rose/20 bg-ivory text-sm focus:outline-none focus:border-gold"
-          />
+        <div className="flex flex-col items-center text-center gap-3">
+          <div className="w-14 h-14 rounded-[16px] bg-navy flex items-center justify-center ring-1 ring-gold/30 shadow-sm overflow-hidden">
+            <RaidaMark className="w-10 h-10" />
+          </div>
+          <div>
+            <p className="text-[11px] font-semibold tracking-[0.2em] text-gold-dark uppercase">RAIDA Admin</p>
+            <h2 className="mt-1 text-xl font-extrabold text-navy tracking-[-0.03em]">دخول الإدارة</h2>
+            <p className="mt-1.5 text-[13px] text-muted leading-relaxed">
+              مساحة محمية لإدارة المنصة والمحتوى والعضوات.
+            </p>
+          </div>
         </div>
-        <div>
-          <label className="block text-[11px] font-semibold text-muted mb-1.5">كلمة المرور</label>
-          <input
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-            className="w-full h-11 px-4 rounded-[12px] border border-rose/20 bg-ivory text-sm focus:outline-none focus:border-gold"
-          />
+
+        <div className="space-y-3.5">
+          <div>
+            <label className="block text-[11px] font-semibold text-muted mb-1.5">البريد الإلكتروني</label>
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+              autoComplete="username"
+              placeholder="admin@…"
+              className="w-full h-11 px-4 rounded-[12px] border border-navy/10 bg-ivory text-sm focus:outline-none focus:border-gold/60 focus:ring-2 focus:ring-gold/15 transition"
+            />
+          </div>
+          <div>
+            <label className="block text-[11px] font-semibold text-muted mb-1.5">كلمة المرور</label>
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+              autoComplete="current-password"
+              className="w-full h-11 px-4 rounded-[12px] border border-navy/10 bg-ivory text-sm focus:outline-none focus:border-gold/60 focus:ring-2 focus:ring-gold/15 transition"
+            />
+          </div>
         </div>
-        {error && <p className="text-sm text-rose">{error}</p>}
-        <p className="text-[11px] text-muted">تجريبي: {hint}</p>
+
+        {error && (
+          <div className="rounded-[12px] bg-rose-soft/80 ring-1 ring-rose/25 px-3.5 py-2.5 text-[13px] text-navy">
+            {error}
+          </div>
+        )}
+
         <Button type="submit" variant="gold" size="md" className="w-full" disabled={submitting}>
-          {submitting ? 'جاري الدخول...' : 'دخول'}
+          {submitting ? 'جاري التحقق...' : 'دخول لوحة الإدارة'}
         </Button>
+
+        <p className="text-[11px] text-muted text-center leading-relaxed">{hint}</p>
       </form>
     </div>
   )
@@ -163,35 +225,46 @@ function AdminChrome({
   }, [])
 
   return (
-    <div className="fixed inset-0 z-40 flex flex-col bg-ivory overflow-hidden">
-      <header className="relative shrink-0 h-[72px] sm:h-[80px] bg-[rgba(251,249,247,0.88)] backdrop-blur-[28px] saturate-[180%] border-b border-navy/[0.06]">
+    <div className="fixed inset-0 z-40 flex flex-col bg-[#F5F2EE] overflow-hidden">
+      <header className="relative shrink-0 h-16 sm:h-[68px] material-thick border-b border-navy/[0.07]">
         <div
-          className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-l from-transparent via-gold/55 to-transparent"
+          className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-l from-transparent via-gold/50 to-transparent"
           aria-hidden
         />
-        <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-          <div className="text-center px-16 sm:px-40">
-            <p className="text-[10px] sm:text-[11px] font-semibold tracking-[0.34em] text-gold-dark uppercase">
-              Admin Dashboard
-            </p>
-            <h1 className="mt-1 text-[22px] sm:text-[28px] font-extrabold tracking-[-0.05em] text-navy leading-none">
-              لوحة الإدارة
-            </h1>
-          </div>
-        </div>
         <div className="relative h-full px-3 sm:px-5 flex items-center justify-between gap-3">
-          <div className="min-w-10 flex items-center">{leading}</div>
+          <div className="flex items-center gap-2.5 min-w-0">
+            {leading}
+            <div className="hidden sm:flex items-center gap-2.5 min-w-0">
+              <div className="w-9 h-9 rounded-[11px] bg-navy flex items-center justify-center overflow-hidden ring-1 ring-gold/20 shrink-0">
+                <RaidaMark className="w-7 h-7" />
+              </div>
+              <div className="min-w-0 leading-none">
+                <p className="text-[10px] font-semibold tracking-[0.18em] text-gold-dark uppercase">RAIDA</p>
+                <p className="mt-1 text-[14px] font-extrabold text-navy tracking-[-0.02em]">لوحة الإدارة</p>
+              </div>
+            </div>
+            <div className="sm:hidden flex items-center gap-2">
+              <div className="w-9 h-9 rounded-[11px] bg-navy flex items-center justify-center overflow-hidden">
+                <RaidaMark className="w-7 h-7" />
+              </div>
+              <p className="text-[14px] font-extrabold text-navy">الإدارة</p>
+            </div>
+          </div>
+
           <div className="flex items-center gap-2">
             {userEmail && (
-              <p className="hidden lg:block max-w-[200px] truncate text-[11px] text-muted">
-                {userEmail}
-              </p>
+              <div className="hidden md:flex items-center gap-2 max-w-[240px] h-10 px-3 rounded-full bg-white/80 hairline">
+                <span className="w-6 h-6 rounded-full bg-navy text-gold text-[10px] font-bold flex items-center justify-center shrink-0">
+                  {userEmail.charAt(0).toUpperCase()}
+                </span>
+                <p className="truncate text-[12px] text-navy/70 font-medium">{userEmail}</p>
+              </div>
             )}
             {onLogout && (
               <button
                 type="button"
                 onClick={onLogout}
-                className="h-10 w-10 sm:w-auto sm:px-3 rounded-full bg-white hairline text-muted hover:text-navy hover:bg-blush/80 pressable inline-flex items-center justify-center gap-1.5 text-[12px] font-medium"
+                className="h-10 w-10 sm:w-auto sm:px-3.5 rounded-full bg-white hairline text-muted hover:text-navy hover:bg-blush/80 pressable inline-flex items-center justify-center gap-1.5 text-[12px] font-semibold transition-colors"
                 aria-label="تسجيل الخروج"
               >
                 <LogOut className="w-4 h-4" />
@@ -202,7 +275,7 @@ function AdminChrome({
               href="/"
               target="_blank"
               rel="noreferrer"
-              className="h-10 px-3.5 sm:px-4 rounded-full bg-navy text-white text-[12px] sm:text-[13px] font-semibold pressable inline-flex items-center gap-2 shadow-sm ring-1 ring-gold/25 hover:bg-navy-light transition-colors"
+              className="h-10 px-3.5 sm:px-4 rounded-full bg-navy text-white text-[12px] sm:text-[13px] font-semibold pressable inline-flex items-center gap-2 shadow-sm ring-1 ring-gold/20 hover:bg-navy-light transition-colors"
             >
               <span className="hidden sm:inline">زيارة الموقع</span>
               <span className="sm:hidden">الموقع</span>
@@ -212,6 +285,26 @@ function AdminChrome({
         </div>
       </header>
       <div className="flex-1 min-h-0 overflow-hidden">{children}</div>
+    </div>
+  )
+}
+
+function Panel({ children, className = '' }: { children: ReactNode; className?: string }) {
+  return (
+    <div className={`rounded-[18px] bg-white hairline shadow-xs overflow-hidden ${className}`}>
+      {children}
+    </div>
+  )
+}
+
+function EmptyState({ title, hint }: { title: string; hint?: string }) {
+  return (
+    <div className="py-14 px-6 text-center">
+      <div className="mx-auto w-12 h-12 rounded-[14px] bg-ivory ring-1 ring-navy/8 flex items-center justify-center mb-3">
+        <Inbox className="w-5 h-5 text-muted" />
+      </div>
+      <p className="text-[14px] font-semibold text-navy">{title}</p>
+      {hint && <p className="mt-1 text-[12px] text-muted max-w-sm mx-auto leading-relaxed">{hint}</p>}
     </div>
   )
 }
@@ -226,10 +319,10 @@ function ActionBar({
   children?: ReactNode
 }) {
   return (
-    <div className="p-5 border-b border-rose/10 flex flex-col sm:flex-row gap-3 justify-between">
-      <div>{children}</div>
+    <div className="p-4 sm:p-5 border-b border-navy/[0.06] flex flex-col sm:flex-row gap-3 sm:items-center justify-between bg-gradient-to-l from-ivory/80 to-white">
+      <div className="min-w-0 flex-1">{children}</div>
       {onAdd && (
-        <Button variant="gold" size="sm" onClick={onAdd}>
+        <Button variant="gold" size="sm" onClick={onAdd} className="shrink-0 self-start sm:self-auto">
           <Plus className="w-4 h-4" /> {addLabel}
         </Button>
       )}
@@ -246,12 +339,24 @@ function IconActions({
 }) {
   return (
     <div className="flex items-center gap-1">
-      <button type="button" onClick={onEdit} className="p-1.5 rounded-lg hover:bg-blush cursor-pointer" title="تعديل">
-        <Pencil className="w-4 h-4 text-muted" />
+      <button
+        type="button"
+        onClick={onEdit}
+        className="h-9 w-9 rounded-[10px] bg-ivory hover:bg-blush ring-1 ring-navy/8 hover:ring-rose/25 flex items-center justify-center pressable cursor-pointer transition-colors"
+        title="تعديل"
+        aria-label="تعديل"
+      >
+        <Pencil className="w-3.5 h-3.5 text-navy/70" />
       </button>
       {onDelete && (
-        <button type="button" onClick={onDelete} className="p-1.5 rounded-lg hover:bg-blush cursor-pointer" title="حذف">
-          <Trash2 className="w-4 h-4 text-rose" />
+        <button
+          type="button"
+          onClick={onDelete}
+          className="h-9 w-9 rounded-[10px] bg-ivory hover:bg-rose-soft ring-1 ring-navy/8 hover:ring-rose/30 flex items-center justify-center pressable cursor-pointer transition-colors"
+          title="حذف"
+          aria-label="حذف"
+        >
+          <Trash2 className="w-3.5 h-3.5 text-rose" />
         </button>
       )}
     </div>
@@ -265,6 +370,8 @@ export default function AdminDashboardPage() {
   const [userSearch, setUserSearch] = useState('')
   const [editor, setEditor] = useState<Editor>(null)
   const allowed = isAdminRole(user?.role)
+  const { reduce } = useMotionSafe()
+  const activeNav = adminNav.find((i) => i.id === active)
 
   const {
     data: overview,
@@ -351,7 +458,7 @@ export default function AdminDashboardPage() {
     reload: reloadInquiries,
   } = useAsyncData(
     () =>
-      allowed && active === 'partnerships'
+      allowed && (active === 'partnerships' || active === 'overview')
         ? adminApi.partnershipInquiries()
         : Promise.resolve([] as PartnershipInquiry[]),
     [user?.id, user?.role, active],
@@ -445,10 +552,17 @@ export default function AdminDashboardPage() {
           noindex
         />
         <div className="h-full flex items-center justify-center px-4">
-          <div className="bg-white rounded-[20px] p-8 hairline shadow-sm max-w-md text-center space-y-4">
-            <h2 className="text-lg font-bold text-navy">غير مصرح</h2>
-            <p className="text-sm text-muted">هذا الحساب لا يملك صلاحيات إدارية.</p>
-            <Button to="/" target="_blank" rel="noreferrer" variant="gold" size="sm">زيارة الموقع</Button>
+          <div className="bg-white rounded-[22px] p-8 hairline shadow-sm max-w-md text-center space-y-4">
+            <div className="mx-auto w-14 h-14 rounded-[16px] bg-navy flex items-center justify-center ring-1 ring-gold/25">
+              <Shield className="w-6 h-6 text-gold" />
+            </div>
+            <h2 className="text-lg font-extrabold text-navy tracking-[-0.02em]">غير مصرح بالدخول</h2>
+            <p className="text-sm text-muted leading-relaxed">
+              هذا الحساب لا يملك صلاحيات إدارية. إن كنتِ تحتاجين وصولاً، تواصلي مع المديرة العليا.
+            </p>
+            <Button to="/" target="_blank" rel="noreferrer" variant="gold" size="sm">
+              زيارة الموقع
+            </Button>
           </div>
         </div>
       </AdminChrome>
@@ -829,68 +943,150 @@ export default function AdminDashboardPage() {
       )}
 
       <div className="h-full flex min-h-0">
-        <aside
-          className={`fixed lg:static inset-y-0 right-0 z-50 lg:z-0 w-[260px] bg-white/90 backdrop-blur-xl border-l border-navy/[0.06] flex flex-col transition-transform duration-300 lg:translate-x-0 ${
-            sidebarOpen ? 'translate-x-0' : 'translate-x-full lg:translate-x-0'
-          }`}
-          style={{ top: sidebarOpen ? '0' : undefined }}
-        >
-          <div className="lg:hidden flex items-center justify-between px-4 h-[72px] border-b border-navy/[0.06]">
-            <p className="text-[13px] font-semibold text-navy">الأقسام</p>
-            <button
-              type="button"
-              onClick={() => setSidebarOpen(false)}
-              className="h-9 w-9 rounded-full bg-ivory hairline flex items-center justify-center pressable"
-              aria-label="إغلاق"
-            >
-              <X className="w-4 h-4 text-navy" />
-            </button>
+        {/* Desktop sidebar */}
+        <aside className="hidden lg:flex w-[268px] shrink-0 flex-col border-l border-navy/[0.07] bg-[#0A1328] text-white">
+          <div className="px-4 pt-5 pb-3">
+            <p className="text-[10px] font-semibold tracking-[0.2em] text-gold/80 uppercase">Console</p>
+            <p className="mt-1 text-[13px] text-white/55 leading-snug">إدارة RAIDA بالكامل من مكان واحد</p>
           </div>
-          <nav className="p-3 space-y-0.5 overflow-y-auto flex-1">
-            {adminNav.map((item) => {
-              const Icon = item.icon
-              const isActive = active === item.id
-              return (
-                <button
-                  key={item.id}
-                  type="button"
-                  onClick={() => {
-                    setActive(item.id)
-                    setSidebarOpen(false)
-                  }}
-                  className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-[14px] text-[13px] font-medium transition-colors cursor-pointer ${
-                    isActive
-                      ? 'bg-navy text-white shadow-sm'
-                      : 'text-muted hover:bg-blush/80 hover:text-navy'
-                  }`}
-                >
-                  <span
-                    className={`w-8 h-8 rounded-[10px] flex items-center justify-center shrink-0 ${
-                      isActive ? 'bg-white/12' : 'bg-rose-soft'
-                    }`}
-                  >
-                    <Icon className={`w-4 h-4 ${isActive ? 'text-gold' : 'text-rose'}`} />
-                  </span>
-                  {item.label}
-                </button>
-              )
-            })}
+          <nav className="flex-1 overflow-y-auto px-2.5 pb-4 space-y-4">
+            {navGroups.map((group) => (
+              <div key={group.label}>
+                <p className="px-3 mb-1.5 text-[10px] font-semibold tracking-[0.14em] text-white/35 uppercase">
+                  {group.label}
+                </p>
+                <div className="space-y-0.5">
+                  {group.items.map((item) => {
+                    const Icon = item.icon
+                    const isActive = active === item.id
+                    const badgeCount =
+                      item.id === 'partnerships'
+                        ? inquiryList.filter((q) => q.status === 'new').length
+                        : 0
+                    return (
+                      <button
+                        key={item.id}
+                        type="button"
+                        onClick={() => setActive(item.id)}
+                        className={`relative w-full flex items-center gap-3 px-3 py-2.5 rounded-[12px] text-[13px] font-medium transition-colors cursor-pointer ${
+                          isActive
+                            ? 'bg-white/10 text-white shadow-sm ring-1 ring-white/10'
+                            : 'text-white/55 hover:bg-white/[0.06] hover:text-white'
+                        }`}
+                      >
+                        {isActive && (
+                          <span className="absolute right-0 top-1/2 -translate-y-1/2 w-0.5 h-6 rounded-full bg-gold" />
+                        )}
+                        <span
+                          className={`w-8 h-8 rounded-[10px] flex items-center justify-center shrink-0 ${
+                            isActive ? 'bg-gold/15 text-gold' : 'bg-white/[0.06] text-white/70'
+                          }`}
+                        >
+                          <Icon className="w-4 h-4" />
+                        </span>
+                        <span className="flex-1 text-right">{item.label}</span>
+                        {badgeCount > 0 && (
+                          <span className="min-w-5 h-5 px-1.5 rounded-full bg-rose text-navy text-[10px] font-bold flex items-center justify-center">
+                            {badgeCount}
+                          </span>
+                        )}
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
+            ))}
           </nav>
+          <div className="p-3 border-t border-white/10">
+            <div className="rounded-[14px] bg-white/[0.06] ring-1 ring-white/10 px-3 py-3">
+              <p className="text-[11px] text-white/45">الدور</p>
+              <p className="mt-0.5 text-[13px] font-semibold text-gold">
+                {roleLabel[user.role] || user.role}
+              </p>
+            </div>
+          </div>
         </aside>
 
-        {sidebarOpen && (
-          <div className="fixed inset-0 bg-navy/35 z-40 lg:hidden" onClick={() => setSidebarOpen(false)} />
-        )}
+        {/* Mobile sidebar sheet */}
+        <AnimatePresence>
+          {sidebarOpen && (
+            <>
+              <motion.div
+                className="fixed inset-0 z-50 bg-navy/45 lg:hidden"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                onClick={() => setSidebarOpen(false)}
+              />
+              <motion.aside
+                className="fixed top-0 bottom-0 right-0 z-[60] w-[min(88vw,300px)] lg:hidden flex flex-col bg-navy text-white shadow-xl"
+                initial={reduce ? { opacity: 0 } : { x: 28, opacity: 0 }}
+                animate={reduce ? { opacity: 1 } : { x: 0, opacity: 1 }}
+                exit={reduce ? { opacity: 0 } : { x: 20, opacity: 0 }}
+                transition={springs.snappy}
+              >
+                <div className="flex items-center justify-between px-4 h-16 border-b border-white/10">
+                  <p className="text-[13px] font-semibold">الأقسام</p>
+                  <button
+                    type="button"
+                    onClick={() => setSidebarOpen(false)}
+                    className="h-9 w-9 rounded-full bg-white/10 flex items-center justify-center pressable"
+                    aria-label="إغلاق"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+                <nav className="flex-1 overflow-y-auto p-3 space-y-4">
+                  {navGroups.map((group) => (
+                    <div key={group.label}>
+                      <p className="px-3 mb-1.5 text-[10px] font-semibold tracking-[0.14em] text-white/35 uppercase">
+                        {group.label}
+                      </p>
+                      <div className="space-y-0.5">
+                        {group.items.map((item) => {
+                          const Icon = item.icon
+                          const isActive = active === item.id
+                          return (
+                            <button
+                              key={item.id}
+                              type="button"
+                              onClick={() => {
+                                setActive(item.id)
+                                setSidebarOpen(false)
+                              }}
+                              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-[12px] text-[13px] font-medium ${
+                                isActive ? 'bg-white/10 text-white' : 'text-white/60'
+                              }`}
+                            >
+                              <Icon className={`w-4 h-4 ${isActive ? 'text-gold' : ''}`} />
+                              {item.label}
+                            </button>
+                          )
+                        })}
+                      </div>
+                    </div>
+                  ))}
+                </nav>
+              </motion.aside>
+            </>
+          )}
+        </AnimatePresence>
 
         <main className="flex-1 min-w-0 overflow-y-auto">
-          <div className="px-4 sm:px-6 lg:px-10 py-6 lg:py-8">
-            <div className="mb-6">
-              <p className="text-[11px] font-semibold tracking-[0.18em] text-gold-dark uppercase">
-                {adminNav.find((i) => i.id === active)?.id}
-              </p>
-              <h2 className="mt-1 text-[1.65rem] sm:text-[1.85rem] font-extrabold text-navy tracking-[-0.03em]">
-                {adminNav.find((i) => i.id === active)?.label}
-              </h2>
+          <div className="px-4 sm:px-6 lg:px-8 py-5 lg:py-7 max-w-[1280px]">
+            <div className="mb-6 flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
+              <div className="min-w-0">
+                <div className="inline-flex items-center gap-2 rounded-full bg-white/80 px-3 py-1 text-[11px] font-semibold text-navy/60 ring-1 ring-navy/8 mb-2">
+                  <span className="w-1.5 h-1.5 rounded-full bg-gold" />
+                  {activeNav?.id || 'admin'}
+                </div>
+                <h2 className="text-[1.55rem] sm:text-[1.75rem] font-extrabold text-navy tracking-[-0.03em]">
+                  {activeNav?.label}
+                </h2>
+                <p className="mt-1 text-[13px] text-muted max-w-xl leading-relaxed">
+                  {activeNav?.hint}
+                </p>
+              </div>
             </div>
 
             {tabLoading ? (
@@ -900,54 +1096,68 @@ export default function AdminDashboardPage() {
             ) : (
               <>
               {active === 'overview' && (
-                <div className="space-y-6 animate-fade-up">
-                  <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                <div className="space-y-5 animate-fade-up">
+                  <div className="grid grid-cols-2 xl:grid-cols-4 gap-3 sm:gap-4">
                     {kpiCards.map((k) => {
                       const Icon = k.icon
                       return (
-                        <div key={k.label} className="relative overflow-hidden rounded-[20px] bg-white hairline shadow-xs p-5">
-                          <div className="absolute top-0 inset-x-0 h-0.5 bg-gradient-to-l from-gold via-rose to-transparent" />
-                          <div className="flex items-center justify-between">
-                            <div className="w-10 h-10 rounded-[12px] bg-rose-soft ring-1 ring-rose/20 flex items-center justify-center">
-                              <Icon className="w-5 h-5 text-navy" />
+                        <Panel key={k.label} className="relative p-4 sm:p-5">
+                          <div className="absolute top-0 inset-x-0 h-0.5 bg-gradient-to-l from-gold via-rose/80 to-transparent" />
+                          <div className="flex items-center justify-between gap-2">
+                            <div className="w-10 h-10 rounded-[12px] bg-navy/[0.04] ring-1 ring-navy/8 flex items-center justify-center">
+                              <Icon className="w-[18px] h-[18px] text-navy" />
                             </div>
                             {k.change && (
-                              <span className="text-xs font-semibold text-emerald-600 flex items-center gap-0.5">
+                              <span className="text-[11px] font-semibold text-emerald-600 flex items-center gap-0.5">
                                 <ArrowUpRight className="w-3 h-3" /> {k.change}
                               </span>
                             )}
                           </div>
-                          <p className="mt-3 text-2xl font-extrabold text-navy tracking-[-0.03em] tabular-nums">{k.value}</p>
+                          <p className="mt-3 text-2xl sm:text-[1.65rem] font-extrabold text-navy tracking-[-0.03em] tabular-nums">
+                            {k.value}
+                          </p>
                           <p className="text-[11px] text-muted mt-1">{k.label}</p>
-                        </div>
+                        </Panel>
                       )
                     })}
                   </div>
 
-                  <div className="grid lg:grid-cols-3 gap-6">
-                    <div className="lg:col-span-2 bg-white rounded-[16px] p-6 border border-rose/10 shadow-soft">
+                  <div className="grid lg:grid-cols-3 gap-4 sm:gap-5">
+                    <Panel className="lg:col-span-2 p-5 sm:p-6">
                       <div className="flex items-center justify-between mb-6">
-                        <h3 className="font-bold text-navy">الإيرادات حسب الخطة</h3>
-                        <TrendingUp className="w-5 h-5 text-gold" />
+                        <div>
+                          <h3 className="font-bold text-navy tracking-[-0.01em]">الإيرادات حسب الخطة</h3>
+                          <p className="text-[12px] text-muted mt-0.5">تقدير شهري للاشتراكات النشطة</p>
+                        </div>
+                        <div className="w-10 h-10 rounded-[12px] bg-gold/15 ring-1 ring-gold/25 flex items-center justify-center">
+                          <TrendingUp className="w-5 h-5 text-gold-dark" />
+                        </div>
                       </div>
                       <div className="flex items-end gap-3 h-48">
                         {(revenue?.breakdown ?? []).map((row) => (
-                          <div key={row.plan} className="flex-1 flex flex-col items-center gap-2">
+                          <div key={row.plan} className="flex-1 flex flex-col items-center gap-2 min-w-0">
                             <div
-                              className="w-full rounded-t-lg bg-gradient-to-t from-gold-dark to-gold"
+                              className="w-full rounded-t-[10px] bg-gradient-to-t from-navy to-gold"
                               style={{ height: `${Math.max(8, (row.monthlyRevenue / maxRevenue) * 100)}%` }}
                             />
-                            <span className="text-[10px] text-muted text-center">{row.nameAr}</span>
+                            <span className="text-[10px] text-muted text-center truncate w-full">{row.nameAr}</span>
                           </div>
                         ))}
+                        {(revenue?.breakdown ?? []).length === 0 && (
+                          <p className="w-full text-center text-sm text-muted self-center">لا توجد بيانات إيرادات بعد</p>
+                        )}
                       </div>
-                      <p className="text-sm text-muted mt-4">
-                        الإجمالي الشهري: <span className="font-bold text-navy">{money(revenue?.monthlyRevenue ?? 0)}</span>
-                      </p>
-                    </div>
+                      <div className="mt-5 pt-4 border-t border-navy/[0.06] flex items-center justify-between gap-3">
+                        <p className="text-[13px] text-muted">الإجمالي الشهري</p>
+                        <p className="text-[15px] font-extrabold text-navy tabular-nums">
+                          {money(revenue?.monthlyRevenue ?? 0)}
+                        </p>
+                      </div>
+                    </Panel>
 
-                    <div className="bg-white rounded-[16px] p-6 border border-rose/10 shadow-soft">
-                      <h3 className="font-bold text-navy mb-4">توزيع الخطط</h3>
+                    <Panel className="p-5 sm:p-6">
+                      <h3 className="font-bold text-navy mb-1 tracking-[-0.01em]">توزيع الخطط</h3>
+                      <p className="text-[12px] text-muted mb-5">نسبة العضوات حسب الاشتراك</p>
                       <div className="space-y-4">
                         {(planDistribution.length
                           ? planDistribution
@@ -958,51 +1168,63 @@ export default function AdminDashboardPage() {
                             ]
                         ).map((p, i) => {
                           const pct = Math.round((Number(p.count) / totalPlanCount) * 100)
-                          const color = ['bg-muted', 'bg-rose', 'bg-gold'][i % 3]
+                          const color = ['bg-navy/30', 'bg-rose', 'bg-gold'][i % 3]
                           return (
                             <div key={p.plan}>
-                              <div className="flex justify-between text-sm mb-1.5">
+                              <div className="flex justify-between text-[13px] mb-1.5">
                                 <span className="text-navy font-medium">{planLabel[p.plan] || p.plan}</span>
-                                <span className="text-muted">{pct}%</span>
+                                <span className="text-muted tabular-nums">{pct}%</span>
                               </div>
-                              <div className="h-2 rounded-full bg-light overflow-hidden">
+                              <div className="h-2 rounded-full bg-ivory overflow-hidden ring-1 ring-navy/5">
                                 <div className={`h-full rounded-full ${color}`} style={{ width: `${pct}%` }} />
                               </div>
                             </div>
                           )
                         })}
                       </div>
-                      <div className="mt-6 p-4 rounded-[12px] bg-navy text-white">
-                        <p className="text-xs text-white/50">الأعضاء</p>
-                        <p className="text-2xl font-extrabold text-gold mt-1">{kpis?.members ?? 0}</p>
+                      <div className="mt-6 p-4 rounded-[14px] bg-navy text-white">
+                        <p className="text-[11px] text-white/50">إجمالي العضوات</p>
+                        <p className="text-2xl font-extrabold text-gold mt-1 tabular-nums">{kpis?.members ?? 0}</p>
                       </div>
-                    </div>
+                    </Panel>
                   </div>
 
-                  <div className="bg-white rounded-[16px] p-6 border border-rose/10 shadow-soft">
-                    <h3 className="font-bold text-navy mb-4">آخر العضوات المسجّلات</h3>
+                  <Panel>
+                    <div className="px-5 sm:px-6 py-4 border-b border-navy/[0.06] flex items-center justify-between">
+                      <div>
+                        <h3 className="font-bold text-navy tracking-[-0.01em]">آخر العضوات المسجّلات</h3>
+                        <p className="text-[12px] text-muted mt-0.5">أحدث الحسابات في المنصة</p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setActive('users')}
+                        className="text-[12px] font-semibold text-gold-dark hover:text-navy pressable-soft"
+                      >
+                        عرض الكل
+                      </button>
+                    </div>
                     <div className="overflow-x-auto">
                       <table className="w-full text-sm">
                         <thead>
-                          <tr className="text-muted text-xs border-b border-rose/10">
-                            <th className="text-right pb-3 font-semibold">العضوة</th>
-                            <th className="text-right pb-3 font-semibold">التخصص</th>
-                            <th className="text-right pb-3 font-semibold">المدينة</th>
-                            <th className="text-right pb-3 font-semibold">الخطة</th>
+                          <tr className="text-muted text-[11px] border-b border-navy/[0.05] bg-ivory/60">
+                            <th className="text-right px-5 py-3 font-semibold">العضوة</th>
+                            <th className="text-right px-5 py-3 font-semibold">التخصص</th>
+                            <th className="text-right px-5 py-3 font-semibold">المدينة</th>
+                            <th className="text-right px-5 py-3 font-semibold">الخطة</th>
                           </tr>
                         </thead>
                         <tbody>
                           {recentMembers.slice(0, 5).map((m) => (
-                            <tr key={m.id} className="border-b border-rose/5 hover:bg-blush/50">
-                              <td className="py-3">
+                            <tr key={m.id} className="border-b border-navy/[0.04] hover:bg-blush/40 transition-colors">
+                              <td className="px-5 py-3">
                                 <div className="flex items-center gap-3">
-                                  <img src={m.image || imageFallback} alt="" className="w-8 h-8 rounded-full object-cover" />
+                                  <img src={m.image || imageFallback} alt="" className="w-8 h-8 rounded-full object-cover ring-1 ring-navy/8" />
                                   <span className="font-medium text-navy">{m.name}</span>
                                 </div>
                               </td>
-                              <td className="py-3 text-muted">{m.specialty}</td>
-                              <td className="py-3 text-muted">{m.city}</td>
-                              <td className="py-3">
+                              <td className="px-5 py-3 text-muted">{m.specialty}</td>
+                              <td className="px-5 py-3 text-muted">{m.city}</td>
+                              <td className="px-5 py-3">
                                 <Badge variant={m.plan === 'BUSINESS' ? 'gold' : 'soft'}>
                                   {planLabel[m.plan || ''] || m.plan || 'مجاني'}
                                 </Badge>
@@ -1011,33 +1233,35 @@ export default function AdminDashboardPage() {
                           ))}
                           {recentMembers.length === 0 && (
                             <tr>
-                              <td colSpan={4} className="py-8 text-center text-muted">لا توجد بيانات</td>
+                              <td colSpan={4}>
+                                <EmptyState title="لا توجد عضوات بعد" hint="ستظهر هنا أحدث التسجيلات تلقائياً." />
+                              </td>
                             </tr>
                           )}
                         </tbody>
                       </table>
                     </div>
-                  </div>
+                  </Panel>
                 </div>
               )}
 
               {active === 'users' && (
-                <div className="bg-white rounded-[16px] border border-rose/10 shadow-soft animate-fade-up">
+                <Panel className="animate-fade-up">
                   <ActionBar onAdd={() => setEditor({ kind: 'user' })} addLabel="إضافة عضوة">
-                    <div className="relative">
+                    <div className="relative max-w-sm">
                       <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted" />
                       <input
-                        placeholder="بحث عن عضوة..."
+                        placeholder="بحث بالاسم أو البريد..."
                         value={userSearch}
                         onChange={(e) => setUserSearch(e.target.value)}
-                        className="pr-10 pl-4 py-2.5 rounded-[12px] border border-rose/20 bg-ivory text-sm w-full sm:w-64 focus:outline-none focus:border-gold"
+                        className="pr-10 pl-4 py-2.5 rounded-[12px] border border-navy/10 bg-white text-sm w-full focus:outline-none focus:border-gold/50 focus:ring-2 focus:ring-gold/15 transition"
                       />
                     </div>
                   </ActionBar>
                   <div className="overflow-x-auto">
                     <table className="w-full text-sm">
                       <thead>
-                        <tr className="text-muted text-xs bg-ivory">
+                        <tr className="text-muted text-[11px] bg-ivory/70 border-b border-navy/[0.05]">
                           <th className="text-right p-4 font-semibold">العضوة</th>
                           <th className="text-right p-4 font-semibold">الدور</th>
                           <th className="text-right p-4 font-semibold">الخطة</th>
@@ -1050,13 +1274,13 @@ export default function AdminDashboardPage() {
                         {users.map((u) => {
                           const m = u.profile
                           return (
-                            <tr key={u.id} className="border-t border-rose/5 hover:bg-blush/30">
+                            <tr key={u.id} className="border-t border-navy/[0.04] hover:bg-blush/35 transition-colors">
                               <td className="p-4">
                                 <div className="flex items-center gap-3">
-                                  <img src={m?.image || imageFallback} alt="" className="w-9 h-9 rounded-[8px] object-cover" />
-                                  <div>
-                                    <p className="font-semibold text-navy">{m?.name || u.email}</p>
-                                    <p className="text-xs text-muted">{u.email}</p>
+                                  <img src={m?.image || imageFallback} alt="" className="w-9 h-9 rounded-[10px] object-cover ring-1 ring-navy/8" />
+                                  <div className="min-w-0">
+                                    <p className="font-semibold text-navy truncate">{m?.name || u.email}</p>
+                                    <p className="text-[11px] text-muted truncate">{u.email}</p>
                                   </div>
                                 </div>
                               </td>
@@ -1080,13 +1304,15 @@ export default function AdminDashboardPage() {
                         })}
                         {users.length === 0 && (
                           <tr>
-                            <td colSpan={6} className="p-8 text-center text-muted">لا توجد مستخدمات</td>
+                            <td colSpan={6}>
+                              <EmptyState title="لا توجد مستخدمات" hint="أضيفي عضوة جديدة أو عدّلي كلمات البحث." />
+                            </td>
                           </tr>
                         )}
                       </tbody>
                     </table>
                   </div>
-                </div>
+                </Panel>
               )}
 
               {active === 'brands' && (
@@ -1096,13 +1322,13 @@ export default function AdminDashboardPage() {
                       <Plus className="w-4 h-4" /> إضافة علامة
                     </Button>
                   </div>
-                  <div className="grid sm:grid-cols-2 gap-4">
+                  <div className="grid sm:grid-cols-2 gap-3 sm:gap-4">
                     {brands.map((b) => (
-                      <div key={b.id} className="bg-white rounded-[16px] p-5 border border-rose/10 shadow-soft flex items-center gap-4">
-                        <img src={b.logo || brandFallback} alt="" className="w-14 h-14 rounded-[12px] object-cover" />
+                      <Panel key={b.id} className="p-4 sm:p-5 flex items-center gap-4">
+                        <img src={b.logo || brandFallback} alt="" className="w-14 h-14 rounded-[14px] object-cover ring-1 ring-navy/8" />
                         <div className="flex-1 min-w-0">
-                          <p className="font-bold text-navy">{b.name}</p>
-                          <p className="text-xs text-muted">{b.category}</p>
+                          <p className="font-bold text-navy truncate">{b.name}</p>
+                          <p className="text-[12px] text-muted mt-0.5">{b.category}</p>
                         </div>
                         <Badge variant={b.isActive !== false ? 'gold' : 'soft'}>
                           {b.isActive !== false ? 'نشطة' : 'موقوفة'}
@@ -1115,10 +1341,12 @@ export default function AdminDashboardPage() {
                             reloadBrands()
                           }}
                         />
-                      </div>
+                      </Panel>
                     ))}
                     {brands.length === 0 && (
-                      <p className="text-sm text-muted col-span-2 text-center py-10">لا توجد علامات</p>
+                      <Panel className="sm:col-span-2">
+                        <EmptyState title="لا توجد علامات" hint="أضيفي علامة تجارية لعرضها في الدليل." />
+                      </Panel>
                     )}
                   </div>
                 </div>
@@ -1126,17 +1354,17 @@ export default function AdminDashboardPage() {
 
               {active === 'events' && (
                 <div className="space-y-3 animate-fade-up">
-                  <div className="flex justify-end mb-2">
+                  <div className="flex justify-end mb-1">
                     <Button variant="gold" size="sm" onClick={() => setEditor({ kind: 'event' })}>
                       <Plus className="w-4 h-4" /> إنشاء فعالية
                     </Button>
                   </div>
                   {events.map((e) => (
-                    <div key={e.id} className="bg-white rounded-[16px] p-5 border border-rose/10 shadow-soft flex flex-col sm:flex-row items-start sm:items-center gap-4">
-                      <img src={e.image || eventFallback} alt="" className="w-full sm:w-20 h-28 sm:h-14 rounded-[10px] object-cover" />
-                      <div className="flex-1">
+                    <Panel key={e.id} className="p-4 sm:p-5 flex flex-col sm:flex-row items-start sm:items-center gap-4">
+                      <img src={e.image || eventFallback} alt="" className="w-full sm:w-20 h-28 sm:h-14 rounded-[12px] object-cover ring-1 ring-navy/8" />
+                      <div className="flex-1 min-w-0">
                         <p className="font-bold text-navy">{e.title}</p>
-                        <p className="text-xs text-muted">{e.date} — {e.category}</p>
+                        <p className="text-[12px] text-muted mt-0.5">{e.date} — {e.category}</p>
                       </div>
                       <Badge variant={e.isPublished === false ? 'soft' : 'rose'}>
                         {e.isPublished === false ? 'مسودة' : e.price || 'منشورة'}
@@ -1159,31 +1387,33 @@ export default function AdminDashboardPage() {
                           reloadEvents()
                         }}
                       />
-                    </div>
+                    </Panel>
                   ))}
                   {events.length === 0 && (
-                    <p className="text-sm text-muted text-center py-10">لا توجد فعاليات</p>
+                    <Panel>
+                      <EmptyState title="لا توجد فعاليات" hint="أنشئي فعالية جديدة لنشرها على المنصة." />
+                    </Panel>
                   )}
                 </div>
               )}
 
               {active === 'partnerships' && (
-                <div className="space-y-8 animate-fade-up">
+                <div className="space-y-7 animate-fade-up">
                   <section>
-                    <div className="flex items-center justify-between mb-4">
-                      <h3 className="font-bold text-navy">الشركاء</h3>
+                    <div className="flex items-center justify-between mb-3">
+                      <h3 className="font-bold text-navy tracking-[-0.01em]">الشركاء</h3>
                       <Button variant="gold" size="sm" onClick={() => setEditor({ kind: 'partner' })}>
                         <Plus className="w-4 h-4" /> إضافة شريك
                       </Button>
                     </div>
-                    <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3">
                       {partnerList.map((p) => (
-                        <div key={p.id} className="bg-white rounded-[16px] p-5 border border-rose/10 shadow-soft text-center">
-                          <div className="w-12 h-12 mx-auto rounded-full bg-navy flex items-center justify-center mb-3">
+                        <Panel key={p.id} className="p-5 text-center">
+                          <div className="w-12 h-12 mx-auto rounded-[14px] bg-navy flex items-center justify-center mb-3 ring-1 ring-gold/20">
                             <span className="text-gold font-bold">{p.name[0]}</span>
                           </div>
                           <p className="font-bold text-navy text-sm">{p.name}</p>
-                          <p className="text-[10px] text-muted mt-1">{p.type}</p>
+                          <p className="text-[11px] text-muted mt-1">{p.type}</p>
                           <div className="mt-3 flex justify-center">
                             <IconActions
                               onEdit={() => setEditor({ kind: 'partner', item: p })}
@@ -1194,28 +1424,30 @@ export default function AdminDashboardPage() {
                               }}
                             />
                           </div>
-                        </div>
+                        </Panel>
                       ))}
                       {partnerList.length === 0 && (
-                        <p className="text-sm text-muted col-span-4 text-center py-10">لا يوجد شركاء</p>
+                        <Panel className="sm:col-span-2 lg:col-span-4">
+                          <EmptyState title="لا يوجد شركاء" hint="أضيفي شركاء لإظهارهم في صفحة الشراكات." />
+                        </Panel>
                       )}
                     </div>
                   </section>
 
                   <section>
-                    <div className="flex items-center justify-between mb-4">
-                      <h3 className="font-bold text-navy">مستويات الشراكة</h3>
+                    <div className="flex items-center justify-between mb-3">
+                      <h3 className="font-bold text-navy tracking-[-0.01em]">مستويات الشراكة</h3>
                       <Button variant="gold" size="sm" onClick={() => setEditor({ kind: 'tier' })}>
                         <Plus className="w-4 h-4" /> إضافة مستوى
                       </Button>
                     </div>
-                    <div className="grid md:grid-cols-3 gap-4">
+                    <div className="grid md:grid-cols-3 gap-3">
                       {tierList.map((t) => (
-                        <div key={t.id} className="bg-white rounded-[16px] p-5 border border-rose/10 shadow-soft">
+                        <Panel key={t.id} className="p-5">
                           <div className="flex items-start justify-between gap-2">
-                            <div>
+                            <div className="min-w-0">
                               <p className="font-bold text-navy">{t.nameAr || t.name}</p>
-                              <p className="text-xs text-muted mt-1">{t.description}</p>
+                              <p className="text-[12px] text-muted mt-1 leading-relaxed">{t.description}</p>
                             </div>
                             <IconActions
                               onEdit={() => setEditor({ kind: 'tier', item: t })}
@@ -1226,19 +1458,28 @@ export default function AdminDashboardPage() {
                               }}
                             />
                           </div>
-                        </div>
+                        </Panel>
                       ))}
                     </div>
                   </section>
 
                   <section>
-                    <h3 className="font-bold text-navy mb-4">طلبات الشراكة</h3>
-                    <div className="bg-white rounded-[16px] border border-rose/10 shadow-soft divide-y divide-rose/10 overflow-hidden">
+                    <div className="flex items-center justify-between mb-3">
+                      <div>
+                        <h3 className="font-bold text-navy tracking-[-0.01em]">طلبات الشراكة</h3>
+                        <p className="text-[12px] text-muted mt-0.5">
+                          {inquiryList.filter((q) => q.status === 'new').length} طلب جديد
+                        </p>
+                      </div>
+                    </div>
+                    <Panel className="divide-y divide-navy/[0.05]">
                       {inquiryList.map((item) => (
                         <button
                           key={item.id}
                           type="button"
-                          className={`w-full text-right p-4 sm:p-5 ${item.status === 'new' ? 'bg-rose-soft/30' : ''}`}
+                          className={`w-full text-right p-4 sm:p-5 hover:bg-blush/40 transition-colors ${
+                            item.status === 'new' ? 'bg-rose-soft/40' : ''
+                          }`}
                           onClick={async () => {
                             if (item.status === 'new') {
                               await adminApi.markPartnershipInquiryRead(item.id)
@@ -1253,7 +1494,7 @@ export default function AdminDashboardPage() {
                                 {item.name} · {item.email}
                                 {item.tier ? ` · ${item.tier}` : ''}
                               </p>
-                              <p className="text-[13px] text-navy mt-2 leading-relaxed">{item.message}</p>
+                              <p className="text-[13px] text-navy/80 mt-2 leading-relaxed">{item.message}</p>
                             </div>
                             <Badge variant={item.status === 'new' ? 'rose' : 'soft'}>
                               {item.status === 'new' ? 'جديدة' : 'مقروءة'}
@@ -1262,35 +1503,38 @@ export default function AdminDashboardPage() {
                         </button>
                       ))}
                       {inquiryList.length === 0 && (
-                        <p className="text-sm text-muted text-center py-10">لا توجد طلبات شراكة بعد</p>
+                        <EmptyState title="لا توجد طلبات شراكة بعد" hint="ستظهر الطلبات الواردة من صفحة الشراكات هنا." />
                       )}
-                    </div>
+                    </Panel>
                   </section>
                 </div>
               )}
 
               {active === 'plans' && (
-                <div className="grid md:grid-cols-3 gap-4 animate-fade-up">
+                <div className="grid md:grid-cols-3 gap-3 sm:gap-4 animate-fade-up">
                   {planList.map((p) => {
                     const members = planDistribution.find((row) => row.plan === p.name)?.count ?? 0
                     return (
-                      <div key={p.id} className="bg-white rounded-[16px] p-6 border border-rose/10 shadow-soft">
+                      <Panel key={p.id} className={`p-5 sm:p-6 ${p.highlighted ? 'ring-1 ring-gold/35' : ''}`}>
                         <div className="flex items-start justify-between gap-2">
                           <div>
-                            <h3 className="font-bold text-navy text-lg">{p.nameAr}</h3>
-                            <p className="text-xs text-muted">{p.name}</p>
+                            <h3 className="font-bold text-navy text-lg tracking-[-0.02em]">{p.nameAr}</h3>
+                            <p className="text-[11px] text-muted mt-0.5">{p.name}</p>
                           </div>
                           <IconActions onEdit={() => setEditor({ kind: 'plan', item: p })} />
                         </div>
-                        <p className="text-3xl font-extrabold text-navy mt-3">{p.price}</p>
-                        <p className="text-xs text-muted">{p.period}</p>
-                        <p className="text-sm text-muted mt-3">{p.description}</p>
-                        <ul className="mt-3 space-y-1 text-xs text-navy">
+                        <p className="text-3xl font-extrabold text-navy mt-4 tracking-[-0.03em]">{p.price}</p>
+                        <p className="text-[12px] text-muted">{p.period}</p>
+                        <p className="text-[13px] text-muted mt-3 leading-relaxed">{p.description}</p>
+                        <ul className="mt-4 space-y-1.5 text-[12px] text-navy">
                           {p.features.slice(0, 4).map((feature) => (
-                            <li key={feature}>• {feature}</li>
+                            <li key={feature} className="flex gap-2">
+                              <span className="text-gold mt-0.5">•</span>
+                              <span>{feature}</span>
+                            </li>
                           ))}
                         </ul>
-                        <div className="mt-4 flex items-center justify-between gap-2 flex-wrap">
+                        <div className="mt-5 flex items-center gap-2 flex-wrap">
                           <Badge variant={p.highlighted ? 'gold' : 'soft'}>{members} عضوة</Badge>
                           <Badge variant={p.grantsAccess === false ? 'soft' : 'rose'}>
                             {p.grantsAccess === false ? 'بدون دخول' : 'تمنح الدخول'}
@@ -1299,7 +1543,7 @@ export default function AdminDashboardPage() {
                             {p.isActive === false ? 'مخفية' : 'ظاهرة'}
                           </Badge>
                         </div>
-                      </div>
+                      </Panel>
                     )
                   })}
                 </div>
@@ -1390,38 +1634,48 @@ export default function AdminDashboardPage() {
               )}
 
               {active === 'revenue' && (
-                <div className="space-y-6 animate-fade-up">
-                  <div className="grid sm:grid-cols-3 gap-4">
+                <div className="space-y-5 animate-fade-up">
+                  <div className="grid sm:grid-cols-3 gap-3 sm:gap-4">
                     {[
                       { label: 'إيرادات شهرية تقديرية', value: money(revenue?.monthlyRevenue ?? 0) },
                       { label: 'متوسط الاشتراك', value: money(revenue?.averageSubscription ?? 0) },
                       { label: 'عضوات مدفوعات', value: String(revenue?.payingMembers ?? 0) },
                     ].map((s) => (
-                      <div key={s.label} className="bg-white rounded-[16px] p-5 border border-rose/10 shadow-soft">
-                        <p className="text-xs text-muted">{s.label}</p>
-                        <p className="text-2xl font-extrabold text-navy mt-1">{s.value}</p>
-                      </div>
+                      <Panel key={s.label} className="p-5">
+                        <p className="text-[12px] text-muted">{s.label}</p>
+                        <p className="text-2xl font-extrabold text-navy mt-1.5 tracking-[-0.03em] tabular-nums">
+                          {s.value}
+                        </p>
+                      </Panel>
                     ))}
                   </div>
-                  <div className="bg-white rounded-[16px] p-6 border border-rose/10 shadow-soft">
-                    <h3 className="font-bold text-navy mb-6">تفصيل الإيرادات حسب الخطة</h3>
+                  <Panel className="p-5 sm:p-6">
+                    <h3 className="font-bold text-navy mb-1 tracking-[-0.01em]">تفصيل الإيرادات حسب الخطة</h3>
+                    <p className="text-[12px] text-muted mb-6">تقدير مبني على الاشتراكات النشطة</p>
                     <div className="space-y-4">
                       {(revenue?.breakdown ?? []).map((row) => (
                         <div key={row.plan}>
-                          <div className="flex justify-between text-sm mb-1.5">
-                            <span className="text-navy font-medium">{row.nameAr} · {row.members} عضوة</span>
-                            <span className="text-muted">{money(row.monthlyRevenue)}</span>
+                          <div className="flex justify-between text-[13px] mb-1.5 gap-3">
+                            <span className="text-navy font-medium">
+                              {row.nameAr} · {row.members} عضوة
+                            </span>
+                            <span className="text-muted tabular-nums shrink-0">{money(row.monthlyRevenue)}</span>
                           </div>
-                          <div className="h-2 rounded-full bg-light overflow-hidden">
+                          <div className="h-2 rounded-full bg-ivory overflow-hidden ring-1 ring-navy/5">
                             <div
-                              className="h-full rounded-full bg-gold"
-                              style={{ width: `${Math.max(4, (row.monthlyRevenue / maxRevenue) * 100)}%` }}
+                              className="h-full rounded-full bg-gradient-to-l from-navy to-gold"
+                              style={{
+                                width: `${Math.max(4, (row.monthlyRevenue / maxRevenue) * 100)}%`,
+                              }}
                             />
                           </div>
                         </div>
                       ))}
+                      {(revenue?.breakdown ?? []).length === 0 && (
+                        <EmptyState title="لا توجد بيانات إيرادات" />
+                      )}
                     </div>
-                  </div>
+                  </Panel>
                 </div>
               )}
             </>
@@ -1444,16 +1698,20 @@ function ContentSection({
   addLabel: string
   children: ReactNode
 }) {
+  const count = Children.count(children)
+
   return (
-    <div className="bg-white rounded-[16px] border border-rose/10 shadow-soft">
-      <div className="p-5 border-b border-rose/10 flex items-center justify-between">
-        <h3 className="font-bold text-navy">{title}</h3>
+    <Panel>
+      <div className="p-4 sm:p-5 border-b border-navy/[0.06] flex items-center justify-between gap-3 bg-gradient-to-l from-ivory/70 to-white">
+        <h3 className="font-bold text-navy tracking-[-0.01em]">{title}</h3>
         <Button variant="gold" size="sm" onClick={onAdd}>
           <Plus className="w-4 h-4" /> {addLabel}
         </Button>
       </div>
-      <div className="divide-y divide-rose/10">{children}</div>
-    </div>
+      <div className="divide-y divide-navy/[0.05]">
+        {count > 0 ? children : <EmptyState title="لا توجد عناصر بعد" />}
+      </div>
+    </Panel>
   )
 }
 
@@ -1469,10 +1727,10 @@ function ContentRow({
   onDelete: () => void
 }) {
   return (
-    <div className="p-5 flex items-center justify-between gap-3">
+    <div className="p-4 sm:p-5 flex items-center justify-between gap-3 hover:bg-blush/30 transition-colors">
       <div className="min-w-0">
-        <p className="font-semibold text-navy text-sm">{title}</p>
-        <p className="text-xs text-muted truncate">{subtitle}</p>
+        <p className="font-semibold text-navy text-[13px]">{title}</p>
+        <p className="text-[12px] text-muted truncate mt-0.5">{subtitle}</p>
       </div>
       <IconActions onEdit={onEdit} onDelete={onDelete} />
     </div>
