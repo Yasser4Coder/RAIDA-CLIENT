@@ -19,7 +19,7 @@ export function ErrorBlock({
   return (
     <div className="flex flex-col items-center justify-center gap-3 py-16 text-center px-4">
       <p className="text-sm text-muted max-w-md">{message}</p>
-      <p className="text-xs text-muted/80">تأكدي أن خادم RAIDA يعمل على المنفذ 5000 وقاعدة البيانات جاهزة.</p>
+      <p className="text-xs text-muted/80">تعذر تحميل المحتوى. أعيدي المحاولة بعد قليل.</p>
       {onRetry ? (
         <button
           type="button"

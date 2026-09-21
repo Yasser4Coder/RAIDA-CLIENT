@@ -8,15 +8,18 @@ import { navLinks } from '../../data/nav'
 const explore = navLinks
 const community = [
   { to: '/members', label: 'دليل الأعضاء' },
-  { to: '/brands', label: 'العلامات التجارية' },
-  { to: '/events', label: 'الفعاليات' },
-  { to: '/partnerships', label: 'الشراكات' },
+  { to: '/experts', label: 'خبيرات رائدة' },
+  { to: '/academies', label: 'الأكاديميات' },
+  { to: '/programs', label: 'البرامج التدريبية' },
+  { to: '/opportunities', label: 'الفرص' },
+  { to: '/sos-store', label: 'SOS Store' },
 ]
 const company = [
+  { to: '/about', label: 'عن رائدة' },
+  { to: '/benefits', label: 'المزايا' },
   { to: '/membership', label: 'العضوية' },
+  { to: '/partnerships', label: 'الشراكات' },
   { to: '/dashboard', label: 'لوحة التحكم' },
-  { to: '/#stories', label: 'قصص النجاح' },
-  { to: '/membership', label: 'المساعدة' },
 ]
 
 const socials = [
@@ -54,14 +57,17 @@ export default function Footer() {
                   جاهزة للانضمام؟
                 </h2>
                 <p className="mt-2 text-sm text-white/50 leading-relaxed">
-                  أنشئي حسابكِ واختاري الخطة التي تناسب مرحلة نموكِ.
+                  أنشئي حسابكِ مجانًا، أو اختاري عضوية مهنية لظهوركِ في الدليل والفرص.
                 </p>
               </div>
 
-              <div className="w-full lg:max-w-md">
-                <Button to="/membership" variant="gold" size="md" className="w-full sm:w-auto">
-                  انضمي إلى RAIDA
+              <div className="w-full lg:max-w-md flex flex-col sm:flex-row gap-3">
+                <Button to="/dashboard" variant="gold" size="md" className="w-full sm:w-auto">
+                  انضمي مجانًا
                   <ChevronLeft className="w-4 h-4 opacity-70" />
+                </Button>
+                <Button to="/membership" variant="glass" size="md" className="w-full sm:w-auto !text-white !border-white/20 !bg-white/10">
+                  العضوية المهنية
                 </Button>
               </div>
             </div>

@@ -88,6 +88,9 @@ export type PricingPlan = {
   name: string
   nameAr: string
   price: string
+  originalPrice?: string | null
+  launchPrice?: string | null
+  launchSavings?: string | null
   period: string
   description: string
   features: string[]
@@ -141,8 +144,47 @@ export type Consultation = {
   guestPhone: string | null
   subject: string
   message: string
+  field?: string | null
+  consultationType?: string | null
+  mode?: 'online' | 'in_person' | null
+  preferredAt?: string | null
+  wilaya?: string | null
   status: 'new' | 'read' | 'archived'
+  targetType?: 'member' | 'raida'
+  adminReply?: string | null
+  repliedAt?: string | null
+  direction?: 'received' | 'sent' | null
+  consultantName?: string | null
+  memberName?: string | null
+  memberProfileId?: string | null
   createdAt: string
+}
+
+export type CmsProgram = {
+  id: string
+  kind: 'annual' | 'specialized'
+  number?: string | null
+  title: string
+  description?: string | null
+  trainer?: string | null
+  duration?: string | null
+  mode?: string | null
+  level?: string | null
+  memberPrice?: string | null
+  publicPrice?: string | null
+  field?: string | null
+  month?: string | null
+  sortOrder?: number
+  isPublished?: boolean
+}
+
+export type CmsOpportunity = {
+  id: string
+  type: string
+  title: string
+  description: string
+  sortOrder?: number
+  isPublished?: boolean
 }
 
 export type PartnershipInquiry = {
@@ -169,7 +211,8 @@ export type UserSafe = {
   id: string
   email: string
   role: string
-  plan: string
+  plan: string | null
+  membershipStatus?: string
   isActive: boolean
   isEmailVerified: boolean
   hasAccess?: boolean

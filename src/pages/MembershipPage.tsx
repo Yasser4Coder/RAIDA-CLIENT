@@ -12,27 +12,32 @@ import { catalogApi, meApi } from '../lib/catalog'
 import { asArray } from '../lib/normalize'
 import SeoHead from '../components/seo/SeoHead'
 import { breadcrumbJsonLd, routeSeo } from '../lib/seo'
+import { freeCommunityBenefits, joinSteps } from '../data/platformContent'
 
 const faqs = [
   {
-    q: 'هل يمكنني الترقية لاحقاً؟',
-    a: 'نعم، يمكنكِ الترقية أو تغيير خطتك في أي وقت من لوحة التحكم.',
+    q: 'هل الانضمام إلى المجتمع مجاني؟',
+    a: 'نعم. يمكنكِ إنشاء حساب مجاني لمتابعة المحتوى والفرص والفعاليات. العضويات المهنية (أعمال، خبيرة، أكاديمية) اختيارية ومدفوعة سنويًا بعد موافقة الإدارة.',
   },
   {
-    q: 'هل توجد فترة تجريبية؟',
-    a: 'الخطة المجانية متاحة دائماً، والخطة الاحترافية تشمل 14 يوماً تجريبياً.',
+    q: 'ما الفرق بين الزائرة والعضوة؟',
+    a: 'الزائرة حساب عادي للتصفح والتسجيل في الفعاليات. العضوة اشتراك مدفوع سنوي يظهر في دليل رائدة ويحتاج موافقة الإدارة.',
+  },
+  {
+    q: 'كيف أطلب عضوية مهنية؟',
+    a: 'أنشئي حساب عضوة واختاري إحدى الخطط الثلاث، أو قدّمي الطلب من لوحة التحكم إن كان لديكِ حساب زائرة. بعد القبول تُحدد جلسة Online ثم تُفعَّل العضوية.',
+  },
+  {
+    q: 'كم مدة عرض الإطلاق؟',
+    a: 'أسعار الإطلاق متاحة لمدة شهر واحد فقط. بعد انتهائه تعود العضويات إلى أسعارها الأصلية، بينما يُحتسب السعر التأسيسي لسنة كاملة إن انضممتِ خلال شهر الإطلاق.',
   },
   {
     q: 'كيف أدفع الاشتراك؟',
-    a: 'نقبل البطاقات البنكية، التحويل البنكي، ووسائل الدفع المحلية.',
-  },
-  {
-    q: 'هل يمكنني الإلغاء في أي وقت؟',
-    a: 'نعم. يمكنكِ إلغاء الاشتراك المدفوع قبل موعد التجديد دون رسوم إضافية.',
+    a: 'بعد الموافقة تتواصل معكِ الإدارة لتأكيد التحويل أو وسيلة الدفع المعتمدة.',
   },
 ]
 
-const trust = ['إلغاء في أي وقت', 'بدون بطاقة للخطة المجانية', 'ترقية فورية']
+const trust = ['عضوية سنوية', 'موافقة الإدارة', 'سعر إطلاق لمدة شهر']
 
 export default function MembershipPage() {
   const { reduce } = useMotionSafe()
@@ -60,22 +65,18 @@ export default function MembershipPage() {
       navigate('/admin')
       return
     }
-    if (user.plan === planName) {
+    if (user.plan === planName && user.membershipStatus === 'approved') {
       navigate('/dashboard')
-      return
-    }
-    if (planName !== 'FREE') {
-      setPlanError('ترقية الخطط المدفوعة تتم من خلال الإدارة بعد تأكيد الاشتراك.')
       return
     }
     setBusyPlan(planName)
     setPlanError(null)
     try {
-      await meApi.updatePlan(planName)
+      await meApi.requestMembership(planName)
       await refreshMe()
       navigate('/dashboard')
     } catch (err) {
-      setPlanError(err instanceof Error ? err.message : 'تعذر تغيير الخطة')
+      setPlanError(err instanceof Error ? err.message : 'تعذر إرسال طلب العضوية')
     } finally {
       setBusyPlan(null)
     }
@@ -119,7 +120,7 @@ export default function MembershipPage() {
               </span>
             </h1>
             <p className="mt-4 text-lg sm:text-xl text-muted max-w-2xl mx-auto leading-relaxed">
-              اختاري الخطة التي تناسب مرحلة نموكِ وابدئي بناء حضورك المهني.
+              المجتمع مفتوح ومجانٍ للجميع. العضويات المهنية السنوية لرائدات الأعمال والمدربات والأكاديميات — بعد موافقة الإدارة.
             </p>
 
             <div className="mt-7 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-[13px] text-muted">
@@ -130,11 +131,51 @@ export default function MembershipPage() {
                 </span>
               ))}
             </div>
+            <div className="mt-6">
+              <Button to="/dashboard" variant="outline" size="md">
+                انضمي مجانًا أولًا
+                <ChevronLeft className="w-4 h-4 opacity-70" />
+              </Button>
+            </div>
           </motion.div>
         </div>
       </section>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-20">
+        <Reveal className="mb-12">
+          <div className="rounded-[20px] bg-white hairline shadow-xs p-6 sm:p-8">
+            <p className="text-[12px] font-semibold text-rose">مجتمع مفتوح</p>
+            <h2 className="mt-1 text-xl font-extrabold text-navy">ماذا يوفّر الحساب المجاني؟</h2>
+            <ul className="mt-4 grid sm:grid-cols-2 lg:grid-cols-3 gap-2">
+              {freeCommunityBenefits.map((b) => (
+                <li key={b} className="text-sm text-muted flex gap-2 items-center">
+                  <Check className="w-4 h-4 text-rose shrink-0" strokeWidth={2.5} />
+                  {b}
+                </li>
+              ))}
+            </ul>
+          </div>
+        </Reveal>
+
+        <Reveal className="mb-14">
+          <div className="text-center mb-8">
+            <p className="text-[12px] font-semibold text-rose">كيفية الانضمام</p>
+            <h2 className="mt-1 text-2xl sm:text-3xl font-extrabold text-navy">4 مراحل بسيطة</h2>
+            <p className="mt-2 text-sm text-muted">
+              طلب الانضمام → دراسة الطلب → جلسة عمل Online → تفعيل العضوية
+            </p>
+          </div>
+          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {joinSteps.map((step) => (
+              <div key={step.step} className="rounded-[18px] bg-white hairline p-5 shadow-xs">
+                <span className="text-[11px] font-bold text-gold-dark tracking-wider">{step.step}</span>
+                <h3 className="mt-2 font-bold text-navy">{step.title}</h3>
+                <p className="mt-2 text-sm text-muted leading-relaxed">{step.body}</p>
+              </div>
+            ))}
+          </div>
+        </Reveal>
+
         {loading ? (
           <LoadingBlock />
         ) : error ? (
@@ -156,7 +197,7 @@ export default function MembershipPage() {
                   {plan.highlighted && (
                     <span className="absolute -top-3 left-1/2 -translate-x-1/2 inline-flex items-center gap-1 px-3.5 py-1 rounded-full bg-gold text-navy text-[11px] font-bold shadow-sm">
                       <Sparkles className="w-3 h-3" />
-                      الأكثر شعبية
+                      سعر الإطلاق
                     </span>
                   )}
 
@@ -167,13 +208,6 @@ export default function MembershipPage() {
                   >
                     {plan.nameAr}
                   </p>
-                  <p
-                    className={`text-[11px] mt-0.5 tracking-[0.06em] ${
-                      plan.highlighted ? 'text-white/40' : 'text-muted'
-                    }`}
-                  >
-                    {plan.name}
-                  </p>
 
                   <div className="mt-5 flex items-baseline gap-1.5">
                     <span
@@ -181,16 +215,20 @@ export default function MembershipPage() {
                         plan.highlighted ? 'text-white' : 'text-navy'
                       }`}
                     >
-                      {plan.price}
+                      {plan.launchPrice || plan.price}
                     </span>
-                    {plan.price !== '0' && (
-                      <span className={`text-sm ${plan.highlighted ? 'text-white/45' : 'text-muted'}`}>
-                        دج
-                      </span>
-                    )}
+                    <span className={`text-sm ${plan.highlighted ? 'text-white/45' : 'text-muted'}`}>
+                      دج
+                    </span>
                   </div>
+                  {plan.originalPrice && (
+                    <p className={`text-[12px] mt-1 ${plan.highlighted ? 'text-white/45' : 'text-muted'}`}>
+                      <span className="line-through">{plan.originalPrice} دج</span>
+                      {plan.launchSavings ? ` — توفير ${plan.launchSavings} دج` : ''}
+                    </p>
+                  )}
                   <p className={`text-[11px] mt-1 ${plan.highlighted ? 'text-white/45' : 'text-muted'}`}>
-                    {plan.period}
+                    / {plan.period}
                   </p>
                   <p
                     className={`mt-4 text-sm leading-relaxed ${
@@ -212,33 +250,24 @@ export default function MembershipPage() {
                         <span className={plan.highlighted ? 'text-white/80' : 'text-dark'}>{f}</span>
                       </li>
                     ))}
-                    <li className="flex items-start gap-2.5 text-[13px]">
-                      <Check
-                        className={`w-4 h-4 mt-0.5 shrink-0 ${
-                          plan.highlighted ? 'text-gold' : 'text-rose'
-                        }`}
-                        strokeWidth={2.5}
-                      />
-                      <span className={plan.highlighted ? 'text-white/80' : 'text-dark'}>
-                        {plan.grantsAccess === false ? 'بدون دخول لوحة العضوة' : 'دخول لوحة العضوة'}
-                      </span>
-                    </li>
                   </ul>
 
                   <Button
                     variant={plan.highlighted ? 'gold' : 'outline'}
                     size="md"
                     className={`w-full mt-7 ${plan.highlighted ? 'shadow-md shadow-gold/20' : ''}`}
-                    disabled={busyPlan === plan.name}
+                    disabled={busyPlan === plan.name || user?.membershipStatus === 'pending'}
                     onClick={() => void selectPlan(plan.name)}
                   >
-                    {user?.plan === plan.name
-                      ? 'خطتك الحالية'
-                      : busyPlan === plan.name
-                        ? 'جاري التفعيل...'
-                        : user
-                          ? plan.cta
-                          : 'ادخلي لاختيار الخطة'}
+                    {user?.plan === plan.name && user.membershipStatus === 'approved'
+                      ? 'عضويتك الحالية'
+                      : user?.membershipStatus === 'pending' && user.plan === plan.name
+                        ? 'بانتظار الموافقة'
+                        : busyPlan === plan.name
+                          ? 'جاري الإرسال...'
+                          : user
+                            ? plan.cta
+                            : 'ادخلي لطلب العضوية'}
                     <ChevronLeft className="w-4 h-4 opacity-70" />
                   </Button>
                 </motion.article>
@@ -249,6 +278,16 @@ export default function MembershipPage() {
         {planError && (
           <p className="text-center text-sm text-rose mt-4">{planError}</p>
         )}
+
+        <Reveal className="mt-10 max-w-3xl mx-auto">
+          <div className="rounded-[20px] bg-white hairline shadow-xs p-6 text-center space-y-2">
+            <p className="text-[12px] font-bold text-rose">عرض الإطلاق</p>
+            <p className="text-navy font-extrabold text-lg">أسعار الإطلاق متاحة لمدة شهر واحد فقط</p>
+            <p className="text-sm text-muted leading-relaxed">
+              بعد انتهاء شهر الإطلاق تعود العضويات إلى أسعارها الأصلية. انضمي خلال شهر الإطلاق واستفيدي من السعر التأسيسي لمدة سنة كاملة.
+            </p>
+          </div>
+        </Reveal>
 
         {/* FAQ — accordion, interruptible */}
         <Reveal className="mt-20 max-w-2xl mx-auto">
@@ -322,11 +361,11 @@ export default function MembershipPage() {
                 جاهزة للانطلاق؟
               </h2>
               <p className="mt-2 text-white/70 max-w-md mx-auto text-sm sm:text-base">
-                ابدئي مجاناً اليوم، وترقّي متى احتجتِ لمزيد من الظهور والفرص.
+                لا تفوّتي عضوية التأسيس. انضمي خلال شهر الإطلاق واستفيدي من السعر التأسيسي لسنة كاملة.
               </p>
               <div className="mt-6 flex flex-col sm:flex-row gap-3 justify-center">
                 <Button to="/dashboard" variant="gold" size="lg" className="shadow-lg shadow-gold/25">
-                  ابدئي مجاناً
+                  اطلبي العضوية
                   <ChevronLeft className="w-4 h-4 opacity-70" />
                 </Button>
                 <Button

@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { Search, Sparkles, Building2, X } from 'lucide-react'
 import { motion } from 'motion/react'
 import BrandCard, { BrandRow } from '../components/ui/BrandCard'
@@ -98,8 +99,16 @@ export default function BrandsPage() {
               </span>
             </h1>
             <p className="mt-3 text-lg text-muted max-w-xl mx-auto sm:mx-0 leading-relaxed">
-              استكشفي علامات تجارية نسائية فاخرة من مختلف القطاعات في السوق العربي.
+              استكشفي علامات تجارية نسائية فاخرة من مختلف القطاعات — وقدّمي لفتح متجر على SOS Store عبر عضوية رائدة.
             </p>
+            <div className="mt-5">
+              <Link
+                to="/sos-store"
+                className="inline-flex items-center gap-1.5 text-[13px] font-semibold text-rose hover:text-navy pressable-soft"
+              >
+                تعرّفي على SOS Store
+              </Link>
+            </div>
           </motion.div>
         </div>
       </section>

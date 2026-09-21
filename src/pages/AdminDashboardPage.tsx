@@ -9,7 +9,7 @@ import {
   Users, Building2, Calendar, Handshake, CreditCard, FileText,
   DollarSign, LayoutDashboard, TrendingUp, ArrowUpRight, Search,
   Pencil, Trash2, Plus, ExternalLink, LogOut, Menu, X, Shield,
-  Inbox,
+  Inbox, MessageSquare,
 } from 'lucide-react'
 import { AnimatePresence, motion } from 'motion/react'
 import Badge from '../components/ui/Badge'
@@ -20,12 +20,17 @@ import AdminEditor, { confirmDelete, type AdminField } from '../components/admin
 import { useAuth } from '../context/AuthContext'
 import { useAsyncData } from '../hooks/useAsyncData'
 import { adminApi, catalogApi } from '../lib/catalog'
+import { PLAN_LABELS, ROLE_LABELS, MEMBERSHIP_STATUS_LABELS } from '../lib/plans'
 import { safeHref } from '../lib/safe'
 import { springs, useMotionSafe } from '../lib/motion'
+import SafeImg from '../components/ui/SafeImg'
 import type {
   AdminUser,
   Brand,
+  CmsOpportunity,
+  CmsProgram,
   CommunityCard,
+  Consultation,
   EventItem,
   Partner,
   PartnershipInquiry,
@@ -59,6 +64,7 @@ const navGroups: { label: string; items: NavItem[] }[] = [
     label: 'النمو',
     items: [
       { id: 'partnerships', label: 'الشراكات', icon: Handshake, hint: 'الشركاء والطلبات ومستويات الرعاية' },
+      { id: 'consultations', label: 'الاستشارات', icon: MessageSquare, hint: 'طلبات الاستشارة والردود والأرشفة' },
       { id: 'plans', label: 'خطط العضوية', icon: CreditCard, hint: 'الأسعار والمزايا وصلاحيات الدخول' },
     ],
   },
@@ -73,18 +79,8 @@ const navGroups: { label: string; items: NavItem[] }[] = [
 
 const adminNav = navGroups.flatMap((g) => g.items)
 
-const planLabel: Record<string, string> = {
-  FREE: 'مجاني',
-  PROFESSIONAL: 'احترافي',
-  BUSINESS: 'أعمال',
-}
-
-const roleLabel: Record<string, string> = {
-  member: 'عضوة',
-  moderator: 'مشرفة',
-  admin: 'مديرة',
-  super_admin: 'مديرة عليا',
-}
+const planLabel = PLAN_LABELS
+const roleLabel = ROLE_LABELS
 
 const imageFallback =
   'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=400&h=400&fit=crop'
@@ -107,11 +103,13 @@ type Editor =
   | { kind: 'event'; item?: EventItem }
   | { kind: 'partner'; item?: Partner }
   | { kind: 'tier'; item?: PartnershipTier }
-  | { kind: 'plan'; item: PricingPlan }
+  | { kind: 'plan'; item?: PricingPlan }
   | { kind: 'story'; item?: SuccessStory }
   | { kind: 'card'; item?: CommunityCard }
   | { kind: 'stat'; item?: PlatformStat }
   | { kind: 'category'; item?: ServiceCategory }
+  | { kind: 'program'; item?: CmsProgram }
+  | { kind: 'opportunity'; item?: CmsOpportunity }
   | null
 
 function LoginForm({
@@ -514,6 +512,41 @@ export default function AdminDashboardPage() {
     [user?.id, user?.role, active],
   )
 
+  const {
+    data: cmsPrograms,
+    loading: programsLoading,
+    error: programsError,
+    reload: reloadPrograms,
+  } = useAsyncData(
+    () => (allowed && active === 'content' ? adminApi.programs() : Promise.resolve([])),
+    [user?.id, user?.role, active],
+  )
+
+  const {
+    data: cmsOpportunities,
+    loading: opportunitiesLoading,
+    error: opportunitiesError,
+    reload: reloadOpportunities,
+  } = useAsyncData(
+    () => (allowed && active === 'content' ? adminApi.opportunities() : Promise.resolve([])),
+    [user?.id, user?.role, active],
+  )
+
+  const {
+    data: consultationsPayload,
+    loading: consultationsLoading,
+    error: consultationsError,
+    reload: reloadConsultations,
+  } = useAsyncData(
+    () =>
+      allowed
+        ? adminApi.consultations({ limit: 100 })
+        : Promise.resolve({ data: [] as Consultation[] }),
+    [user?.id, user?.role],
+  )
+
+  const [replyDrafts, setReplyDrafts] = useState<Record<string, string>>({})
+
   if (authLoading) {
     return (
       <AdminChrome>
@@ -580,6 +613,9 @@ export default function AdminDashboardPage() {
   const cardList = cards ?? []
   const statList = stats ?? []
   const categoryList = categories ?? []
+  const programList = cmsPrograms ?? []
+  const opportunityList = cmsOpportunities ?? []
+  const consultationList = consultationsPayload?.data ?? []
   const memberOptions = (membersPayload?.data ?? []).map((m) => ({ value: m.id, label: m.name }))
   const recentMembers = overview?.recentMembers ?? []
   const planDistribution = overview?.planDistribution ?? []
@@ -591,7 +627,14 @@ export default function AdminDashboardPage() {
     (active === 'brands' && brandsLoading) ||
     (active === 'events' && eventsLoading) ||
     (active === 'partnerships' && (partnersLoading || tiersLoading || inquiriesLoading)) ||
-    (active === 'content' && (storiesLoading || cardsLoading || statsLoading || categoriesLoading)) ||
+    (active === 'consultations' && consultationsLoading) ||
+    (active === 'content' &&
+      (storiesLoading ||
+        cardsLoading ||
+        statsLoading ||
+        categoriesLoading ||
+        programsLoading ||
+        opportunitiesLoading)) ||
     (active === 'revenue' && revenueLoading)
 
   const tabError =
@@ -600,7 +643,9 @@ export default function AdminDashboardPage() {
     (active === 'brands' && brandsError) ||
     (active === 'events' && eventsError) ||
     (active === 'partnerships' && (partnersError || tiersError || inquiriesError)) ||
-    (active === 'content' && (storiesError || cardsError || statsError || categoriesError)) ||
+    (active === 'consultations' && consultationsError) ||
+    (active === 'content' &&
+      (storiesError || cardsError || statsError || categoriesError || programsError || opportunitiesError)) ||
     (active === 'revenue' && revenueError) ||
     null
 
@@ -618,6 +663,7 @@ export default function AdminDashboardPage() {
       reloadTiers()
       reloadInquiries()
     }
+    if (active === 'consultations') reloadConsultations()
     if (active === 'plans') {
       reloadOverview()
       reloadPlans()
@@ -627,6 +673,8 @@ export default function AdminDashboardPage() {
       reloadCards()
       reloadStats()
       reloadCategories()
+      reloadPrograms()
+      reloadOpportunities()
     }
     if (active === 'revenue') reloadRevenue()
   }
@@ -641,7 +689,7 @@ export default function AdminDashboardPage() {
   const totalPlanCount = planDistribution.reduce((sum, p) => sum + Number(p.count), 0) || 1
   const maxRevenue = Math.max(1, ...(revenue?.breakdown.map((row) => row.monthlyRevenue) ?? [1]))
 
-  const userFields = (creating: boolean): AdminField[] => [
+  const userFields = (creating: boolean, currentRole?: string): AdminField[] => [
     ...(creating
       ? [
           { name: 'email', label: 'البريد الإلكتروني', type: 'email' as const, required: true },
@@ -656,24 +704,38 @@ export default function AdminDashboardPage() {
     { name: 'category', label: 'التصنيف' },
     { name: 'image', label: 'صورة الملف', type: 'image' },
     { name: 'cover', label: 'صورة الغلاف', type: 'image' },
-    {
-      name: 'role',
-      label: 'الدور',
-      type: 'select',
-      options: [
-        { value: 'member', label: 'عضوة' },
-        { value: 'moderator', label: 'مشرفة' },
-        { value: 'admin', label: 'مديرة' },
-      ],
-    },
+    ...(!currentRole || currentRole === 'member' || currentRole === 'guest'
+      ? [
+          {
+            name: 'role',
+            label: 'الدور',
+            type: 'select' as const,
+            options: [
+              { value: 'guest', label: 'زائرة' },
+              { value: 'member', label: 'عضوة' },
+            ],
+          },
+        ]
+      : []),
     {
       name: 'plan',
       label: 'الخطة',
       type: 'select',
       options: [
-        { value: 'FREE', label: 'مجاني' },
-        { value: 'PROFESSIONAL', label: 'احترافي' },
-        { value: 'BUSINESS', label: 'أعمال' },
+        { value: 'BUSINESS', label: PLAN_LABELS.BUSINESS },
+        { value: 'EXPERT', label: PLAN_LABELS.EXPERT },
+        { value: 'ACADEMY', label: PLAN_LABELS.ACADEMY },
+      ],
+    },
+    {
+      name: 'membership_status',
+      label: 'حالة العضوية',
+      type: 'select',
+      options: [
+        { value: 'none', label: MEMBERSHIP_STATUS_LABELS.none },
+        { value: 'pending', label: MEMBERSHIP_STATUS_LABELS.pending },
+        { value: 'approved', label: MEMBERSHIP_STATUS_LABELS.approved },
+        { value: 'rejected', label: MEMBERSHIP_STATUS_LABELS.rejected },
       ],
     },
     { name: 'is_active', label: 'الحساب نشط', type: 'toggle' },
@@ -723,16 +785,67 @@ export default function AdminDashboardPage() {
     { name: 'sort_order', label: 'الترتيب', type: 'number' },
   ]
 
-  const planFields: AdminField[] = [
+  const planFields = (creating: boolean): AdminField[] => [
+    ...(creating
+      ? [
+          {
+            name: 'name',
+            label: 'مفتاح الخطة',
+            type: 'select' as const,
+            required: true,
+            options: [
+              { value: 'BUSINESS', label: PLAN_LABELS.BUSINESS },
+              { value: 'EXPERT', label: PLAN_LABELS.EXPERT },
+              { value: 'ACADEMY', label: PLAN_LABELS.ACADEMY },
+            ],
+          },
+        ]
+      : []),
     { name: 'name_ar', label: 'الاسم بالعربية', required: true },
-    { name: 'price', label: 'السعر', required: true },
-    { name: 'period', label: 'الفترة' },
+    { name: 'price', label: 'سعر الإطلاق / الحالي', required: true },
+    { name: 'original_price', label: 'السعر الأصلي' },
+    { name: 'launch_price', label: 'سعر الإطلاق' },
+    { name: 'launch_savings', label: 'قيمة التوفير' },
+    { name: 'period', label: 'الفترة', required: true },
     { name: 'description', label: 'الوصف', type: 'textarea', required: true },
     { name: 'features', label: 'المزايا (سطر لكل ميزة)', type: 'lines' },
-    { name: 'cta', label: 'نص الزر' },
+    { name: 'cta', label: 'نص الزر', required: true },
     { name: 'highlighted', label: 'خطة مميزة', type: 'toggle' },
     { name: 'grants_access', label: 'تمنح دخول لوحة العضوة', type: 'toggle' },
     { name: 'is_active', label: 'ظاهرة في الموقع', type: 'toggle' },
+  ]
+
+  const programFields: AdminField[] = [
+    {
+      name: 'kind',
+      label: 'النوع',
+      type: 'select',
+      options: [
+        { value: 'annual', label: 'سنوي' },
+        { value: 'specialized', label: 'متخصص' },
+      ],
+    },
+    { name: 'number', label: 'الرقم' },
+    { name: 'title', label: 'العنوان', required: true },
+    { name: 'description', label: 'الوصف', type: 'textarea' },
+    { name: 'trainer', label: 'المدربة' },
+    { name: 'duration', label: 'المدة' },
+    { name: 'mode', label: 'النمط' },
+    { name: 'level', label: 'المستوى' },
+    { name: 'member_price', label: 'سعر العضوات' },
+    { name: 'public_price', label: 'السعر العام' },
+    { name: 'field', label: 'المجال' },
+    { name: 'month', label: 'الشهر' },
+    { name: 'sort_order', label: 'الترتيب', type: 'number' },
+    { name: 'is_published', label: 'منشور', type: 'toggle' },
+  ]
+
+  const opportunityFields: AdminField[] = [
+    { name: 'type', label: 'النوع', required: true },
+    { name: 'title', label: 'العنوان', required: true },
+    { name: 'description', label: 'الوصف', type: 'textarea', required: true },
+    { name: 'sort_order', label: 'الترتيب', type: 'number' },
+    { name: 'is_published', label: 'منشور', type: 'toggle' },
   ]
 
   const storyFields: AdminField[] = [
@@ -773,7 +886,7 @@ export default function AdminDashboardPage() {
       const creating = !editor.item
       return {
         title: creating ? 'إضافة عضوة' : 'تعديل عضوة',
-        fields: userFields(creating),
+        fields: userFields(creating, editor.item?.role),
         initial: editor.item
           ? {
               name: editor.item.profile?.name,
@@ -786,9 +899,10 @@ export default function AdminDashboardPage() {
               cover: editor.item.profile?.cover,
               role: editor.item.role,
               plan: editor.item.plan,
+              membership_status: editor.item.membershipStatus || 'none',
               is_active: editor.item.isActive,
             }
-          : { role: 'member', plan: 'FREE', is_active: true },
+          : { role: 'guest', plan: '', membership_status: 'none', is_active: true },
         submit: (values: Record<string, unknown>) =>
           creating ? adminApi.createUser(values) : adminApi.updateUser(editor.item!.id, values),
         reload: reloadUsers,
@@ -845,21 +959,37 @@ export default function AdminDashboardPage() {
       }
     }
     if (editor.kind === 'plan') {
+      const creating = !editor.item
       return {
-        title: `تعديل خطة ${planLabel[editor.item.name] || editor.item.name}`,
-        fields: planFields,
-        initial: {
-          name_ar: editor.item.nameAr,
-          price: editor.item.price,
-          period: editor.item.period,
-          description: editor.item.description,
-          features: editor.item.features,
-          cta: editor.item.cta,
-          highlighted: editor.item.highlighted,
-          grants_access: editor.item.grantsAccess !== false,
-          is_active: editor.item.isActive !== false,
-        },
-        submit: (values: Record<string, unknown>) => adminApi.updatePlan(editor.item.id, values),
+        title: creating
+          ? 'إضافة خطة عضوية'
+          : `تعديل خطة ${planLabel[editor.item?.name || ''] || editor.item?.name}`,
+        fields: planFields(creating),
+        initial: editor.item
+          ? {
+              name_ar: editor.item.nameAr,
+              price: editor.item.price,
+              original_price: editor.item.originalPrice || '',
+              launch_price: editor.item.launchPrice || '',
+              launch_savings: editor.item.launchSavings || '',
+              period: editor.item.period,
+              description: editor.item.description,
+              features: editor.item.features,
+              cta: editor.item.cta,
+              highlighted: editor.item.highlighted,
+              grants_access: editor.item.grantsAccess !== false,
+              is_active: editor.item.isActive !== false,
+            }
+          : {
+              name: 'BUSINESS',
+              period: 'السنة',
+              cta: 'اطلبي العضوية',
+              highlighted: false,
+              grants_access: true,
+              is_active: true,
+            },
+        submit: (values: Record<string, unknown>) =>
+          creating ? adminApi.createPlan(values) : adminApi.updatePlan(editor.item!.id, values),
         reload: () => {
           reloadPlans()
           reloadOverview()
@@ -896,6 +1026,40 @@ export default function AdminDashboardPage() {
         submit: (values: Record<string, unknown>) =>
           adminApi.upsertStat(editor.item ? { id: editor.item.id, ...values } : values),
         reload: reloadStats,
+      }
+    }
+    if (editor.kind === 'program') {
+      return {
+        title: editor.item ? 'تعديل برنامج' : 'إضافة برنامج',
+        fields: programFields,
+        initial: editor.item
+          ? {
+              ...editor.item,
+              member_price: editor.item.memberPrice,
+              public_price: editor.item.publicPrice,
+              sort_order: editor.item.sortOrder,
+              is_published: editor.item.isPublished !== false,
+            }
+          : { kind: 'specialized', is_published: true },
+        submit: (values: Record<string, unknown>) =>
+          adminApi.upsertProgram(editor.item ? { id: editor.item.id, ...values } : values),
+        reload: reloadPrograms,
+      }
+    }
+    if (editor.kind === 'opportunity') {
+      return {
+        title: editor.item ? 'تعديل فرصة' : 'إضافة فرصة',
+        fields: opportunityFields,
+        initial: editor.item
+          ? {
+              ...editor.item,
+              sort_order: editor.item.sortOrder,
+              is_published: editor.item.isPublished !== false,
+            }
+          : { is_published: true },
+        submit: (values: Record<string, unknown>) =>
+          adminApi.upsertOpportunity(editor.item ? { id: editor.item.id, ...values } : values),
+        reload: reloadOpportunities,
       }
     }
     return {
@@ -962,7 +1126,9 @@ export default function AdminDashboardPage() {
                     const badgeCount =
                       item.id === 'partnerships'
                         ? inquiryList.filter((q) => q.status === 'new').length
-                        : 0
+                        : item.id === 'consultations'
+                          ? consultationList.filter((q) => q.status === 'new').length
+                          : 0
                     return (
                       <button
                         key={item.id}
@@ -1162,9 +1328,9 @@ export default function AdminDashboardPage() {
                         {(planDistribution.length
                           ? planDistribution
                           : [
-                              { plan: 'FREE', count: 0 },
-                              { plan: 'PROFESSIONAL', count: 0 },
                               { plan: 'BUSINESS', count: 0 },
+                              { plan: 'EXPERT', count: 0 },
+                              { plan: 'ACADEMY', count: 0 },
                             ]
                         ).map((p, i) => {
                           const pct = Math.round((Number(p.count) / totalPlanCount) * 100)
@@ -1218,7 +1384,7 @@ export default function AdminDashboardPage() {
                             <tr key={m.id} className="border-b border-navy/[0.04] hover:bg-blush/40 transition-colors">
                               <td className="px-5 py-3">
                                 <div className="flex items-center gap-3">
-                                  <img src={m.image || imageFallback} alt="" className="w-8 h-8 rounded-full object-cover ring-1 ring-navy/8" />
+                                  <SafeImg src={m.image} fallback={imageFallback} alt="" className="w-8 h-8 rounded-full object-cover ring-1 ring-navy/8" />
                                   <span className="font-medium text-navy">{m.name}</span>
                                 </div>
                               </td>
@@ -1226,7 +1392,7 @@ export default function AdminDashboardPage() {
                               <td className="px-5 py-3 text-muted">{m.city}</td>
                               <td className="px-5 py-3">
                                 <Badge variant={m.plan === 'BUSINESS' ? 'gold' : 'soft'}>
-                                  {planLabel[m.plan || ''] || m.plan || 'مجاني'}
+                                  {planLabel[m.plan || ''] || m.plan || '—'}
                                 </Badge>
                               </td>
                             </tr>
@@ -1264,6 +1430,7 @@ export default function AdminDashboardPage() {
                         <tr className="text-muted text-[11px] bg-ivory/70 border-b border-navy/[0.05]">
                           <th className="text-right p-4 font-semibold">العضوة</th>
                           <th className="text-right p-4 font-semibold">الدور</th>
+                          <th className="text-right p-4 font-semibold">حالة العضوية</th>
                           <th className="text-right p-4 font-semibold">الخطة</th>
                           <th className="text-right p-4 font-semibold">المدينة</th>
                           <th className="text-right p-4 font-semibold">الحالة</th>
@@ -1277,7 +1444,7 @@ export default function AdminDashboardPage() {
                             <tr key={u.id} className="border-t border-navy/[0.04] hover:bg-blush/35 transition-colors">
                               <td className="p-4">
                                 <div className="flex items-center gap-3">
-                                  <img src={m?.image || imageFallback} alt="" className="w-9 h-9 rounded-[10px] object-cover ring-1 ring-navy/8" />
+                                  <SafeImg src={m?.image} fallback={imageFallback} alt="" className="w-9 h-9 rounded-[10px] object-cover ring-1 ring-navy/8" />
                                   <div className="min-w-0">
                                     <p className="font-semibold text-navy truncate">{m?.name || u.email}</p>
                                     <p className="text-[11px] text-muted truncate">{u.email}</p>
@@ -1286,8 +1453,13 @@ export default function AdminDashboardPage() {
                               </td>
                               <td className="p-4 text-muted">{roleLabel[u.role] || u.role}</td>
                               <td className="p-4">
-                                <Badge variant={u.plan === 'BUSINESS' ? 'gold' : 'soft'}>
-                                  {planLabel[u.plan] || u.plan}
+                                <Badge variant={u.membershipStatus === 'approved' ? 'gold' : 'soft'}>
+                                  {MEMBERSHIP_STATUS_LABELS[u.membershipStatus || ''] || u.membershipStatus || '—'}
+                                </Badge>
+                              </td>
+                              <td className="p-4">
+                                <Badge variant={u.plan === 'ACADEMY' ? 'gold' : 'soft'}>
+                                  {planLabel[u.plan || ''] || u.plan || '—'}
                                 </Badge>
                               </td>
                               <td className="p-4 text-muted">{m?.city || '—'}</td>
@@ -1304,7 +1476,7 @@ export default function AdminDashboardPage() {
                         })}
                         {users.length === 0 && (
                           <tr>
-                            <td colSpan={6}>
+                            <td colSpan={7}>
                               <EmptyState title="لا توجد مستخدمات" hint="أضيفي عضوة جديدة أو عدّلي كلمات البحث." />
                             </td>
                           </tr>
@@ -1325,7 +1497,7 @@ export default function AdminDashboardPage() {
                   <div className="grid sm:grid-cols-2 gap-3 sm:gap-4">
                     {brands.map((b) => (
                       <Panel key={b.id} className="p-4 sm:p-5 flex items-center gap-4">
-                        <img src={b.logo || brandFallback} alt="" className="w-14 h-14 rounded-[14px] object-cover ring-1 ring-navy/8" />
+                        <SafeImg src={b.logo} fallback={brandFallback} alt="" className="w-14 h-14 rounded-[14px] object-cover ring-1 ring-navy/8" />
                         <div className="flex-1 min-w-0">
                           <p className="font-bold text-navy truncate">{b.name}</p>
                           <p className="text-[12px] text-muted mt-0.5">{b.category}</p>
@@ -1361,7 +1533,7 @@ export default function AdminDashboardPage() {
                   </div>
                   {events.map((e) => (
                     <Panel key={e.id} className="p-4 sm:p-5 flex flex-col sm:flex-row items-start sm:items-center gap-4">
-                      <img src={e.image || eventFallback} alt="" className="w-full sm:w-20 h-28 sm:h-14 rounded-[12px] object-cover ring-1 ring-navy/8" />
+                      <SafeImg src={e.image} fallback={eventFallback} alt="" className="w-full sm:w-20 h-28 sm:h-14 rounded-[12px] object-cover ring-1 ring-navy/8" />
                       <div className="flex-1 min-w-0">
                         <p className="font-bold text-navy">{e.title}</p>
                         <p className="text-[12px] text-muted mt-0.5">{e.date} — {e.category}</p>
@@ -1510,8 +1682,112 @@ export default function AdminDashboardPage() {
                 </div>
               )}
 
+              {active === 'consultations' && (
+                <div className="space-y-4 animate-fade-up">
+                  <Panel className="divide-y divide-navy/[0.06] overflow-hidden">
+                    {consultationList.map((item) => (
+                      <div key={item.id} className={`p-4 sm:p-5 ${item.status === 'new' ? 'bg-rose-soft/25' : ''}`}>
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="min-w-0 flex-1">
+                            <p className="text-[13px] font-bold text-navy">{item.subject}</p>
+                            <p className="text-[12px] text-muted mt-0.5">
+                              {item.guestName} · {item.guestEmail}
+                              {item.guestPhone ? ` · ${item.guestPhone}` : ''}
+                            </p>
+                            <p className="text-[12px] text-muted mt-1">
+                              إلى:{' '}
+                              {item.targetType === 'raida'
+                                ? 'إدارة رائدة'
+                                : item.consultantName || item.memberName || 'خبيرة'}
+                            </p>
+                            <p className="text-[12px] text-muted mt-1">
+                              {[item.field, item.consultationType, item.mode === 'online' ? 'Online' : item.mode === 'in_person' ? 'حضوري' : null]
+                                .filter(Boolean)
+                                .join(' · ')}
+                              {item.preferredAt
+                                ? ` · ${new Date(item.preferredAt).toLocaleString('ar-DZ')}`
+                                : ''}
+                              {item.wilaya ? ` · ${item.wilaya}` : ''}
+                            </p>
+                            <p className="text-[13px] text-navy mt-2 leading-relaxed">{item.message}</p>
+                            {item.adminReply && (
+                              <p className="mt-3 text-[13px] text-navy bg-navy/[0.04] rounded-[12px] p-3">
+                                <span className="font-bold text-rose text-[11px] block mb-1">الرد الحالي</span>
+                                {item.adminReply}
+                              </p>
+                            )}
+                            <div className="mt-3 flex flex-col sm:flex-row gap-2">
+                              <textarea
+                                value={replyDrafts[item.id] ?? ''}
+                                onChange={(e) =>
+                                  setReplyDrafts((prev) => ({ ...prev, [item.id]: e.target.value }))
+                                }
+                                placeholder="اكتبي رد رائدة..."
+                                rows={2}
+                                className="flex-1 px-3 py-2 rounded-[12px] border border-navy/10 text-sm bg-ivory focus:outline-none focus:border-gold/50"
+                              />
+                              <div className="flex gap-2 flex-wrap">
+                                <Button
+                                  variant="gold"
+                                  size="sm"
+                                  onClick={async () => {
+                                    const reply = (replyDrafts[item.id] || '').trim()
+                                    if (reply.length < 2) return
+                                    await adminApi.replyConsultation(item.id, reply)
+                                    setReplyDrafts((prev) => ({ ...prev, [item.id]: '' }))
+                                    reloadConsultations()
+                                  }}
+                                >
+                                  رد
+                                </Button>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={async () => {
+                                    await adminApi.updateConsultationStatus(
+                                      item.id,
+                                      item.status === 'archived' ? 'read' : 'archived',
+                                    )
+                                    reloadConsultations()
+                                  }}
+                                >
+                                  {item.status === 'archived' ? 'إلغاء الأرشفة' : 'أرشفة'}
+                                </Button>
+                                <Button
+                                  variant="soft"
+                                  size="sm"
+                                  onClick={async () => {
+                                    if (!confirmDelete(item.subject)) return
+                                    await adminApi.deleteConsultation(item.id)
+                                    reloadConsultations()
+                                  }}
+                                >
+                                  حذف
+                                </Button>
+                              </div>
+                            </div>
+                          </div>
+                          <Badge variant={item.status === 'new' ? 'rose' : 'soft'}>
+                            {item.status === 'new' ? 'جديدة' : item.status === 'archived' ? 'مؤرشفة' : 'مقروءة'}
+                          </Badge>
+                        </div>
+                      </div>
+                    ))}
+                    {consultationList.length === 0 && (
+                      <EmptyState title="لا توجد استشارات بعد" hint="ستظهر طلبات الاستشارة الواردة هنا." />
+                    )}
+                  </Panel>
+                </div>
+              )}
+
               {active === 'plans' && (
-                <div className="grid md:grid-cols-3 gap-3 sm:gap-4 animate-fade-up">
+                <div className="space-y-4 animate-fade-up">
+                  <div className="flex justify-end">
+                    <Button variant="gold" size="sm" onClick={() => setEditor({ kind: 'plan' })}>
+                      <Plus className="w-4 h-4" /> إضافة خطة
+                    </Button>
+                  </div>
+                  <div className="grid md:grid-cols-3 gap-3 sm:gap-4">
                   {planList.map((p) => {
                     const members = planDistribution.find((row) => row.plan === p.name)?.count ?? 0
                     return (
@@ -1521,7 +1797,15 @@ export default function AdminDashboardPage() {
                             <h3 className="font-bold text-navy text-lg tracking-[-0.02em]">{p.nameAr}</h3>
                             <p className="text-[11px] text-muted mt-0.5">{p.name}</p>
                           </div>
-                          <IconActions onEdit={() => setEditor({ kind: 'plan', item: p })} />
+                          <IconActions
+                            onEdit={() => setEditor({ kind: 'plan', item: p })}
+                            onDelete={async () => {
+                              if (!confirmDelete(p.nameAr || p.name)) return
+                              await adminApi.deletePlan(p.id)
+                              reloadPlans()
+                              reloadOverview()
+                            }}
+                          />
                         </div>
                         <p className="text-3xl font-extrabold text-navy mt-4 tracking-[-0.03em]">{p.price}</p>
                         <p className="text-[12px] text-muted">{p.period}</p>
@@ -1546,6 +1830,12 @@ export default function AdminDashboardPage() {
                       </Panel>
                     )
                   })}
+                  {planList.length === 0 && (
+                    <div className="md:col-span-3">
+                      <EmptyState title="لا توجد خطط عضوية بعد" hint="أضيفي خطة عضوية جديدة لعرضها في الموقع." />
+                    </div>
+                  )}
+                  </div>
                 </div>
               )}
 
@@ -1626,6 +1916,46 @@ export default function AdminDashboardPage() {
                           if (!confirmDelete(item.name)) return
                           await adminApi.deleteServiceCategory(item.id)
                           reloadCategories()
+                        }}
+                      />
+                    ))}
+                  </ContentSection>
+
+                  <ContentSection
+                    title="برامج رائدة"
+                    onAdd={() => setEditor({ kind: 'program' })}
+                    addLabel="إضافة برنامج"
+                  >
+                    {programList.map((item) => (
+                      <ContentRow
+                        key={item.id}
+                        title={item.title}
+                        subtitle={`${item.kind === 'annual' ? 'سنوي' : 'متخصص'}${item.field ? ` — ${item.field}` : ''}`}
+                        onEdit={() => setEditor({ kind: 'program', item })}
+                        onDelete={async () => {
+                          if (!confirmDelete(item.title)) return
+                          await adminApi.deleteProgram(item.id)
+                          reloadPrograms()
+                        }}
+                      />
+                    ))}
+                  </ContentSection>
+
+                  <ContentSection
+                    title="الفرص"
+                    onAdd={() => setEditor({ kind: 'opportunity' })}
+                    addLabel="إضافة فرصة"
+                  >
+                    {opportunityList.map((item) => (
+                      <ContentRow
+                        key={item.id}
+                        title={item.title}
+                        subtitle={item.type}
+                        onEdit={() => setEditor({ kind: 'opportunity', item })}
+                        onDelete={async () => {
+                          if (!confirmDelete(item.title)) return
+                          await adminApi.deleteOpportunity(item.id)
+                          reloadOpportunities()
                         }}
                       />
                     ))}

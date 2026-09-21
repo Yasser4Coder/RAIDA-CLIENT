@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom'
 import type { EventItem } from '../../types/api'
 import { springs, useMotionSafe } from '../../lib/motion'
 import { safeHref } from '../../lib/safe'
+import SafeImg from './SafeImg'
 
 type Event = EventItem
 
@@ -43,8 +44,9 @@ export default function EventCard({
           featured ? 'sm:w-[46%] sm:min-h-full aspect-[16/11] sm:aspect-auto' : 'aspect-[16/11]'
         }`}
       >
-        <img
-          src={event.image || placeholder}
+        <SafeImg
+          src={event.image}
+          fallback={placeholder}
           alt=""
           className="absolute inset-0 h-full w-full object-cover transition-transform duration-700 ease-[var(--ease-out-apple)] group-hover:scale-[1.04]"
           loading="lazy"
@@ -93,9 +95,10 @@ export default function EventCard({
             <div className="mt-4 flex items-center gap-2.5">
               <div className="flex -space-x-2.5 space-x-reverse">
                 {speakers.slice(0, 3).map((s, i) => (
-                  <img
+                  <SafeImg
                     key={i}
-                    src={s.image || placeholder}
+                    src={s.image}
+                    fallback={placeholder}
                     alt={s.name}
                     title={s.name}
                     className="h-8 w-8 rounded-full object-cover ring-2 ring-white shadow-xs"
