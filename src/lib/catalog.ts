@@ -55,6 +55,7 @@ export const authApi = {
     email: string
     password: string
     name: string
+    phone: string
     accountType: 'guest' | 'member'
     plan?: string
     title?: string

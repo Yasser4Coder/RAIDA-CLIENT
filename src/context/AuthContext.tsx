@@ -12,6 +12,7 @@ type AuthState = {
     email: string
     password: string
     name: string
+    phone: string
     accountType: 'guest' | 'member'
     plan?: string
   }) => Promise<void>
@@ -66,6 +67,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       email: string
       password: string
       name: string
+      phone: string
       accountType: 'guest' | 'member'
       plan?: string
     }) => {

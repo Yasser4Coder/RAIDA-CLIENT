@@ -82,6 +82,7 @@ function LoginForm({
     email: string
     password: string
     name: string
+    phone: string
     accountType: 'guest' | 'member'
     plan?: string
   }) => Promise<void>
@@ -91,6 +92,7 @@ function LoginForm({
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [name, setName] = useState('')
+  const [phone, setPhone] = useState('')
   const [accountType, setAccountType] = useState<'guest' | 'member'>('guest')
   const [plan, setPlan] = useState('BUSINESS')
   const [error, setError] = useState<string | null>(null)
@@ -109,6 +111,7 @@ function LoginForm({
           email,
           password,
           name,
+          phone,
           accountType,
           plan: accountType === 'member' ? plan : undefined,
         })
@@ -159,6 +162,21 @@ function LoginForm({
                 onChange={(e) => setName(e.target.value)}
                 required
                 minLength={2}
+                className="w-full h-11 px-4 rounded-[12px] border border-separator bg-ivory text-sm focus:outline-none focus:border-rose/40 focus:ring-2 focus:ring-rose/15"
+              />
+            </div>
+            <div>
+              <label className="block text-[11px] font-semibold text-muted mb-1.5">رقم الهاتف</label>
+              <input
+                type="tel"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                required
+                minLength={8}
+                maxLength={40}
+                placeholder="05XXXXXXXX"
+                inputMode="tel"
+                autoComplete="tel"
                 className="w-full h-11 px-4 rounded-[12px] border border-separator bg-ivory text-sm focus:outline-none focus:border-rose/40 focus:ring-2 focus:ring-rose/15"
               />
             </div>

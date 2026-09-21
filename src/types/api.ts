@@ -8,6 +8,7 @@ export type Member = {
   specialty: string
   city: string
   wilaya: string
+  phone?: string
   category: string
   services: string[]
   image: string | null

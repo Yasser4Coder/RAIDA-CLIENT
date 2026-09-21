@@ -734,6 +734,7 @@ export default function AdminDashboardPage() {
         ]
       : []),
     { name: 'name', label: 'الاسم', required: creating },
+    { name: 'phone', label: 'رقم الهاتف', required: creating },
     { name: 'title', label: 'المسمى' },
     { name: 'specialty', label: 'التخصص' },
     { name: 'city', label: 'المدينة' },
@@ -927,6 +928,7 @@ export default function AdminDashboardPage() {
         initial: editor.item
           ? {
               name: editor.item.profile?.name,
+              phone: editor.item.profile?.phone,
               title: editor.item.profile?.title,
               specialty: editor.item.profile?.specialty,
               city: editor.item.profile?.city,
