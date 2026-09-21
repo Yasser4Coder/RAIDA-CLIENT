@@ -609,7 +609,8 @@ export default function AdminDashboardPage() {
     : allUsers.filter((u) => {
         const name = u.profile?.name?.toLowerCase() ?? ''
         const email = u.email?.toLowerCase() ?? ''
-        return name.includes(userQuery) || email.includes(userQuery)
+        const phone = u.profile?.phone?.toLowerCase() ?? ''
+        return name.includes(userQuery) || email.includes(userQuery) || phone.includes(userQuery)
       })
   const brands = brandsPayload?.data ?? []
   const events = eventsPayload?.data ?? []
@@ -1519,6 +1520,7 @@ export default function AdminDashboardPage() {
                         <thead>
                           <tr className="text-muted text-[11px] bg-ivory/70 border-b border-navy/[0.05]">
                             <th className="text-right p-4 font-semibold">العضوة</th>
+                            <th className="text-right p-4 font-semibold">الهاتف</th>
                             <th className="text-right p-4 font-semibold">الدور</th>
                             <th className="text-right p-4 font-semibold">حالة العضوية</th>
                             <th className="text-right p-4 font-semibold">الخطة</th>
@@ -1540,6 +1542,9 @@ export default function AdminDashboardPage() {
                                       <p className="text-[11px] text-muted truncate">{u.email}</p>
                                     </div>
                                   </div>
+                                </td>
+                                <td className="p-4 text-muted tabular-nums dir-ltr text-right">
+                                  {m?.phone || '—'}
                                 </td>
                                 <td className="p-4 text-muted">{roleLabel[u.role] || u.role}</td>
                                 <td className="p-4">
@@ -1566,7 +1571,7 @@ export default function AdminDashboardPage() {
                           })}
                           {users.length === 0 && (
                             <tr>
-                              <td colSpan={7}>
+                              <td colSpan={8}>
                                 <EmptyState title="لا توجد مستخدمات" hint="أضيفي عضوة جديدة أو عدّلي كلمات البحث." />
                               </td>
                             </tr>
