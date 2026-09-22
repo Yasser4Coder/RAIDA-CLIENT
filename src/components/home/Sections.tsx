@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom'
 import type { ElementType } from 'react'
 import AnimatedCounter from '../ui/AnimatedCounter'
 import SectionHeader from '../ui/SectionHeader'
@@ -37,15 +38,20 @@ export function StatsSection() {
   const { data: stats, loading, error, reload } = useAsyncData(() => catalogApi.stats(), [])
 
   return (
-    <section className="py-14 lg:py-18 bg-ivory">
+    <section className="pt-6 pb-10 lg:pb-14 bg-ivory">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {loading && <LoadingBlock />}
         {error && <ErrorBlock message={error} onRetry={reload} />}
         {stats && (
           <Stagger className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-            {stats.map((stat) => (
+            {stats.map((stat, i) => (
               <StaggerItem key={stat.id}>
-                <div className="text-center p-6 lg:p-8 rounded-[22px] bg-white hairline shadow-xs">
+                <div className="relative overflow-hidden text-center p-6 lg:p-8 rounded-[22px] bg-white hairline shadow-sm hover:shadow-md transition-shadow">
+                  <div
+                    className="absolute inset-x-0 top-0 h-1 bg-gradient-to-l from-gold via-rose to-mauve opacity-80"
+                    style={{ opacity: 0.5 + (i % 4) * 0.12 }}
+                    aria-hidden
+                  />
                   <div className="text-[1.75rem] sm:text-4xl font-extrabold text-navy tracking-[-0.03em] tabular-nums">
                     <AnimatedCounter end={stat.value} suffix={stat.suffix} />
                   </div>
@@ -67,8 +73,12 @@ export function CommunitySection() {
   )
 
   return (
-    <section className="py-16 lg:py-24 section-fade">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <section className="py-16 lg:py-24 bg-white relative overflow-hidden">
+      <div
+        className="pointer-events-none absolute inset-0 opacity-[0.4] hero-dot-grid"
+        aria-hidden
+      />
+      <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <Reveal>
           <SectionHeader
             eyebrow="اكتشفي المجتمع"
@@ -85,9 +95,9 @@ export function CommunitySection() {
               const Icon = iconMap[card.icon] || Sparkles
               return (
                 <StaggerItem key={card.id}>
-                  <div className="group h-full p-6 rounded-[22px] bg-white/80 backdrop-blur-sm hairline shadow-xs pressable-soft hover:shadow-md transition-shadow">
-                    <div className="w-11 h-11 rounded-[13px] bg-rose-soft flex items-center justify-center border border-rose/20">
-                      <Icon className="w-[18px] h-[18px] text-rose" />
+                  <div className="group h-full p-6 rounded-[22px] bg-ivory/80 hairline shadow-xs pressable-soft hover:shadow-md hover:bg-blush/50 transition-all">
+                    <div className="w-11 h-11 rounded-[13px] bg-navy text-gold flex items-center justify-center group-hover:bg-gold group-hover:text-navy transition-colors">
+                      <Icon className="w-[18px] h-[18px]" />
                     </div>
                     <h3 className="mt-4 text-[17px] font-bold text-navy tracking-[-0.01em]">{card.title}</h3>
                     <p className="mt-2 text-sm text-muted leading-relaxed">{card.description}</p>
@@ -182,9 +192,9 @@ export function ServicesSection() {
       <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <Reveal>
           <SectionHeader
-            eyebrow="دليل الخدمات"
-            title="ابحثي عن الخدمة المناسبة"
-            description="تصنيفات واضحة تساعدك على إيجاد الخبيرة المناسبة لمشروعك."
+            eyebrow="اطلبي خدمة"
+            title="خدمات لمشروعكِ"
+            description="اختاري التصنيف وقدّمي طلبًا — يصل إلى الخبيرات المناسبات عبر رائدة."
             light
             centered
           />
@@ -197,18 +207,27 @@ export function ServicesSection() {
               const Icon = iconMap[cat.icon] || Sparkles
               return (
                 <StaggerItem key={cat.id}>
-                  <button className="group w-full p-5 rounded-[18px] bg-white/[0.04] border border-white/8 hover:bg-white/[0.08] hover:border-white/15 transition-colors text-center pressable cursor-pointer">
-                    <div className="w-11 h-11 mx-auto rounded-[12px] bg-white/8 flex items-center justify-center group-hover:bg-gold/20 transition-colors">
+                  <Link
+                    to="/services"
+                    className="group block w-full p-5 rounded-[18px] bg-white/[0.04] border border-white/8 hover:bg-white/[0.1] hover:border-gold/30 transition-colors text-center pressable"
+                  >
+                    <div className="w-11 h-11 mx-auto rounded-[12px] bg-white/8 flex items-center justify-center group-hover:bg-gold/25 transition-colors">
                       <Icon className="w-[18px] h-[18px] text-rose-light group-hover:text-gold transition-colors" />
                     </div>
                     <h3 className="mt-3 text-[13px] font-semibold text-white tracking-[-0.01em]">{cat.name}</h3>
                     <p className="mt-1 text-[11px] text-white/35">{cat.count} مزودة</p>
-                  </button>
+                  </Link>
                 </StaggerItem>
               )
             })}
           </Stagger>
         )}
+        <div className="text-center mt-8">
+          <Button to="/services" variant="gold" size="md">
+            اطلبي خدمة الآن
+            <ChevronLeft className="w-4 h-4 opacity-70" />
+          </Button>
+        </div>
       </div>
     </section>
   )

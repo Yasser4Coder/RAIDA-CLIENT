@@ -33,11 +33,23 @@ export default function SectionHeader({
       <div className={centered ? '' : 'max-w-xl'}>
         {eyebrow && (
           <span
-            className={`inline-block text-[12px] font-semibold tracking-[0.02em] mb-2.5 ${
-              light ? 'text-gold' : 'text-rose'
+            className={`inline-flex flex-col items-start gap-2 mb-2.5 ${
+              centered ? 'items-center' : ''
             }`}
           >
-            {eyebrow}
+            <span
+              className={`text-[12px] font-semibold tracking-[0.06em] uppercase ${
+                light ? 'text-gold' : 'text-gold-dark'
+              }`}
+            >
+              {eyebrow}
+            </span>
+            <span
+              className={`h-0.5 w-8 rounded-full bg-gradient-to-l from-gold via-rose to-transparent ${
+                light ? 'from-gold-light' : ''
+              }`}
+              aria-hidden
+            />
           </span>
         )}
         <h2 className={`display-sm ${light ? 'text-white' : 'text-navy'}`}>{title}</h2>

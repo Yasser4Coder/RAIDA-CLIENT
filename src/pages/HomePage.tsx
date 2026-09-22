@@ -1,5 +1,6 @@
 import Hero from '../components/home/Hero'
 import SosGroupOriginSection from '../components/home/SosGroupOriginSection'
+import LandingQuickPaths from '../components/home/LandingQuickPaths'
 import CommunityManagerSection from '../components/home/CommunityManagerSection'
 import {
   StatsSection,
@@ -30,6 +31,7 @@ export default function HomePage() {
       <Hero />
       <SosGroupOriginSection />
       <StatsSection />
+      <LandingQuickPaths />
       <CommunitySection />
       <CommunityManagerSection />
       <FeaturedMembers />
