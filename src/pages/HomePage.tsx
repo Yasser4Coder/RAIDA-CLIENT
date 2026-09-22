@@ -1,4 +1,5 @@
 import Hero from '../components/home/Hero'
+import CommunityManagerSection from '../components/home/CommunityManagerSection'
 import {
   StatsSection,
   CommunitySection,
@@ -28,6 +29,7 @@ export default function HomePage() {
       <Hero />
       <StatsSection />
       <CommunitySection />
+      <CommunityManagerSection />
       <FeaturedMembers />
       <FeaturedBrands />
       <ServicesSection />
