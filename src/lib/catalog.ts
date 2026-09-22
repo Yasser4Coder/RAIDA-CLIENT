@@ -39,6 +39,8 @@ export const catalogApi = {
   programs: () => apiRequest<import('../types/api').CmsProgram[]>('/programs', { auth: false }),
   opportunities: () =>
     apiRequest<import('../types/api').CmsOpportunity[]>('/opportunities', { auth: false }),
+  announcements: () =>
+    apiRequest<import('../types/api').Announcement[]>('/announcements', { auth: false }),
 }
 
 export const authApi = {
@@ -318,4 +320,13 @@ export const adminApi = {
     }),
   deleteOpportunity: (id: string) =>
     apiRequest<void>(`/admin/opportunities/${id}`, { method: 'DELETE' }),
+
+  announcements: () => apiRequest<import('../types/api').Announcement[]>('/admin/announcements'),
+  upsertAnnouncement: (payload: Record<string, unknown>) =>
+    apiRequest<import('../types/api').Announcement>('/admin/announcements', {
+      method: 'POST',
+      body: payload,
+    }),
+  deleteAnnouncement: (id: string) =>
+    apiRequest<void>(`/admin/announcements/${id}`, { method: 'DELETE' }),
 }

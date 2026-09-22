@@ -11,6 +11,7 @@ export const navLinks = [
 /** Secondary destinations linked from footer / community hub */
 export const secondaryLinks = [
   { to: '/community', label: 'المجتمع' },
+  { to: '/announcements', label: 'الإعلانات' },
   { to: '/members', label: 'دليل الأعضاء' },
   { to: '/academies', label: 'الأكاديميات' },
   { to: '/brands', label: 'العلامات' },

@@ -141,6 +141,12 @@ export const routeSeo = {
     path: '/opportunities',
     keywords: ['فرص', 'معارض', 'تمويل', 'RAIDA'],
   },
+  announcements: {
+    title: `الإعلانات | ${SITE_NAME}`,
+    description: 'إعلانات رسمية وتعيينات ومستجدات من مؤسسة SOS Group ومجتمع رائدة.',
+    path: '/announcements',
+    keywords: ['إعلانات', 'تعيينات', 'SOS Group', 'RAIDA'],
+  },
   consultations: {
     title: `الاستشارات | ${SITE_NAME}`,
     description:

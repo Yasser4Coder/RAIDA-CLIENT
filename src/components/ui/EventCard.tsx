@@ -31,17 +31,17 @@ export default function EventCard({
 
   return (
     <motion.article
-      whileHover={reduce ? undefined : { y: -5 }}
-      whileTap={reduce ? undefined : { scale: 0.98 }}
+      whileHover={reduce ? undefined : { y: -4 }}
+      whileTap={reduce ? undefined : { scale: 0.99 }}
       transition={springs.snappy}
-      className={`group relative flex h-full overflow-hidden rounded-[22px] bg-white hairline shadow-sm will-change-transform ${
-        featured ? 'flex-col sm:flex-row' : 'flex-col'
+      className={`group relative flex h-full overflow-hidden rounded-[22px] bg-white hairline shadow-sm hover:shadow-md transition-shadow will-change-transform ${
+        featured ? 'flex-col sm:flex-row min-h-[280px]' : 'flex-col'
       }`}
     >
       <Link
         to={`/events/${event.id}`}
         className={`relative overflow-hidden bg-navy/5 shrink-0 ${
-          featured ? 'sm:w-[46%] sm:min-h-full aspect-[16/11] sm:aspect-auto' : 'aspect-[16/11]'
+          featured ? 'sm:w-[48%] sm:min-h-full aspect-[16/11] sm:aspect-auto' : 'aspect-[16/11]'
         }`}
       >
         <SafeImg
@@ -51,36 +51,40 @@ export default function EventCard({
           className="absolute inset-0 h-full w-full object-cover transition-transform duration-700 ease-[var(--ease-out-apple)] group-hover:scale-[1.04]"
           loading="lazy"
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-navy/50 via-transparent to-navy/10" />
+        <div className="absolute inset-0 bg-gradient-to-t from-navy/55 via-transparent to-navy/10" />
 
-        <span className="absolute top-3 right-3 inline-flex items-center rounded-full material-ultra-thin px-2.5 py-1 text-[11px] font-semibold tracking-[0.01em] text-navy ring-1 ring-white/40 shadow-xs">
+        <span className="absolute top-3 right-3 inline-flex items-center rounded-full bg-white/90 backdrop-blur-sm px-2.5 py-1 text-[11px] font-semibold tracking-[0.01em] text-navy ring-1 ring-white/50 shadow-xs">
           {event.category}
         </span>
 
-        <div className="absolute bottom-3 right-3 overflow-hidden rounded-[14px] material-thick shadow-md ring-1 ring-white/50 min-w-[3.25rem] text-center">
-          <div className="bg-rose/90 px-2.5 py-0.5 text-[9px] font-bold tracking-[0.04em] text-navy">
+        <div className="absolute bottom-3 right-3 overflow-hidden rounded-[14px] bg-white shadow-md ring-1 ring-navy/8 min-w-[3.25rem] text-center">
+          <div className="bg-rose px-2.5 py-0.5 text-[9px] font-bold tracking-[0.04em] text-navy">
             {rest.split(' ')[0] || 'موعد'}
           </div>
-          <div className="px-2.5 py-1.5 bg-white/90">
+          <div className="px-2.5 py-1.5">
             <p className="text-[1.35rem] font-extrabold leading-none tracking-[-0.03em] text-navy tabular-nums">
-              {day}
+              {day || '—'}
             </p>
           </div>
         </div>
       </Link>
 
-      <div className={`flex flex-1 flex-col ${featured ? 'p-6 sm:p-7' : 'p-5'}`}>
+      <div className={`flex flex-1 flex-col ${featured ? 'p-6 sm:p-8' : 'p-5'}`}>
         <Link to={`/events/${event.id}`} className="flex-1 min-w-0">
-          <p className="caption font-medium text-rose flex items-center gap-1.5">
-            <Calendar className="w-3.5 h-3.5" />
-            {event.date}
-            <span className="text-navy/20">·</span>
-            {event.time}
+          <p className="caption font-medium text-rose flex flex-wrap items-center gap-x-1.5 gap-y-0.5">
+            <Calendar className="w-3.5 h-3.5 shrink-0" />
+            <span>{event.date}</span>
+            {event.time ? (
+              <>
+                <span className="text-navy/20">·</span>
+                <span>{event.time}</span>
+              </>
+            ) : null}
           </p>
 
           <h3
             className={`mt-2 font-bold text-navy tracking-[-0.02em] leading-[1.25] group-hover:text-navy-light transition-colors ${
-              featured ? 'text-xl sm:text-2xl' : 'text-[16px]'
+              featured ? 'text-xl sm:text-2xl' : 'text-[16px] line-clamp-2'
             }`}
           >
             {event.title}
@@ -90,6 +94,12 @@ export default function EventCard({
             <MapPin className="w-3.5 h-3.5 text-gold mt-0.5 shrink-0" />
             <span className="line-clamp-2">{event.location}</span>
           </p>
+
+          {featured && event.description && (
+            <p className="mt-3 text-sm text-muted leading-relaxed line-clamp-2 max-w-xl">
+              {event.description}
+            </p>
+          )}
 
           {speakers.length > 0 && (
             <div className="mt-4 flex items-center gap-2.5">
@@ -117,7 +127,7 @@ export default function EventCard({
         </Link>
 
         <div className="mt-auto pt-5 flex items-center justify-between gap-3 border-t border-separator/80">
-          <span className="text-[12px] font-medium text-muted">{event.price}</span>
+          <span className="text-[12px] font-semibold text-navy/70">{event.price || '—'}</span>
           {registerUrl ? (
             <a
               href={registerUrl}
@@ -125,13 +135,13 @@ export default function EventCard({
               rel="noreferrer"
               className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-full bg-navy text-white text-[12px] font-semibold pressable hover:bg-navy-light transition-colors"
             >
-              منصة التسجيل
+              التسجيل
               <ExternalLink className="w-3.5 h-3.5 opacity-80" />
             </a>
           ) : (
             <Link
               to={`/events/${event.id}`}
-              className="inline-flex items-center gap-1 text-[13px] font-semibold text-rose"
+              className="inline-flex items-center gap-1 h-9 px-3.5 rounded-full bg-rose-soft text-navy text-[13px] font-semibold hover:bg-blush transition-colors"
             >
               التفاصيل
               <ChevronLeft className="w-4 h-4 opacity-70" />

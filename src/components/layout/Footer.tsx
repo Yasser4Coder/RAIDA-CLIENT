@@ -16,6 +16,7 @@ const community = [
 ]
 const company = [
   { to: '/about', label: 'عن رائدة' },
+  { to: '/announcements', label: 'الإعلانات' },
   { to: '/membership', label: 'العضوية' },
   { to: '/project-check', label: 'اختبري مشروعك' },
   { to: '/member-of-month', label: 'رائدة الشهر' },

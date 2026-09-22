@@ -3,6 +3,8 @@ import { getApiOrigin } from './api'
 const UPLOAD_PATH =
   /^\/uploads\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\.(jpg|jpeg|png|webp|gif)$/i
 
+const PUBLIC_IMAGE_PATH = /^\/images\/[a-z0-9._-]+\.(jpg|jpeg|png|webp|gif)$/i
+
 function normalizeUploadPath(value: string): string {
   const trimmed = value.trim()
   return trimmed.startsWith('/') ? trimmed : `/${trimmed}`
@@ -10,6 +12,10 @@ function normalizeUploadPath(value: string): string {
 
 function isUploadPath(value: string): boolean {
   return UPLOAD_PATH.test(normalizeUploadPath(value))
+}
+
+function isPublicImagePath(value: string): boolean {
+  return PUBLIC_IMAGE_PATH.test(value.trim())
 }
 
 function uploadUrl(path: string): string {
@@ -30,12 +36,15 @@ export function safeHref(value?: string | null): string | undefined {
   }
 }
 
-/** Resolve API upload paths and external image URLs for `<img src>`. */
+/** Resolve API upload paths, public `/images/` assets, and external image URLs for `<img src>`. */
 export function safeImageSrc(value?: string | null, fallback = ''): string {
   if (!value) return fallback
   const trimmed = value.trim()
   if (isUploadPath(trimmed)) {
     return uploadUrl(trimmed)
+  }
+  if (isPublicImagePath(trimmed)) {
+    return trimmed
   }
 
   const href = safeHref(trimmed)

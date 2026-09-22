@@ -26,6 +26,7 @@ import { springs, useMotionSafe } from '../lib/motion'
 import SafeImg from '../components/ui/SafeImg'
 import type {
   AdminUser,
+  Announcement,
   Brand,
   CmsOpportunity,
   CmsProgram,
@@ -71,7 +72,7 @@ const navGroups: { label: string; items: NavItem[] }[] = [
   {
     label: 'المحتوى والتحليل',
     items: [
-      { id: 'content', label: 'المحتوى', icon: FileText, hint: 'قصص النجاح والإحصائيات والتصنيفات' },
+      { id: 'content', label: 'المحتوى', icon: FileText, hint: 'الإعلانات وقصص النجاح والإحصائيات' },
       { id: 'revenue', label: 'الإيرادات', icon: DollarSign, hint: 'تحليل الاشتراكات والإيرادات التقديرية' },
     ],
   },
@@ -110,6 +111,7 @@ type Editor =
   | { kind: 'category'; item?: ServiceCategory }
   | { kind: 'program'; item?: CmsProgram }
   | { kind: 'opportunity'; item?: CmsOpportunity }
+  | { kind: 'announcement'; item?: Announcement }
   | null
 
 function LoginForm({
@@ -533,6 +535,16 @@ export default function AdminDashboardPage() {
   )
 
   const {
+    data: announcements,
+    loading: announcementsLoading,
+    error: announcementsError,
+    reload: reloadAnnouncements,
+  } = useAsyncData(
+    () => (allowed && active === 'content' ? adminApi.announcements() : Promise.resolve([])),
+    [user?.id, user?.role, active],
+  )
+
+  const {
     data: consultationsPayload,
     loading: consultationsLoading,
     error: consultationsError,
@@ -624,6 +636,7 @@ export default function AdminDashboardPage() {
   const categoryList = categories ?? []
   const programList = cmsPrograms ?? []
   const opportunityList = cmsOpportunities ?? []
+  const announcementList = announcements ?? []
   const consultationList = consultationsPayload?.data ?? []
   const memberOptions = (membersPayload?.data ?? []).map((m) => ({ value: m.id, label: m.name }))
   const recentMembers = overview?.recentMembers ?? []
@@ -643,7 +656,8 @@ export default function AdminDashboardPage() {
         statsLoading ||
         categoriesLoading ||
         programsLoading ||
-        opportunitiesLoading)) ||
+        opportunitiesLoading ||
+        announcementsLoading)) ||
     (active === 'revenue' && revenueLoading)
 
   const tabError =
@@ -654,7 +668,13 @@ export default function AdminDashboardPage() {
     (active === 'partnerships' && (partnersError || tiersError || inquiriesError)) ||
     (active === 'consultations' && consultationsError) ||
     (active === 'content' &&
-      (storiesError || cardsError || statsError || categoriesError || programsError || opportunitiesError)) ||
+      (storiesError ||
+        cardsError ||
+        statsError ||
+        categoriesError ||
+        programsError ||
+        opportunitiesError ||
+        announcementsError)) ||
     (active === 'revenue' && revenueError) ||
     null
 
@@ -889,6 +909,19 @@ export default function AdminDashboardPage() {
     { name: 'is_published', label: 'منشور', type: 'toggle' },
   ]
 
+  const announcementFields: AdminField[] = [
+    { name: 'title', label: 'العنوان', required: true },
+    { name: 'excerpt', label: 'المقتطف', type: 'textarea' },
+    { name: 'body', label: 'نص الإعلان', type: 'textarea', required: true },
+    { name: 'category', label: 'التصنيف', required: true },
+    { name: 'source', label: 'المصدر' },
+    { name: 'image', label: 'صورة الإعلان', type: 'image' },
+    { name: 'published_at', label: 'تاريخ النشر (YYYY-MM-DD)' },
+    { name: 'sort_order', label: 'الترتيب', type: 'number' },
+    { name: 'featured', label: 'مميز', type: 'toggle' },
+    { name: 'is_published', label: 'منشور', type: 'toggle' },
+  ]
+
   const storyFields: AdminField[] = [
     { name: 'title', label: 'العنوان', required: true },
     { name: 'excerpt', label: 'المقتطف', type: 'textarea', required: true },
@@ -1103,6 +1136,28 @@ export default function AdminDashboardPage() {
         submit: (values: Record<string, unknown>) =>
           adminApi.upsertOpportunity(editor.item ? { id: editor.item.id, ...values } : values),
         reload: reloadOpportunities,
+      }
+    }
+    if (editor.kind === 'announcement') {
+      return {
+        title: editor.item ? 'تعديل إعلان' : 'إضافة إعلان',
+        fields: announcementFields,
+        initial: editor.item
+          ? {
+              ...editor.item,
+              published_at: editor.item.publishedAt,
+              sort_order: editor.item.sortOrder,
+              is_published: editor.item.isPublished !== false,
+            }
+          : {
+              category: 'إعلان',
+              featured: false,
+              is_published: true,
+              published_at: new Date().toISOString().slice(0, 10),
+            },
+        submit: (values: Record<string, unknown>) =>
+          adminApi.upsertAnnouncement(editor.item ? { id: editor.item.id, ...values } : values),
+        reload: reloadAnnouncements,
       }
     }
     return {
@@ -1940,6 +1995,26 @@ export default function AdminDashboardPage() {
 
               {active === 'content' && (
                 <div className="space-y-8 animate-fade-up">
+                  <ContentSection
+                    title="الإعلانات"
+                    onAdd={() => setEditor({ kind: 'announcement' })}
+                    addLabel="إضافة إعلان"
+                  >
+                    {announcementList.map((item) => (
+                      <ContentRow
+                        key={item.id}
+                        title={item.title}
+                        subtitle={`${item.category}${item.source ? ` — ${item.source}` : ''}`}
+                        onEdit={() => setEditor({ kind: 'announcement', item })}
+                        onDelete={async () => {
+                          if (!confirmDelete(item.title)) return
+                          await adminApi.deleteAnnouncement(item.id)
+                          reloadAnnouncements()
+                        }}
+                      />
+                    ))}
+                  </ContentSection>
+
                   <ContentSection
                     title="قصص النجاح"
                     onAdd={() => setEditor({ kind: 'story' })}

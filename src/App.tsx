@@ -14,6 +14,7 @@ import BrandsPage from './pages/BrandsPage'
 import BrandPage from './pages/BrandPage'
 import SosStorePage from './pages/SosStorePage'
 import OpportunitiesPage from './pages/OpportunitiesPage'
+import AnnouncementsPage from './pages/AnnouncementsPage'
 import ConsultationsPage from './pages/ConsultationsPage'
 import EventsPage from './pages/EventsPage'
 import EventDetailPage from './pages/EventDetailPage'
@@ -46,6 +47,7 @@ export default function App() {
           <Route path="brands/:id" element={<BrandPage />} />
           <Route path="sos-store" element={<SosStorePage />} />
           <Route path="opportunities" element={<OpportunitiesPage />} />
+          <Route path="announcements" element={<AnnouncementsPage />} />
           <Route path="consultations" element={<ConsultationsPage />} />
           <Route path="events" element={<EventsPage />} />
           <Route path="events/:id" element={<EventDetailPage />} />

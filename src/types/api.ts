@@ -190,6 +190,20 @@ export type CmsOpportunity = {
   isPublished?: boolean
 }
 
+export type Announcement = {
+  id: string
+  title: string
+  excerpt: string | null
+  body: string
+  image: string | null
+  category: string
+  source: string | null
+  featured: boolean
+  publishedAt?: string | null
+  sortOrder?: number
+  isPublished?: boolean
+}
+
 export type PartnershipInquiry = {
   id: string
   name: string
