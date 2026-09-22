@@ -82,6 +82,10 @@ export default function Footer() {
               <p className="text-sm text-white/55 leading-relaxed max-w-xs tracking-[0.01em]">
                 حيث تلتقي الطموحات بالخبرات والفرص
               </p>
+              <p className="mt-3 text-[12px] text-white/45 leading-relaxed max-w-xs">
+                منصّة <span className="text-white/70 font-medium">RAIDA رائدة</span> من ابتكار وإنشاء{' '}
+                <span className="text-gold/90 font-semibold">SOS Group</span>
+              </p>
               <p className="mt-2 text-[11px] font-medium tracking-[0.06em] text-gold/85">
                 Connect · Grow · Lead
               </p>
@@ -190,8 +194,8 @@ export default function Footer() {
 
           {/* Bottom bar */}
           <div className="py-5 border-t border-white/[0.07] flex flex-col sm:flex-row items-center justify-between gap-4">
-            <p className="text-[11px] text-white/30 tracking-[0.01em]">
-              © 2026 RAIDA رائدة. جميع الحقوق محفوظة.
+            <p className="text-[11px] text-white/30 tracking-[0.01em] text-center sm:text-right">
+              © 2026 RAIDA رائدة · من ابتكار SOS Group. جميع الحقوق محفوظة.
             </p>
             <div className="flex items-center gap-5">
               <a href="mailto:hello@raaida.net?subject=سياسة الخصوصية" className="text-[11px] text-white/30 hover:text-white/65 transition-colors">

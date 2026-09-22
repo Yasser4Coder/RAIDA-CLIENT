@@ -1,4 +1,5 @@
 import Hero from '../components/home/Hero'
+import SosGroupOriginSection from '../components/home/SosGroupOriginSection'
 import CommunityManagerSection from '../components/home/CommunityManagerSection'
 import {
   StatsSection,
@@ -27,6 +28,7 @@ export default function HomePage() {
         jsonLd={[organizationJsonLd(), websiteJsonLd()]}
       />
       <Hero />
+      <SosGroupOriginSection />
       <StatsSection />
       <CommunitySection />
       <CommunityManagerSection />

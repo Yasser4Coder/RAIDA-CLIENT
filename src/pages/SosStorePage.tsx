@@ -31,7 +31,7 @@ export default function SosStorePage() {
             </span>
           </>
         }
-        description="عضوات رائدة يمكنهن التقديم لفتح متجر على SOS Store: عرض المنتجات، استقبال الطلبات، والوصول إلى العملاء مع الترويج داخل المجتمع."
+        description="عضوات رائدة يمكنهن التقديم لفتح متجر على SOS Store: عرض المنتجات، استقبال الطلبات، والوصول إلى العملاء مع الترويج داخل المجتمع — ضمن منظومة ابتكرتها SOS Group."
       >
         <div className="mt-7 flex flex-col sm:flex-row gap-3 justify-center">
           <Button to="/membership" variant="gold" size="lg">

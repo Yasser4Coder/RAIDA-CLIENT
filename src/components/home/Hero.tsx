@@ -98,6 +98,10 @@ export default function Hero() {
           transition={{ ...transition, delay: reduce ? 0 : 0.12 }}
         >
           منصة ومجتمع مهني يجمع رائدات الأعمال والخبراء والشركات لبناء فرص حقيقية للنمو والتعاون.
+          <span className="block mt-3 text-[15px] sm:text-base text-navy/55">
+            ابتُكرت وأنشئت بواسطة{' '}
+            <span className="font-semibold text-navy/80">SOS Group</span>
+          </span>
         </motion.p>
 
         {/* CTAs — primary high-contrast, secondary subordinate */}

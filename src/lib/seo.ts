@@ -4,7 +4,7 @@ export const SITE_NAME = 'RAIDA رائدة'
 export const SITE_NAME_SHORT = 'RAIDA'
 export const SITE_TAGLINE = 'حيث تلتقي الطموحات بالخبرات والفرص'
 export const DEFAULT_DESCRIPTION =
-  'منصة ومجتمع مهني يجمع رائدات الأعمال والخبراء والشركات والشركاء في الجزائر لبناء فرص حقيقية للنمو والتعاون.'
+  'RAIDA رائدة — منصّة ومجتمع مهني من ابتكار SOS Group، يجمع رائدات الأعمال والخبراء والشركاء في الجزائر لبناء فرص حقيقية للنمو والتعاون.'
 
 import { safeImageSrc } from './safe'
 
@@ -93,9 +93,10 @@ export const routeSeo = {
   },
   about: {
     title: `عن رائدة | ${SITE_NAME}`,
-    description: 'تعرّفي على مجتمع رائدة: شبكة مهنية تجمع المشاريع والخبيرات والأكاديميات والعلامات.',
+    description:
+      'تعرّفي على مجتمع رائدة: منصّة ابتُكرت وأنشئت بواسطة SOS Group لتمكين رائدات الأعمال في الجزائر.',
     path: '/about',
-    keywords: ['عن رائدة', 'RAIDA', 'مجتمع نسائي'],
+    keywords: ['عن رائدة', 'RAIDA', 'SOS Group', 'مجتمع نسائي'],
   },
   community: {
     title: `مجتمع رائدة | ${SITE_NAME}`,
@@ -213,6 +214,10 @@ export function organizationJsonLd() {
     logo: absoluteImage('/raida-logo-light.png'),
     image: absoluteImage('/raida-icon.png'),
     description: DEFAULT_DESCRIPTION,
+    parentOrganization: {
+      '@type': 'Organization',
+      name: 'SOS Group',
+    },
     foundingLocation: {
       '@type': 'Place',
       name: 'Algeria',
