@@ -109,10 +109,16 @@ export default function ConsultationRequestForm({
 
   if (done) {
     return (
-      <p className="text-sm text-navy bg-rose-soft/60 rounded-[12px] p-4">
-        تم استلام طلبكِ. المسار: المجال → الخبيرة/رائدة → الوقت → Online/حضوري. ستظهر في صندوق استشاراتكِ
-        إن كنتِ مسجّلة، وسيُؤكَّد الدفع والجلسة لاحقًا من الإدارة أو الخبيرة.
-      </p>
+      <div className="rounded-[16px] bg-navy/[0.03] ring-1 ring-navy/8 p-5 sm:p-6 text-center sm:text-right">
+        <div className="mx-auto sm:mx-0 w-12 h-12 rounded-[14px] bg-gold/15 text-gold-dark flex items-center justify-center mb-3">
+          <span className="text-lg font-extrabold">✓</span>
+        </div>
+        <p className="font-extrabold text-navy text-lg">تم استلام طلبكِ</p>
+        <p className="mt-2 text-sm text-muted leading-relaxed">
+          المسار التالي: تأكيد الموعد ← الدفع عند الاقتضاء ← الجلسة. سيظهر الطلب في صندوق استشاراتكِ إن كنتِ
+          مسجّلة، وستتواصل معكِ الإدارة أو الخبيرة قريبًا.
+        </p>
+      </div>
     )
   }
 

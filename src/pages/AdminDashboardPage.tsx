@@ -883,6 +883,8 @@ export default function AdminDashboardPage() {
     { name: 'type', label: 'النوع', required: true },
     { name: 'title', label: 'العنوان', required: true },
     { name: 'description', label: 'الوصف', type: 'textarea', required: true },
+    { name: 'deadline', label: 'آخر أجل (YYYY-MM-DD)' },
+    { name: 'apply_url', label: 'رابط التقديم' },
     { name: 'sort_order', label: 'الترتيب', type: 'number' },
     { name: 'is_published', label: 'منشور', type: 'toggle' },
   ]
@@ -1093,6 +1095,7 @@ export default function AdminDashboardPage() {
         initial: editor.item
           ? {
               ...editor.item,
+              apply_url: editor.item.applyUrl,
               sort_order: editor.item.sortOrder,
               is_published: editor.item.isPublished !== false,
             }

@@ -184,6 +184,8 @@ export type CmsOpportunity = {
   type: string
   title: string
   description: string
+  deadline?: string | null
+  applyUrl?: string | null
   sortOrder?: number
   isPublished?: boolean
 }

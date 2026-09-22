@@ -20,6 +20,8 @@ import EventDetailPage from './pages/EventDetailPage'
 import PartnershipsPage from './pages/PartnershipsPage'
 import MembershipPage from './pages/MembershipPage'
 import BenefitsPage from './pages/BenefitsPage'
+import ProjectCheckPage from './pages/ProjectCheckPage'
+import MemberOfMonthPage from './pages/MemberOfMonthPage'
 import DashboardPage from './pages/DashboardPage'
 import AdminDashboardPage from './pages/AdminDashboardPage'
 import VerifyEmailPage, { ForgotPasswordPage, ResetPasswordPage } from './pages/AuthMailPages'
@@ -50,6 +52,8 @@ export default function App() {
           <Route path="partnerships" element={<PartnershipsPage />} />
           <Route path="membership" element={<MembershipPage />} />
           <Route path="benefits" element={<BenefitsPage />} />
+          <Route path="project-check" element={<ProjectCheckPage />} />
+          <Route path="member-of-month" element={<MemberOfMonthPage />} />
           <Route path="dashboard" element={<DashboardPage />} />
           <Route path="verify-email" element={<VerifyEmailPage />} />
           <Route path="forgot-password" element={<ForgotPasswordPage />} />

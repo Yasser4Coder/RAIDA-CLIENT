@@ -3,7 +3,7 @@ import { Link, Navigate } from 'react-router-dom'
 import {
   LayoutDashboard, User, Briefcase, Calendar, Handshake, Bell,
   BarChart3, CreditCard, Settings, ChevronLeft, Eye, Users,
-  TrendingUp, CalendarCheck, MessageSquare, Plus, Menu, X, Trash2, Sparkles,
+  TrendingUp, CalendarCheck, MessageSquare, Plus, Menu, X, Trash2, Sparkles, Trophy,
 } from 'lucide-react'
 import { AnimatePresence, motion } from 'motion/react'
 import Badge from '../components/ui/Badge'
@@ -33,6 +33,7 @@ type SidebarItem = {
 
 const memberSidebarItems: SidebarItem[] = [
   { id: 'overview', label: 'نظرة عامة', icon: LayoutDashboard },
+  { id: 'opportunities', label: 'الفرص', icon: Trophy },
   { id: 'consultations', label: 'الاستشارات', icon: MessageSquare },
   { id: 'profile', label: 'الملف الشخصي', icon: User },
   { id: 'services', label: 'الخدمات', icon: Briefcase },
@@ -46,6 +47,7 @@ const memberSidebarItems: SidebarItem[] = [
 
 const guestSidebarItems: SidebarItem[] = [
   { id: 'overview', label: 'نظرة عامة', icon: LayoutDashboard },
+  { id: 'opportunities', label: 'الفرص', icon: Trophy },
   { id: 'consultations', label: 'الاستشارات', icon: MessageSquare },
   { id: 'profile', label: 'الملف الشخصي', icon: User },
   { id: 'notifications', label: 'الإشعارات', icon: Bell },
@@ -63,6 +65,20 @@ const imageFallback =
   'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=400&h=400&fit=crop'
 const eventImageFallback =
   'https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=800&h=500&fit=crop'
+
+function profileCompleteness(m: Member): number {
+  const checks = [
+    Boolean(m.name?.trim()),
+    Boolean(m.title?.trim()),
+    Boolean(m.specialty?.trim()),
+    Boolean(m.city?.trim() || m.wilaya?.trim()),
+    Boolean(m.bio?.trim()),
+    Boolean(m.image),
+    (m.services?.length ?? 0) > 0,
+    Boolean(m.phone?.trim() || m.website?.trim()),
+  ]
+  return Math.round((checks.filter(Boolean).length / checks.length) * 100)
+}
 
 function Surface({ children, className = '' }: { children: ReactNode; className?: string }) {
   return (
@@ -738,6 +754,14 @@ export default function DashboardPage() {
     [user?.id, user?.hasAccess, active],
   )
 
+  const { data: opportunitiesList } = useAsyncData(
+    () =>
+      user && (active === 'overview' || active === 'opportunities')
+        ? catalogApi.opportunities()
+        : Promise.resolve([]),
+    [user?.id, active],
+  )
+
   const isGuest = user?.role === 'guest'
   const sidebarItems = isGuest ? guestSidebarItems : memberSidebarItems
   const member = dashboard?.profile || authProfile
@@ -1043,6 +1067,97 @@ export default function DashboardPage() {
             >
               {active === 'overview' && (
                 <div className="space-y-4">
+                  {(() => {
+                    const completeness = profileCompleteness(member)
+                    const membershipLabel = isGuest
+                      ? ROLE_LABELS.guest
+                      : planLabel[user.plan || ''] || user.plan || ROLE_LABELS.member
+                    let nextLabel = 'استكشفي الفرص المتاحة'
+                    let nextAction: () => void = () => select('opportunities')
+                    let nextTo: string | null = null
+                    if (completeness < 70) {
+                      nextLabel = 'أكملي ملفكِ الشخصي لزيادة ظهوركِ'
+                      nextAction = () => select('profile')
+                    } else if (isGuest) {
+                      nextLabel = 'ترقّي للعضوية المهنية للظهور في الدليل'
+                      nextTo = '/membership'
+                    } else if (upcomingEvents.length === 0) {
+                      nextLabel = 'اطلبي خدمة أو استشارة لدعم مشروعكِ'
+                      nextTo = '/services'
+                    }
+                    return (
+                      <>
+                        <div className="grid sm:grid-cols-2 gap-3">
+                          <Surface className="p-5">
+                            <div className="flex items-center justify-between gap-3">
+                              <div>
+                                <p className="text-[11px] font-semibold text-muted">اكتمال الملف</p>
+                                <p className="mt-1 text-3xl font-extrabold text-navy tabular-nums tracking-[-0.03em]">
+                                  {completeness}%
+                                </p>
+                              </div>
+                              <div className="relative w-14 h-14">
+                                <svg viewBox="0 0 36 36" className="w-14 h-14 -rotate-90">
+                                  <circle cx="18" cy="18" r="15.5" fill="none" stroke="currentColor" className="text-navy/10" strokeWidth="3" />
+                                  <circle
+                                    cx="18"
+                                    cy="18"
+                                    r="15.5"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    className="text-gold"
+                                    strokeWidth="3"
+                                    strokeDasharray={`${completeness} ${100 - completeness}`}
+                                    strokeLinecap="round"
+                                  />
+                                </svg>
+                              </div>
+                            </div>
+                            <div className="mt-3 h-2 rounded-full bg-ivory overflow-hidden ring-1 ring-navy/5">
+                              <div
+                                className="h-full rounded-full bg-gold transition-all"
+                                style={{ width: `${completeness}%` }}
+                              />
+                            </div>
+                            {completeness < 100 && (
+                              <button
+                                type="button"
+                                onClick={() => select('profile')}
+                                className="mt-3 text-[12px] font-semibold text-rose pressable-soft"
+                              >
+                                إكمال الملف
+                              </button>
+                            )}
+                          </Surface>
+
+                          <Surface className="p-5">
+                            <p className="text-[11px] font-semibold text-muted">العضوية</p>
+                            <p className="mt-1 text-lg font-extrabold text-navy">{membershipLabel}</p>
+                            <p className="mt-3 text-[13px] text-muted leading-relaxed">الخطوة التالية</p>
+                            {nextTo ? (
+                              <Link
+                                to={nextTo}
+                                className="mt-1 inline-flex items-center gap-1 text-[14px] font-bold text-navy hover:text-rose"
+                              >
+                                {nextLabel}
+                                <ChevronLeft className="w-4 h-4" />
+                              </Link>
+                            ) : (
+                              <button
+                                type="button"
+                                onClick={nextAction}
+                                className="mt-1 inline-flex items-center gap-1 text-[14px] font-bold text-navy hover:text-rose text-right"
+                              >
+                                {nextLabel}
+                                <ChevronLeft className="w-4 h-4" />
+                              </button>
+                            )}
+                          </Surface>
+                        </div>
+                      </>
+                    )
+                  })()}
+
                   <div className={`grid grid-cols-2 ${isGuest ? '' : 'lg:grid-cols-4'} gap-3`}>
                     {overviewStats.map((s) => {
                       const Icon = s.icon
@@ -1076,6 +1191,40 @@ export default function DashboardPage() {
 
                   <Surface className="p-5">
                     <div className="flex items-center justify-between mb-3">
+                      <h3 className="font-bold text-navy tracking-[-0.01em]">فرص مقترحة</h3>
+                      <button
+                        type="button"
+                        onClick={() => select('opportunities')}
+                        className="text-[12px] text-rose font-semibold pressable-soft"
+                      >
+                        عرض الكل
+                      </button>
+                    </div>
+                    <div className="space-y-2">
+                      {(opportunitiesList ?? []).slice(0, 3).map((o) => (
+                        <Link
+                          key={o.id}
+                          to="/opportunities"
+                          className="flex items-start gap-3 p-3 rounded-[12px] bg-ivory hover:bg-blush/70 transition-colors"
+                        >
+                          <Trophy className="w-4 h-4 text-gold-dark mt-0.5 shrink-0" />
+                          <div className="min-w-0">
+                            <p className="text-[13px] font-semibold text-navy truncate">{o.title}</p>
+                            <p className="text-[11px] text-muted mt-0.5">
+                              {o.type}
+                              {o.deadline ? ` · حتى ${o.deadline}` : ''}
+                            </p>
+                          </div>
+                        </Link>
+                      ))}
+                      {(opportunitiesList ?? []).length === 0 && (
+                        <p className="text-sm text-muted py-3 text-center">لا توجد فرص منشورة حاليًا</p>
+                      )}
+                    </div>
+                  </Surface>
+
+                  <Surface className="p-5">
+                    <div className="flex items-center justify-between mb-3">
                       <h3 className="font-bold text-navy tracking-[-0.01em]">
                         {isGuest ? 'استشاراتك' : 'استكشفي المنصة'}
                       </h3>
@@ -1099,9 +1248,10 @@ export default function DashboardPage() {
                           { to: '/programs', label: 'البرامج' },
                           { to: '/experts', label: 'الخبيرات' },
                           { to: '/opportunities', label: 'الفرص' },
+                          { to: '/services', label: 'اطلبي خدمة' },
                           { to: '/sos-store', label: 'SOS Store' },
-                          { to: '/benefits', label: 'المزايا' },
                           { to: '/membership', label: 'العضوية' },
+                          { to: '/project-check', label: 'اختبري مشروعك' },
                         ].map((link) => (
                           <Link
                             key={link.to}
@@ -1195,6 +1345,38 @@ export default function DashboardPage() {
                     </Surface>
                   )}
                 </div>
+              )}
+
+              {active === 'opportunities' && (
+                <Surface className="p-5">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="font-bold text-navy">الفرص المتاحة</h3>
+                    <Button to="/opportunities" variant="outline" size="sm">
+                      الصفحة الكاملة
+                    </Button>
+                  </div>
+                  <div className="space-y-2">
+                    {(opportunitiesList ?? []).slice(0, 12).map((o) => (
+                      <Link
+                        key={o.id}
+                        to="/opportunities"
+                        className="block p-4 rounded-[14px] bg-ivory hover:bg-blush/60 transition-colors"
+                      >
+                        <div className="flex items-center gap-2 text-[11px] text-muted">
+                          <span className="font-semibold text-gold-dark">{o.type}</span>
+                          {o.deadline && <span>· حتى {o.deadline}</span>}
+                        </div>
+                        <p className="mt-1 font-bold text-navy">{o.title}</p>
+                        {o.description && (
+                          <p className="mt-1 text-[13px] text-muted line-clamp-2">{o.description}</p>
+                        )}
+                      </Link>
+                    ))}
+                    {(opportunitiesList ?? []).length === 0 && (
+                      <p className="text-sm text-muted py-8 text-center">لا توجد فرص منشورة حاليًا</p>
+                    )}
+                  </div>
+                </Surface>
               )}
 
               {active === 'consultations' && (

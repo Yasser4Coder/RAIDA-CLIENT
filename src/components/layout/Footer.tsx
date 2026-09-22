@@ -7,17 +7,18 @@ import { navLinks } from '../../data/nav'
 
 const explore = navLinks
 const community = [
+  { to: '/community', label: 'المجتمع' },
   { to: '/members', label: 'دليل الأعضاء' },
   { to: '/experts', label: 'خبيرات رائدة' },
   { to: '/academies', label: 'الأكاديميات' },
-  { to: '/programs', label: 'البرامج التدريبية' },
-  { to: '/opportunities', label: 'الفرص' },
+  { to: '/brands', label: 'العلامات' },
   { to: '/sos-store', label: 'SOS Store' },
 ]
 const company = [
   { to: '/about', label: 'عن رائدة' },
-  { to: '/benefits', label: 'المزايا' },
   { to: '/membership', label: 'العضوية' },
+  { to: '/project-check', label: 'اختبري مشروعك' },
+  { to: '/member-of-month', label: 'رائدة الشهر' },
   { to: '/partnerships', label: 'الشراكات' },
   { to: '/dashboard', label: 'لوحة التحكم' },
 ]

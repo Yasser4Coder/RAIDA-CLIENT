@@ -1,23 +1,23 @@
 export const navLinks = [
   { to: '/', label: 'الرئيسية' },
-  { to: '/community', label: 'المجتمع' },
-  { to: '/experts', label: 'الخبيرات' },
-  { to: '/consultations', label: 'الاستشارات' },
+  { to: '/opportunities', label: 'الفرص' },
   { to: '/programs', label: 'البرامج' },
+  { to: '/experts', label: 'الخبيرات' },
   { to: '/services', label: 'الخدمات' },
-  { to: '/brands', label: 'العلامات' },
-  { to: '/academies', label: 'الأكاديميات' },
   { to: '/events', label: 'الفعاليات' },
+  { to: '/membership', label: 'العضوية' },
 ]
 
 /** Secondary destinations linked from footer / community hub */
 export const secondaryLinks = [
-  { to: '/about', label: 'عن رائدة' },
+  { to: '/community', label: 'المجتمع' },
   { to: '/members', label: 'دليل الأعضاء' },
-  { to: '/sos-store', label: 'SOS Store' },
+  { to: '/academies', label: 'الأكاديميات' },
+  { to: '/brands', label: 'العلامات' },
   { to: '/consultations', label: 'الاستشارات' },
-  { to: '/opportunities', label: 'الفرص' },
   { to: '/partnerships', label: 'الشراكات' },
-  { to: '/benefits', label: 'المزايا' },
-  { to: '/membership', label: 'العضوية' },
+  { to: '/about', label: 'عن رائدة' },
+  { to: '/sos-store', label: 'SOS Store' },
+  { to: '/project-check', label: 'اختبري مشروعك' },
+  { to: '/member-of-month', label: 'رائدة الشهر' },
 ]

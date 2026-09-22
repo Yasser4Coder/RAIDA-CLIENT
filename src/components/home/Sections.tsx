@@ -269,9 +269,9 @@ export function SuccessStories() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <Reveal>
           <SectionHeader
-            eyebrow="قصص النجاح"
+            eyebrow="رائدة الشهر"
             title="رحلات ملهمة"
-            description="قصص حقيقية لرائدات وعلامات صنعت الفارق."
+            description="كل شهر نسلّط الضوء على عضوة وإنجازاتها — وقصص أخرى من المجتمع."
             centered
           />
         </Reveal>
@@ -335,6 +335,12 @@ export function SuccessStories() {
             </div>
           </div>
         )}
+        <div className="text-center mt-8">
+          <Button to="/member-of-month" variant="outline" size="sm">
+            رائدة الشهر
+            <ChevronLeft className="w-4 h-4 opacity-50" />
+          </Button>
+        </div>
       </div>
     </section>
   )

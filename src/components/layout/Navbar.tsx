@@ -3,6 +3,7 @@ import { Link, NavLink, useLocation } from 'react-router-dom'
 import {
   Menu, X, LayoutDashboard, Users, Building2, Calendar,
   Briefcase, BookOpen, GraduationCap, Home, ChevronLeft, School, MessageSquare,
+  Trophy, CreditCard,
 } from 'lucide-react'
 import { AnimatePresence, motion } from 'motion/react'
 import { navLinks, secondaryLinks } from '../../data/nav'
@@ -13,14 +14,16 @@ import { useAuth } from '../../context/AuthContext'
 
 const linkIcons: Record<string, typeof Home> = {
   '/': Home,
-  '/community': Users,
-  '/experts': GraduationCap,
+  '/opportunities': Trophy,
   '/programs': BookOpen,
+  '/experts': GraduationCap,
   '/services': Briefcase,
+  '/events': Calendar,
+  '/membership': CreditCard,
+  '/community': Users,
+  '/consultations': MessageSquare,
   '/brands': Building2,
   '/academies': School,
-  '/consultations': MessageSquare,
-  '/events': Calendar,
 }
 
 export default function Navbar() {

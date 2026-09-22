@@ -116,10 +116,11 @@ export const routeSeo = {
     keywords: ['برامج تدريبية', 'دورات', 'أكاديمية رائدة'],
   },
   services: {
-    title: `دليل الخدمات | ${SITE_NAME}`,
-    description: 'ابحثي عن خدمات تطوير المشاريع والتسويق والقانون والتقنية والتجارة الإلكترونية.',
+    title: `اطلبي خدمة | ${SITE_NAME}`,
+    description:
+      'اطلبي خدمة لمشروعكِ — محاسبة، تصميم، قانون، تسويق، مواقع — وتصل الطلبات إلى الخبيرات المناسبات عبر رائدة.',
     path: '/services',
-    keywords: ['دليل الخدمات', 'خبيرات', 'RAIDA'],
+    keywords: ['اطلبي خدمة', 'خدمات', 'خبيرات', 'RAIDA'],
   },
   academies: {
     title: `الأكاديميات | ${SITE_NAME}`,
@@ -151,6 +152,18 @@ export const routeSeo = {
     description: 'من الحساب المجاني إلى العضوية المهنية — دورات واستشارات وتخفيضات وأولوية الفرص.',
     path: '/benefits',
     keywords: ['مزايا', 'عضوية رائدة', 'RAIDA'],
+  },
+  projectCheck: {
+    title: `اختبري مشروعك | ${SITE_NAME}`,
+    description: 'أداة مجانية لتقييم جاهزية مشروعكِ والحصول على الخطوة التالية المقترحة.',
+    path: '/project-check',
+    keywords: ['اختبار مشروع', 'جاهزية', 'رائدة'],
+  },
+  memberOfMonth: {
+    title: `رائدة الشهر | ${SITE_NAME}`,
+    description: 'كل شهر نسلّط الضوء على عضوة وإنجازاتها ومشروعها داخل مجتمع رائدة.',
+    path: '/member-of-month',
+    keywords: ['رائدة الشهر', 'قصة نجاح', 'RAIDA'],
   },
   dashboard: {
     title: `لوحة التحكم | ${SITE_NAME}`,
