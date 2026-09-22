@@ -13,6 +13,7 @@ import SafeImg from '../ui/SafeImg'
 import { LoadingBlock, ErrorBlock } from '../ui/StateBlocks'
 import { useAsyncData } from '../../hooks/useAsyncData'
 import { catalogApi } from '../../lib/catalog'
+import { planDetailPath } from '../../data/membershipPlanDetails'
 import {
   Rocket, GraduationCap, Lightbulb, Handshake, Calendar, Sparkles,
   Megaphone, Briefcase, Palette, Code, Calculator, Scale, TrendingUp,
@@ -535,21 +536,32 @@ export function PricingSection() {
                   <p className={`text-[11px] mt-1 ${plan.highlighted ? 'text-white/45' : 'text-muted'}`}>/ {plan.period}</p>
                   <p className={`mt-4 text-sm ${plan.highlighted ? 'text-white/65' : 'text-muted'}`}>{plan.description}</p>
                   <ul className="mt-6 space-y-2.5 flex-1">
-                    {(Array.isArray(plan.features) ? plan.features : []).map((f) => (
+                    {(Array.isArray(plan.features) ? plan.features : []).slice(0, 5).map((f) => (
                       <li key={f} className="flex items-start gap-2 text-sm">
                         <Check className={`w-4 h-4 mt-0.5 shrink-0 ${plan.highlighted ? 'text-gold' : 'text-rose'}`} />
                         <span className={plan.highlighted ? 'text-white/75' : 'text-dark'}>{f}</span>
                       </li>
                     ))}
                   </ul>
-                  <Button
-                    to="/membership"
-                    variant={plan.highlighted ? 'gold' : 'outline'}
-                    size="md"
-                    className="w-full mt-7"
-                  >
-                    {plan.cta}
-                  </Button>
+                  <div className="mt-7 space-y-2">
+                    <Button
+                      to={planDetailPath(plan.name)}
+                      variant={plan.highlighted ? 'gold' : 'primary'}
+                      size="md"
+                      className="w-full"
+                    >
+                      تعرّفي على العضوية
+                      <ChevronLeft className="w-4 h-4 opacity-70" />
+                    </Button>
+                    <Button
+                      to="/membership"
+                      variant={plan.highlighted ? 'glass' : 'outline'}
+                      size="sm"
+                      className={`w-full ${plan.highlighted ? '!text-white/85 !border-white/20 !bg-white/10' : ''}`}
+                    >
+                      {plan.cta}
+                    </Button>
+                  </div>
                 </div>
               </StaggerItem>
             ))}

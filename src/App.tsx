@@ -20,6 +20,7 @@ import EventsPage from './pages/EventsPage'
 import EventDetailPage from './pages/EventDetailPage'
 import PartnershipsPage from './pages/PartnershipsPage'
 import MembershipPage from './pages/MembershipPage'
+import MembershipPlanPage from './pages/MembershipPlanPage'
 import BenefitsPage from './pages/BenefitsPage'
 import ProjectCheckPage from './pages/ProjectCheckPage'
 import MemberOfMonthPage from './pages/MemberOfMonthPage'
@@ -53,6 +54,7 @@ export default function App() {
           <Route path="events/:id" element={<EventDetailPage />} />
           <Route path="partnerships" element={<PartnershipsPage />} />
           <Route path="membership" element={<MembershipPage />} />
+          <Route path="membership/:planSlug" element={<MembershipPlanPage />} />
           <Route path="benefits" element={<BenefitsPage />} />
           <Route path="project-check" element={<ProjectCheckPage />} />
           <Route path="member-of-month" element={<MemberOfMonthPage />} />

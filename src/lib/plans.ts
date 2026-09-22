@@ -4,6 +4,8 @@ export const PLAN_LABELS: Record<string, string> = {
   ACADEMY: 'عضوية رائدة للأكاديميات ومراكز التدريب',
 }
 
+export { planDetailPath } from '../data/membershipPlanDetails'
+
 export const ROLE_LABELS: Record<string, string> = {
   guest: 'زائرة',
   client: 'زائرة',

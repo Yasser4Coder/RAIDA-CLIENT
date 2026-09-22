@@ -13,6 +13,7 @@ import { asArray } from '../lib/normalize'
 import SeoHead from '../components/seo/SeoHead'
 import { breadcrumbJsonLd, routeSeo } from '../lib/seo'
 import { freeCommunityBenefits, joinSteps } from '../data/platformContent'
+import { planDetailPath } from '../data/membershipPlanDetails'
 
 const faqs = [
   {
@@ -239,7 +240,7 @@ export default function MembershipPage() {
                   </p>
 
                   <ul className="mt-6 space-y-2.5 flex-1">
-                    {asArray(plan.features).map((f) => (
+                    {asArray(plan.features).slice(0, 6).map((f) => (
                       <li key={f} className="flex items-start gap-2.5 text-[13px]">
                         <Check
                           className={`w-4 h-4 mt-0.5 shrink-0 ${
@@ -252,24 +253,34 @@ export default function MembershipPage() {
                     ))}
                   </ul>
 
-                  <Button
-                    variant={plan.highlighted ? 'gold' : 'outline'}
-                    size="md"
-                    className={`w-full mt-7 ${plan.highlighted ? 'shadow-md shadow-gold/20' : ''}`}
-                    disabled={busyPlan === plan.name || user?.membershipStatus === 'pending'}
-                    onClick={() => void selectPlan(plan.name)}
-                  >
-                    {user?.plan === plan.name && user.membershipStatus === 'approved'
-                      ? 'عضويتك الحالية'
-                      : user?.membershipStatus === 'pending' && user.plan === plan.name
-                        ? 'بانتظار الموافقة'
-                        : busyPlan === plan.name
-                          ? 'جاري الإرسال...'
-                          : user
-                            ? plan.cta
-                            : 'ادخلي لطلب العضوية'}
-                    <ChevronLeft className="w-4 h-4 opacity-70" />
-                  </Button>
+                  <div className="mt-7 space-y-2">
+                    <Button
+                      to={planDetailPath(plan.name)}
+                      variant={plan.highlighted ? 'gold' : 'primary'}
+                      size="md"
+                      className={`w-full ${plan.highlighted ? 'shadow-md shadow-gold/20' : ''}`}
+                    >
+                      تعرّفي أكثر على العضوية
+                      <ChevronLeft className="w-4 h-4 opacity-70" />
+                    </Button>
+                    <Button
+                      variant={plan.highlighted ? 'glass' : 'outline'}
+                      size="sm"
+                      className={`w-full ${plan.highlighted ? '!text-white/85 !border-white/20 !bg-white/10' : ''}`}
+                      disabled={busyPlan === plan.name || user?.membershipStatus === 'pending'}
+                      onClick={() => void selectPlan(plan.name)}
+                    >
+                      {user?.plan === plan.name && user.membershipStatus === 'approved'
+                        ? 'عضويتك الحالية'
+                        : user?.membershipStatus === 'pending' && user.plan === plan.name
+                          ? 'بانتظار الموافقة'
+                          : busyPlan === plan.name
+                            ? 'جاري الإرسال...'
+                            : user
+                              ? plan.cta
+                              : 'ادخلي لطلب العضوية'}
+                    </Button>
+                  </div>
                 </motion.article>
               </StaggerItem>
             ))}
