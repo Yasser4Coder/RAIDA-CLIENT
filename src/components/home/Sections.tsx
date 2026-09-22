@@ -5,6 +5,7 @@ import SectionHeader from '../ui/SectionHeader'
 import MemberCard from '../ui/MemberCard'
 import BrandCard from '../ui/BrandCard'
 import EventCard from '../ui/EventCard'
+import LandingEventCompact from './LandingEventCompact'
 import Button from '../ui/Button'
 import Badge from '../ui/Badge'
 import Reveal, { Stagger, StaggerItem } from '../ui/Reveal'
@@ -240,35 +241,112 @@ export function EventsSection() {
   )
   const featured = events?.[0]
   const rest = events?.slice(1) ?? []
+  const count = events?.length ?? 0
 
   return (
-    <section className="py-16 lg:py-24 bg-ivory relative">
-      <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-rose-soft/40 via-transparent to-transparent" />
+    <section className="py-16 lg:py-24 bg-ivory relative overflow-hidden">
+      <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-rose-soft/50 via-ivory to-ivory" />
+      <div
+        className="pointer-events-none absolute top-0 left-0 w-72 h-72 rounded-full bg-gold/10 blur-3xl"
+        aria-hidden
+      />
+
       <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <Reveal>
-          <SectionHeader
-            eyebrow="الفعاليات القادمة"
-            title="فعاليات تستحق الحضور"
-            description="مؤتمرات وورش عمل وملتقيات لبناء علاقات وفرص حقيقية."
-            linkTo="/events"
-            linkLabel="كل الفعاليات"
-          />
+          <div className="mb-10 md:mb-12">
+            <SectionHeader
+              eyebrow="الفعاليات القادمة"
+              title="فعاليات تستحق الحضور"
+              description="مؤتمرات وورش عمل وملتقيات — خطّطي حضوركِ ووسّعي شبكتكِ المهنية."
+              linkTo="/events"
+              linkLabel="كل الفعاليات"
+            />
+            {count > 0 && (
+              <div className="mt-5 flex flex-wrap items-center gap-2">
+                <span className="inline-flex items-center gap-2 rounded-full bg-white hairline px-4 py-2 text-[13px] font-semibold text-navy shadow-xs">
+                  <Calendar className="w-4 h-4 text-rose" />
+                  {count.toLocaleString('ar-DZ')} فعاليات معروضة الآن
+                </span>
+              </div>
+            )}
+          </div>
         </Reveal>
+
         {loading && <LoadingBlock />}
         {error && <ErrorBlock message={error} onRetry={reload} />}
+
+        {!loading && !error && count === 0 && (
+          <Reveal>
+            <div className="rounded-[22px] bg-white hairline p-10 text-center max-w-lg mx-auto">
+              <Calendar className="w-10 h-10 text-gold mx-auto mb-3" />
+              <p className="font-bold text-navy">لا توجد فعاليات منشورة حاليًا</p>
+              <p className="mt-2 text-sm text-muted">تابعي الصفحة أو انضمي للمجتمع لمعرفة المواعيد القادمة.</p>
+              <Button to="/events" variant="gold" size="md" className="mt-5">
+                صفحة الفعاليات
+              </Button>
+            </div>
+          </Reveal>
+        )}
+
         {featured && (
-          <div className="space-y-4">
-            <Reveal>
-              <EventCard event={featured} featured />
+          <div className="grid lg:grid-cols-12 gap-4 lg:gap-5 items-stretch">
+            <Reveal className="lg:col-span-7">
+              <div className="relative h-full">
+                <span className="absolute top-4 left-4 z-10 rounded-full bg-gold text-navy text-[11px] font-bold px-3 py-1 shadow-sm ring-1 ring-gold-dark/20">
+                  الأقرب موعدًا
+                </span>
+                <EventCard event={featured} featured />
+              </div>
             </Reveal>
-            <Stagger className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {rest.map((e) => (
-                <StaggerItem key={e.id}>
-                  <EventCard event={e} />
-                </StaggerItem>
-              ))}
-            </Stagger>
+
+            {rest.length > 0 && (
+              <div className="hidden lg:flex lg:col-span-5 flex-col gap-3">
+                <p className="text-[12px] font-semibold text-muted px-1 hidden lg:block">
+                  أيضًا هذا الشهر
+                </p>
+                <Stagger className="flex flex-col gap-3 flex-1">
+                  {rest.map((e) => (
+                    <StaggerItem key={e.id} className="flex-1">
+                      <LandingEventCompact event={e} />
+                    </StaggerItem>
+                  ))}
+                </Stagger>
+              </div>
+            )}
+
+            {/* Mobile: horizontal scan for secondary events */}
+            {rest.length > 0 && (
+              <div className="lg:hidden col-span-full -mx-4 px-4">
+                <p className="text-[12px] font-semibold text-muted mb-3 px-1">فعاليات أخرى</p>
+                <div className="flex gap-3 overflow-x-auto snap-x snap-mandatory pb-2 scrollbar-thin">
+                  {rest.map((e) => (
+                    <div key={e.id} className="snap-start shrink-0 w-[min(88vw,320px)]">
+                      <LandingEventCompact event={e} />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
+        )}
+
+        {featured && (
+          <Reveal>
+            <div className="mt-10 rounded-[20px] bg-navy text-white px-6 py-5 sm:px-8 sm:py-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 ring-1 ring-gold/20">
+              <div>
+                <p className="text-[11px] font-semibold tracking-[0.14em] text-gold uppercase">
+                  لا تفوّتي الفرصة
+                </p>
+                <p className="mt-1 text-[15px] sm:text-base text-white/80 leading-relaxed max-w-md">
+                  سجّلي في الفعالية المناسبة لكِ، أو تصفّحي التفاصيل والمتحدثات على صفحة الفعاليات.
+                </p>
+              </div>
+              <Button to={`/events/${featured.id}`} variant="gold" size="md" className="shrink-0 w-full sm:w-auto">
+                سجّلي في {featured.title.length > 28 ? 'الفعالية' : featured.title}
+                <ChevronLeft className="w-4 h-4 opacity-70" />
+              </Button>
+            </div>
+          </Reveal>
         )}
       </div>
     </section>
