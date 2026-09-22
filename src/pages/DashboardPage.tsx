@@ -21,6 +21,7 @@ import SafeImg from '../components/ui/SafeImg'
 import ConsultationRequestForm from '../components/ui/ConsultationRequestForm'
 import SeoHead from '../components/seo/SeoHead'
 import { routeSeo } from '../lib/seo'
+import LoginRegisterForm from '../components/auth/LoginRegisterForm'
 
 const planLabel = PLAN_LABELS
 
@@ -84,188 +85,6 @@ function Surface({ children, className = '' }: { children: ReactNode; className?
   return (
     <div className={`rounded-[18px] bg-white hairline shadow-xs ${className}`}>
       {children}
-    </div>
-  )
-}
-
-function LoginForm({
-  onLogin,
-  onRegister,
-  hint,
-}: {
-  onLogin: (email: string, password: string) => Promise<void>
-  onRegister: (payload: {
-    email: string
-    password: string
-    name: string
-    phone: string
-    accountType: 'guest' | 'member'
-    plan?: string
-  }) => Promise<void>
-  hint: string
-}) {
-  const [mode, setMode] = useState<'login' | 'register'>('login')
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const [name, setName] = useState('')
-  const [phone, setPhone] = useState('')
-  const [accountType, setAccountType] = useState<'guest' | 'member'>('guest')
-  const [plan, setPlan] = useState('BUSINESS')
-  const [error, setError] = useState<string | null>(null)
-  const [submitting, setSubmitting] = useState(false)
-  const { data: plans } = useAsyncData(() => catalogApi.plans(), [])
-
-  const handleSubmit = async (e: FormEvent) => {
-    e.preventDefault()
-    setSubmitting(true)
-    setError(null)
-    try {
-      if (mode === 'login') {
-        await onLogin(email, password)
-      } else {
-        await onRegister({
-          email,
-          password,
-          name,
-          phone,
-          accountType,
-          plan: accountType === 'member' ? plan : undefined,
-        })
-      }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : mode === 'login' ? 'فشل تسجيل الدخول' : 'تعذر إنشاء الحساب')
-    } finally {
-      setSubmitting(false)
-    }
-  }
-
-  return (
-    <div className="pt-20 min-h-screen bg-ivory flex items-center justify-center px-4">
-      <form
-        onSubmit={handleSubmit}
-        className="w-full max-w-md rounded-[20px] bg-white hairline shadow-sm p-6 sm:p-8 space-y-4"
-      >
-        <div className="grid grid-cols-2 gap-1 p-1 rounded-full bg-ivory">
-          <button
-            type="button"
-            className={`h-9 rounded-full text-[13px] font-semibold ${mode === 'login' ? 'bg-navy text-white' : 'text-muted'}`}
-            onClick={() => setMode('login')}
-          >
-            دخول
-          </button>
-          <button
-            type="button"
-            className={`h-9 rounded-full text-[13px] font-semibold ${mode === 'register' ? 'bg-navy text-white' : 'text-muted'}`}
-            onClick={() => setMode('register')}
-          >
-            إنشاء حساب
-          </button>
-        </div>
-        <h1 className="text-xl font-extrabold text-navy tracking-[-0.02em]">
-          {mode === 'login' ? 'تسجيل الدخول' : 'إنشاء حساب'}
-        </h1>
-        <p className="text-[13px] text-muted">
-          {mode === 'login'
-            ? 'ادخلي إلى لوحة التحكم الخاصة بكِ.'
-            : 'اختاري حساب زائرة أو عضوية مدفوعة. العضوية تحتاج موافقة الإدارة.'}
-        </p>
-        {mode === 'register' && (
-          <>
-            <div>
-              <label className="block text-[11px] font-semibold text-muted mb-1.5">الاسم</label>
-              <input
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                required
-                minLength={2}
-                className="w-full h-11 px-4 rounded-[12px] border border-separator bg-ivory text-sm focus:outline-none focus:border-rose/40 focus:ring-2 focus:ring-rose/15"
-              />
-            </div>
-            <div>
-              <label className="block text-[11px] font-semibold text-muted mb-1.5">رقم الهاتف</label>
-              <input
-                type="tel"
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-                required
-                minLength={8}
-                maxLength={40}
-                placeholder="05XXXXXXXX"
-                inputMode="tel"
-                autoComplete="tel"
-                className="w-full h-11 px-4 rounded-[12px] border border-separator bg-ivory text-sm focus:outline-none focus:border-rose/40 focus:ring-2 focus:ring-rose/15"
-              />
-            </div>
-            <div className="grid grid-cols-2 gap-2">
-              <button
-                type="button"
-                className={`h-11 rounded-[12px] text-[13px] font-semibold border ${
-                  accountType === 'guest' ? 'bg-navy text-white border-navy' : 'bg-ivory text-muted border-separator'
-                }`}
-                onClick={() => setAccountType('guest')}
-              >
-                زائرة
-              </button>
-              <button
-                type="button"
-                className={`h-11 rounded-[12px] text-[13px] font-semibold border ${
-                  accountType === 'member' ? 'bg-navy text-white border-navy' : 'bg-ivory text-muted border-separator'
-                }`}
-                onClick={() => setAccountType('member')}
-              >
-                عضوة
-              </button>
-            </div>
-            {accountType === 'member' && (
-              <div>
-                <label className="block text-[11px] font-semibold text-muted mb-1.5">خطة العضوية</label>
-                <select
-                  value={plan}
-                  onChange={(e) => setPlan(e.target.value)}
-                  className="w-full h-11 px-4 rounded-[12px] border border-separator bg-ivory text-sm focus:outline-none focus:border-rose/40"
-                >
-                  {(plans ?? []).map((item) => (
-                    <option key={item.name} value={item.name}>
-                      {item.nameAr} — {item.launchPrice || item.price} دج
-                    </option>
-                  ))}
-                </select>
-              </div>
-            )}
-          </>
-        )}
-        <div>
-          <label className="block text-[11px] font-semibold text-muted mb-1.5">البريد الإلكتروني</label>
-          <input
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-            className="w-full h-11 px-4 rounded-[12px] border border-separator bg-ivory text-sm focus:outline-none focus:border-rose/40 focus:ring-2 focus:ring-rose/15"
-          />
-        </div>
-        <div>
-          <label className="block text-[11px] font-semibold text-muted mb-1.5">كلمة المرور</label>
-          <input
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-            minLength={mode === 'register' ? 10 : 1}
-            className="w-full h-11 px-4 rounded-[12px] border border-separator bg-ivory text-sm focus:outline-none focus:border-rose/40 focus:ring-2 focus:ring-rose/15"
-          />
-        </div>
-        {error && <p className="text-sm text-rose">{error}</p>}
-        {mode === 'login' && (
-          <Link to="/forgot-password" className="block text-[12px] text-rose font-semibold">
-            نسيتِ كلمة المرور أو رابط التأكيد؟
-          </Link>
-        )}
-        {import.meta.env.DEV && <p className="text-[11px] text-muted">تجريبي: {hint}</p>}
-        <Button type="submit" variant="gold" size="md" className="w-full" disabled={submitting}>
-          {submitting ? 'جاري الحفظ...' : mode === 'login' ? 'دخول' : 'إنشاء الحساب'}
-        </Button>
-      </form>
     </div>
   )
 }
@@ -856,8 +675,8 @@ export default function DashboardPage() {
     return (
       <>
         {seo}
-        <LoginForm
-          hint={import.meta.env.DEV ? 'sara@raida.local / Password123!' : 'أدخلي بيانات حسابك'}
+        <LoginRegisterForm
+          hint={import.meta.env.DEV ? 'sara@raida.local / Password123!' : undefined}
           onLogin={login}
           onRegister={register}
         />
