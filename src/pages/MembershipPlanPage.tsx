@@ -42,7 +42,7 @@ export default function MembershipPlanPage() {
   const { planSlug = '' } = useParams()
   const planKey = SLUG_TO_PLAN[planSlug]
   const detail = planKey ? membershipPlanDetails[planKey] : null
-  const { reduce, fadeUp } = useMotionSafe()
+  const { fadeUp } = useMotionSafe()
   const { user, refreshMe } = useAuth()
   const navigate = useNavigate()
   const [busy, setBusy] = useState(false)
