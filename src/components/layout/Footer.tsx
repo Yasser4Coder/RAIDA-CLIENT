@@ -106,13 +106,13 @@ export default function Footer() {
               <ul className="mt-7 space-y-2.5">
                 <li>
                   <a
-                    href="mailto:hello@raaida.net"
+                    href="mailto:raaida@sosgroupdz.com"
                     className="inline-flex items-center gap-2.5 text-[13px] text-white/50 hover:text-white/90 transition-colors pressable-soft"
                   >
                     <span className="w-8 h-8 rounded-[10px] bg-white/[0.06] flex items-center justify-center">
                       <Mail className="w-3.5 h-3.5 text-rose" />
                     </span>
-                    hello@raaida.net
+                    raaida@sosgroupdz.com
                   </a>
                 </li>
                 <li>
@@ -199,10 +199,10 @@ export default function Footer() {
               © 2026 RAIDA رائدة · من ابتكار SOS Group. جميع الحقوق محفوظة.
             </p>
             <div className="flex items-center gap-5">
-              <a href="mailto:hello@raaida.net?subject=سياسة الخصوصية" className="text-[11px] text-white/30 hover:text-white/65 transition-colors">
+              <a href="mailto:raaida@sosgroupdz.com?subject=سياسة الخصوصية" className="text-[11px] text-white/30 hover:text-white/65 transition-colors">
                 سياسة الخصوصية
               </a>
-              <a href="mailto:hello@raaida.net?subject=شروط الاستخدام" className="text-[11px] text-white/30 hover:text-white/65 transition-colors">
+              <a href="mailto:raaida@sosgroupdz.com?subject=شروط الاستخدام" className="text-[11px] text-white/30 hover:text-white/65 transition-colors">
                 شروط الاستخدام
               </a>
               <button
