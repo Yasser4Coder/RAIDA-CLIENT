@@ -18,6 +18,7 @@ import Button from '../components/ui/Button'
 import { RaidaMark } from '../components/ui/Logo'
 import { LoadingBlock, ErrorBlock } from '../components/ui/StateBlocks'
 import AdminEditor, { confirmDelete, type AdminField } from '../components/admin/AdminEditor'
+import AdminMemberProfileEditor from '../components/admin/AdminMemberProfileEditor'
 import { useAuth } from '../context/AuthContext'
 import { useAsyncData } from '../hooks/useAsyncData'
 import { adminApi, catalogApi } from '../lib/catalog'
@@ -1248,7 +1249,19 @@ export default function AdminDashboardPage() {
         path={routeSeo.admin.path}
         noindex
       />
-      {editor && editorConfig && (
+      {editor?.kind === 'user' && editor.item ? (
+        <AdminMemberProfileEditor
+          user={editor.item}
+          financeAllowed={financeAllowed}
+          canAssignAdmin={user?.role === 'super_admin'}
+          onClose={() => setEditor(null)}
+          onSaved={() => reloadUsers()}
+          onDeleted={() => {
+            setEditor(null)
+            reloadUsers()
+          }}
+        />
+      ) : editor && editorConfig ? (
         <AdminEditor
           title={editorConfig.title}
           fields={editorConfig.fields}
@@ -1259,7 +1272,7 @@ export default function AdminDashboardPage() {
             editorConfig.reload()
           }}
         />
-      )}
+      ) : null}
 
       <div className="h-full flex min-h-0">
         {/* Desktop sidebar */}
@@ -1735,7 +1748,15 @@ export default function AdminDashboardPage() {
                                   </Badge>
                                 </td>
                                 <td className="p-4">
-                                  <IconActions onEdit={() => setEditor({ kind: 'user', item: u })} />
+                                  <IconActions
+                                    onEdit={() => setEditor({ kind: 'user', item: u })}
+                                    onDelete={async () => {
+                                      const label = u.profile?.name || u.email
+                                      if (!confirmDelete(label)) return
+                                      await adminApi.deleteUser(u.id)
+                                      reloadUsers()
+                                    }}
+                                  />
                                 </td>
                               </tr>
                             )

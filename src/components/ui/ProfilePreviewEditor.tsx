@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type ChangeEvent, type KeyboardEvent, type RefObject } from 'react'
+import { useEffect, useRef, useState, type ChangeEvent, type KeyboardEvent, type ReactNode, type RefObject } from 'react'
 import {
   Camera,
   Check,
@@ -35,6 +35,18 @@ type Draft = {
   cover: string
 }
 
+export type ProfilePersistPayload = {
+  name: string
+  title: string
+  specialty: string
+  city: string
+  website: string | null
+  bio: string | null
+  image: string | null
+  cover: string | null
+  social: { instagram: string; linkedin: string }
+}
+
 function draftFrom(member: Member): Draft {
   return {
     name: member.name || '',
@@ -52,6 +64,24 @@ function draftFrom(member: Member): Draft {
 
 function isDirty(a: Draft, b: Draft) {
   return (Object.keys(a) as (keyof Draft)[]).some((k) => a[k] !== b[k])
+}
+
+function toPersistPayload(draft: Draft, member: Member): ProfilePersistPayload {
+  return {
+    name: draft.name.trim(),
+    title: draft.title.trim(),
+    specialty: draft.specialty.trim(),
+    city: draft.city.trim(),
+    website: draft.website.trim() || null,
+    bio: draft.bio.trim() || null,
+    image: draft.image || null,
+    cover: draft.cover || null,
+    social: {
+      ...member.social,
+      instagram: draft.instagram.trim(),
+      linkedin: draft.linkedin.trim(),
+    },
+  }
 }
 
 function InlineText({
@@ -176,12 +206,24 @@ export default function ProfilePreviewEditor({
   simple = false,
   onEditServices,
   onOpenSettings,
+  onPersist,
+  eyebrow = 'معاينة الملف العام',
+  hint = 'هكذا سيظهر الملف للزوار — انقري على أي حقل أو صورة لتعديله مباشرة.',
+  asideSlot,
+  showPublicLink = true,
+  stickyOffsetClass = 'bottom-[4.75rem] lg:bottom-6',
 }: {
   member: Member
   onSaved: () => Promise<void>
   simple?: boolean
   onEditServices?: () => void
   onOpenSettings?: () => void
+  onPersist?: (payload: ProfilePersistPayload) => Promise<void>
+  eyebrow?: string
+  hint?: string
+  asideSlot?: ReactNode
+  showPublicLink?: boolean
+  stickyOffsetClass?: string
 }) {
   const [baseline, setBaseline] = useState(() => draftFrom(member))
   const [draft, setDraft] = useState(() => draftFrom(member))
@@ -234,28 +276,17 @@ export default function ProfilePreviewEditor({
     setError(null)
     setOk(false)
     try {
-      if (simple) {
+      const payload = toPersistPayload(draft, member)
+      if (onPersist) {
+        await onPersist(payload)
+      } else if (simple) {
         await meApi.updateProfile({
-          name: draft.name.trim(),
-          city: draft.city.trim(),
-          image: draft.image || null,
+          name: payload.name,
+          city: payload.city,
+          image: payload.image,
         })
       } else {
-        await meApi.updateProfile({
-          name: draft.name.trim(),
-          title: draft.title.trim(),
-          specialty: draft.specialty.trim(),
-          city: draft.city.trim(),
-          website: draft.website.trim() || null,
-          bio: draft.bio.trim() || null,
-          image: draft.image || null,
-          cover: draft.cover || null,
-          social: {
-            ...member.social,
-            instagram: draft.instagram.trim(),
-            linkedin: draft.linkedin.trim(),
-          },
-        })
+        await meApi.updateProfile(payload)
       }
       await onSaved()
       setBaseline(draft)
@@ -271,13 +302,11 @@ export default function ProfilePreviewEditor({
     <div className="space-y-4 pb-24">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 px-0.5">
         <div>
-          <p className="text-[12px] font-semibold text-muted">معاينة الملف العام</p>
-          <p className="mt-0.5 text-[13px] text-muted leading-relaxed">
-            هكذا سيظهر ملفك للزوار — انقري على أي حقل أو صورة لتعديله مباشرة.
-          </p>
+          <p className="text-[12px] font-semibold text-muted">{eyebrow}</p>
+          <p className="mt-0.5 text-[13px] text-muted leading-relaxed">{hint}</p>
         </div>
         <div className="flex flex-wrap gap-2">
-          {!simple && (
+          {showPublicLink && !simple && member.id && (
             <Button to={`/members/${member.id}`} variant="outline" size="sm" className="!rounded-full">
               <Eye className="w-4 h-4" />
               عرض الصفحة العامة
@@ -287,7 +316,6 @@ export default function ProfilePreviewEditor({
       </div>
 
       <div className="overflow-hidden rounded-[22px] bg-white hairline shadow-xs">
-        {/* Cover */}
         <div className="relative h-40 sm:h-52 lg:h-56 overflow-hidden group/cover">
           <SafeImg
             src={draft.cover || undefined}
@@ -306,7 +334,6 @@ export default function ProfilePreviewEditor({
           )}
         </div>
 
-        {/* Header card */}
         <div className="relative px-4 sm:px-6 pb-5 -mt-12 sm:-mt-14">
           <div className="flex flex-col sm:flex-row gap-4 sm:gap-6">
             <div className="relative w-28 h-28 sm:w-32 sm:h-32 shrink-0 group/avatar">
@@ -327,7 +354,7 @@ export default function ProfilePreviewEditor({
             <div className="flex-1 min-w-0 pt-2 sm:pt-14 space-y-1">
               <InlineText
                 value={draft.name}
-                placeholder="اسمك الكامل"
+                placeholder="الاسم الكامل"
                 editing={editing === 'name'}
                 onStart={() => setEditing('name')}
                 onChange={(v) => setField('name', v)}
@@ -450,24 +477,17 @@ export default function ProfilePreviewEditor({
                     ))}
                   </div>
                 ) : (
-                  <p className="text-sm text-muted">
-                    لم تضيفي خدمات بعد.
-                    {onEditServices && (
-                      <>
-                        {' '}
-                        <button type="button" onClick={onEditServices} className="font-semibold text-navy underline-offset-2 hover:underline">
-                          أضيفي الآن
-                        </button>
-                      </>
-                    )}
-                  </p>
+                  <p className="text-sm text-muted">لم تُضف خدمات بعد.</p>
                 )}
                 {products.length > 0 && (
                   <div className="mt-4 pt-4 border-t border-navy/5">
                     <p className="text-[12px] font-semibold text-muted mb-2">المنتجات والعروض</p>
                     <div className="grid sm:grid-cols-2 gap-2">
                       {products.map((p) => (
-                        <div key={p} className="rounded-[12px] bg-white/80 px-3 py-2.5 text-[13px] font-medium text-navy">
+                        <div
+                          key={p}
+                          className="rounded-[12px] bg-white/80 px-3 py-2.5 text-[13px] font-medium text-navy"
+                        >
                           {p}
                         </div>
                       ))}
@@ -521,37 +541,37 @@ export default function ProfilePreviewEditor({
               </section>
             )}
 
-            <section className="rounded-[16px] bg-[#0A1328] p-4 sm:p-5 text-white">
-              <p className="text-[12px] font-semibold text-white/45">حالة الظهور</p>
-              <p className="mt-1 text-[15px] font-bold">
-                {simple
-                  ? 'حساب زائر — غير ظاهر في الدليل'
-                  : member.isPublic === false
-                    ? 'ملف خاص — مخفي عن الدليل'
-                    : 'ظاهر في دليل الأعضاء'}
-              </p>
-              {!simple && (
-                <button
-                  type="button"
-                  onClick={onOpenSettings}
-                  className="mt-3 inline-flex text-[12px] font-semibold text-gold pressable-soft disabled:opacity-50"
-                  disabled={!onOpenSettings}
-                >
-                  يمكن تغيير الظهور من الإعدادات
-                </button>
-              )}
-            </section>
+            {asideSlot}
+
+            {!asideSlot && (
+              <section className="rounded-[16px] bg-[#0A1328] p-4 sm:p-5 text-white">
+                <p className="text-[12px] font-semibold text-white/45">حالة الظهور</p>
+                <p className="mt-1 text-[15px] font-bold">
+                  {simple
+                    ? 'حساب زائر — غير ظاهر في الدليل'
+                    : member.isPublic === false
+                      ? 'ملف خاص — مخفي عن الدليل'
+                      : 'ظاهر في دليل الأعضاء'}
+                </p>
+                {!simple && onOpenSettings && (
+                  <button
+                    type="button"
+                    onClick={onOpenSettings}
+                    className="mt-3 inline-flex text-[12px] font-semibold text-gold pressable-soft"
+                  >
+                    يمكن تغيير الظهور من الإعدادات
+                  </button>
+                )}
+              </section>
+            )}
           </aside>
         </div>
       </div>
 
-      {error && (
-        <p className="text-sm text-rose px-1">{error}</p>
-      )}
+      {error && <p className="text-sm text-rose px-1">{error}</p>}
 
-      {/* Sticky save bar */}
       <div
-        className={`fixed z-40 left-3 right-3 sm:left-auto sm:right-8 bottom-[4.75rem] lg:bottom-6 transition-all ${
+        className={`fixed z-40 left-3 right-3 sm:left-auto sm:right-8 transition-all ${stickyOffsetClass} ${
           dirty || ok ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-3 pointer-events-none'
         }`}
       >

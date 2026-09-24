@@ -253,6 +253,7 @@ export const adminApi = {
     apiRequest<AdminUser>('/admin/users', { method: 'POST', body: payload }),
   updateUser: (id: string, payload: Record<string, unknown>) =>
     apiRequest<AdminUser>(`/admin/users/${id}`, { method: 'PATCH', body: payload }),
+  deleteUser: (id: string) => apiRequest<void>(`/admin/users/${id}`, { method: 'DELETE' }),
 
   brands: (query?: Record<string, string | number | undefined>) => apiList<Brand>('/admin/brands', query),
   createBrand: (payload: Record<string, unknown>) =>
