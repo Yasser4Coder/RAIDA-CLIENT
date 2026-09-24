@@ -214,9 +214,36 @@ export const publicApi = {
 export const adminApi = {
   overview: () =>
     apiRequest<{
-      kpis: { members: number; brands: number; activeEvents: number; partners: number }
+      kpis: {
+        members: number
+        guests?: number
+        pendingMemberships?: number
+        brands: number
+        activeEvents: number
+        totalEvents?: number
+        partners: number
+        consultationsNew?: number
+        consultationsTotal?: number
+        announcements?: number
+        opportunities?: number
+        programs?: number
+        workers?: number
+        totalUsers?: number
+      }
       planDistribution: { plan: string; count: number | string }[]
-      recentMembers: (Member & { plan?: string; email?: string; isActive?: boolean })[]
+      recentMembers: (Member & {
+        plan?: string
+        email?: string
+        isActive?: boolean
+        membershipStatus?: string
+        role?: string
+      })[]
+      recentConsultations?: {
+        id: string
+        guestName?: string
+        subject?: string
+        status?: string
+      }[]
     }>('/admin/overview'),
   revenue: () => apiRequest<AdminRevenue>('/admin/revenue'),
 

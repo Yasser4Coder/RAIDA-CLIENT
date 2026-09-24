@@ -25,6 +25,7 @@ import {
   SLUG_TO_PLAN,
 } from '../data/membershipPlanDetails'
 import { canAccessAdminPanel } from '../lib/plans'
+import type { PricingPlan } from '../types/api'
 
 const accentText: Record<string, string> = {
   gold: 'text-gold',
