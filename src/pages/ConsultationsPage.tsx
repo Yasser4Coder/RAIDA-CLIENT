@@ -120,7 +120,7 @@ export default function ConsultationsPage() {
                   size="lg"
                   className="bg-white/10! text-white! border-white/25! hover:bg-white/18!"
                 >
-                  تصفحي الخبيرات
+                  تصفح الخبراء
                 </Button>
               </div>
             </motion.div>
@@ -256,7 +256,7 @@ export default function ConsultationsPage() {
                   ))}
                 </ul>
                 <Button to="/experts" variant="outline" size="sm" className="w-full mt-5">
-                  دليل الخبيرات
+                  دليل الخبراء
                 </Button>
               </div>
             </Reveal>

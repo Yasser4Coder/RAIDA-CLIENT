@@ -20,11 +20,12 @@ import { useAsyncData } from '../hooks/useAsyncData'
 import { catalogApi } from '../lib/catalog'
 import { breadcrumbJsonLd, routeSeo } from '../lib/seo'
 import { expertAccreditation, expertSpecialties } from '../data/platformContent'
+import { mergeFeaturedExperts } from '../data/featuredExperts'
 import { springs, useMotionSafe } from '../lib/motion'
 import { RaidaMark } from '../components/ui/Logo'
 
 const heroImage =
-  'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=1600&h=900&fit=crop'
+  'https://images.unsplash.com/photo-1521737604893-d14cc237f11d?w=1600&h=900&fit=crop'
 
 export default function ExpertsPage() {
   const [search, setSearch] = useState('')
@@ -36,7 +37,7 @@ export default function ExpertsPage() {
     [],
   )
 
-  const experts = data?.data ?? []
+  const experts = useMemo(() => mergeFeaturedExperts(data?.data ?? []), [data?.data])
 
   const specialties = useMemo(() => {
     const fromData = [...new Set(experts.map((m) => m.specialty).filter(Boolean))]
@@ -75,7 +76,7 @@ export default function ExpertsPage() {
         image={heroImage}
         jsonLd={breadcrumbJsonLd([
           { name: 'الرئيسية', path: '/' },
-          { name: 'خبيرات رائدة', path: '/experts' },
+          { name: 'خبراء رائدة', path: '/experts' },
         ])}
       />
 
@@ -104,25 +105,25 @@ export default function ExpertsPage() {
                   <RaidaMark className="w-7 h-7" />
                 </span>
                 <span className="text-[12px] font-semibold tracking-[0.18em] text-gold uppercase">
-                  خبيرات رائدة
+                  خبراء رائدة
                 </span>
                 {!loading && (
                   <span className="text-[12px] text-white/55 font-medium">
-                    · {experts.length.toLocaleString('ar-DZ')} خبيرة
+                    · {experts.length.toLocaleString('ar-DZ')} خبير
                   </span>
                 )}
               </div>
 
               <h1 className="text-4xl sm:text-5xl lg:text-[3.25rem] font-extrabold text-white tracking-[-0.03em] leading-[1.12]">
-                شبكة المدربات والمستشارات
+                شبكة الخبراء والمدربين
               </h1>
               <p className="mt-4 text-[16px] sm:text-lg text-white/75 leading-relaxed max-w-xl">
-                اكتشفي الخبيرات حسب التخصص، اطّلعي على ملفهن المهني، واطلبي استشارة أو برنامجًا تدريبيًا.
+                اكتشف الخبراء حسب التخصص، اطّلع على الملفات المهنية، واطلب استشارة أو برنامجًا تدريبيًا — للنساء والرجال.
               </p>
 
               <div className="mt-8 flex flex-col sm:flex-row gap-3">
                 <Button to="/consultations" variant="gold" size="lg">
-                  اطلبي استشارة
+                  اطلب استشارة
                   <ChevronLeft className="w-4 h-4 opacity-80" />
                 </Button>
                 <Button
@@ -131,7 +132,7 @@ export default function ExpertsPage() {
                   size="lg"
                   className="bg-white/10! text-white! border-white/25! hover:bg-white/18!"
                 >
-                  انضمي كخبيرة
+                  انضم كخبير
                 </Button>
               </div>
             </motion.div>
@@ -149,7 +150,7 @@ export default function ExpertsPage() {
                 type="search"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                placeholder="ابحثي بالاسم أو التخصص أو المدينة..."
+                placeholder="ابحث بالاسم أو التخصص أو المدينة..."
                 className="w-full pr-11 pl-10 h-11 rounded-[14px] bg-white/85 border border-separator text-navy placeholder:text-muted/55 focus:outline-none focus:border-rose/40 focus:ring-2 focus:ring-rose/15 transition-shadow"
               />
               {search && (
@@ -167,7 +168,7 @@ export default function ExpertsPage() {
 
           <div className="mt-3 flex items-center justify-between gap-3 px-1">
             <p className="text-[13px] text-muted">
-              <span className="font-semibold text-navy tabular-nums">{filtered.length}</span> خبيرة
+              <span className="font-semibold text-navy tabular-nums">{filtered.length}</span> خبير
             </p>
             {hasFilters && (
               <button
@@ -236,11 +237,11 @@ export default function ExpertsPage() {
               <GraduationCap className="w-6 h-6 text-navy/50" />
             </div>
             <p className="text-navy font-extrabold text-lg">
-              {hasFilters ? 'لا نتائج مطابقة' : 'لا توجد خبيرات معتمدات للعرض بعد'}
+              {hasFilters ? 'لا نتائج مطابقة' : 'لا يوجد خبراء معتمدون للعرض بعد'}
             </p>
             <p className="mt-2 text-sm text-muted max-w-sm mx-auto leading-relaxed">
               {hasFilters
-                ? 'جرّبي كلمات بحث أخرى أو امسحي الفلاتر.'
+                ? 'جرّب كلمات بحث أخرى أو امسح الفلاتر.'
                 : 'سيظهر هنا أعضاء عضوية المدربين والخبراء بعد الموافقة.'}
             </p>
             <div className="mt-6 flex flex-col sm:flex-row gap-3 justify-center">
@@ -250,7 +251,7 @@ export default function ExpertsPage() {
                 </Button>
               ) : (
                 <Button to="/members" variant="soft" size="md">
-                  تصفحي دليل الأعضاء
+                  تصفح دليل الأعضاء
                 </Button>
               )}
             </div>
@@ -273,10 +274,10 @@ export default function ExpertsPage() {
                 الاعتماد المهني
               </p>
               <h2 className="mt-2 text-3xl sm:text-4xl font-extrabold text-navy tracking-[-0.02em] leading-tight">
-                خبيرة · مدربة · مستشارة
+                خبير · مدرب · مستشار
               </h2>
               <p className="mt-3 text-muted leading-relaxed">
-                العضوية تمنحكِ الظهور في الدليل. تقديم برامج أو استشارات باسم رائدة يتطلب اعتمادًا مهنيًا منفصلًا.
+                العضوية تمنحك الظهور في الدليل. تقديم برامج أو استشارات باسم رائدة يتطلب اعتمادًا مهنيًا منفصلًا.
               </p>
             </div>
 
@@ -343,7 +344,7 @@ export default function ExpertsPage() {
 
             <div className="mt-8 flex flex-col sm:flex-row gap-3">
               <Button to="/membership" variant="gold" size="md">
-                اطلبي عضوية خبيرة
+                اطلب عضوية خبير
                 <ChevronLeft className="w-4 h-4 opacity-70" />
               </Button>
               <Button to="/services" variant="outline" size="md">
@@ -366,17 +367,17 @@ export default function ExpertsPage() {
             />
             <div className="relative max-w-xl">
               <p className="text-[11px] font-semibold tracking-[0.18em] text-gold/80 uppercase">
-                هل أنتِ خبيرة؟
+                هل أنت خبير؟
               </p>
               <h2 className="mt-3 text-3xl sm:text-4xl font-extrabold tracking-[-0.02em] leading-tight">
-                انضمي إلى دليل خبيرات رائدة
+                انضم إلى دليل خبراء رائدة
               </h2>
               <p className="mt-3 text-white/65 leading-relaxed">
-                ظهوري مهني، وصول لصاحبات المشاريع، وفرص تدريب واستشارات داخل المجتمع.
+                ظهور مهني، وصول لروّاد ورائدات الأعمال، وفرص تدريب واستشارات داخل المجتمع.
               </p>
               <div className="mt-8 flex flex-col sm:flex-row gap-3">
                 <Button to="/membership" variant="gold" size="lg">
-                  انضمي كخبيرة
+                  انضم كخبير
                   <ChevronLeft className="w-4 h-4 opacity-80" />
                 </Button>
                 <Button
@@ -385,7 +386,7 @@ export default function ExpertsPage() {
                   size="lg"
                   className="border-white/25! text-white! hover:bg-white/10!"
                 >
-                  اطلبي استشارة
+                  اطلب استشارة
                 </Button>
               </div>
             </div>

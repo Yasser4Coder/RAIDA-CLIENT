@@ -12,7 +12,7 @@ import { LoadingBlock, ErrorBlock } from '../components/ui/StateBlocks'
 import { materialize, springs, useMotionSafe } from '../lib/motion'
 import { useAuth } from '../context/AuthContext'
 import { useAsyncData } from '../hooks/useAsyncData'
-import { PLAN_LABELS, ROLE_LABELS } from '../lib/plans'
+import { PLAN_LABELS, ROLE_LABELS, canAccessAdminPanel } from '../lib/plans'
 import { catalogApi, meApi } from '../lib/catalog'
 import { asArray } from '../lib/normalize'
 import type { Member } from '../types/api'
@@ -684,7 +684,7 @@ export default function DashboardPage() {
     )
   }
 
-  if (user.role === 'admin' || user.role === 'super_admin') {
+  if (canAccessAdminPanel(user.role)) {
     return <Navigate to="/admin" replace />
   }
 
@@ -1065,7 +1065,7 @@ export default function DashboardPage() {
                       <div className="flex flex-wrap gap-2">
                         {[
                           { to: '/programs', label: 'البرامج' },
-                          { to: '/experts', label: 'الخبيرات' },
+                          { to: '/experts', label: 'الخبراء' },
                           { to: '/opportunities', label: 'الفرص' },
                           { to: '/services', label: 'اطلبي خدمة' },
                           { to: '/sos-store', label: 'SOS Store' },

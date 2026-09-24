@@ -24,7 +24,7 @@ import {
   planDetailPath,
   SLUG_TO_PLAN,
 } from '../data/membershipPlanDetails'
-import type { PricingPlan } from '../types/api'
+import { canAccessAdminPanel } from '../lib/plans'
 
 const accentText: Record<string, string> = {
   gold: 'text-gold',
@@ -74,7 +74,7 @@ export default function MembershipPlanPage() {
       navigate('/dashboard')
       return
     }
-    if (user.role === 'admin' || user.role === 'super_admin') {
+    if (canAccessAdminPanel(user.role)) {
       navigate('/admin')
       return
     }

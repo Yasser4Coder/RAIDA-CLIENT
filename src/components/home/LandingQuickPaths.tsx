@@ -14,7 +14,7 @@ const paths = [
   { to: '/opportunities', label: 'الفرص', desc: 'تمويل ومعارض', icon: Trophy },
   { to: '/programs', label: 'البرامج', desc: 'دورات وورشات', icon: BookOpen },
   { to: '/services', label: 'اطلبي خدمة', desc: 'طلب مباشر', icon: Briefcase },
-  { to: '/experts', label: 'الخبيرات', desc: 'استشارات', icon: GraduationCap },
+  { to: '/experts', label: 'الخبراء', desc: 'استشارات', icon: GraduationCap },
   { to: '/events', label: 'الفعاليات', desc: 'ملتقيات', icon: Calendar },
   { to: '/membership', label: 'العضوية', desc: 'خطط سنوية', icon: CreditCard },
 ]

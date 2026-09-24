@@ -7,9 +7,10 @@ import {
 } from 'react'
 import {
   Users, Building2, Calendar, Handshake, CreditCard, FileText,
-  DollarSign, LayoutDashboard, TrendingUp, ArrowUpRight, Search,
+  DollarSign, LayoutDashboard, Search,
   Pencil, Trash2, Plus, ExternalLink, LogOut, Menu, X, Shield,
-  Inbox, MessageSquare, UserCheck, Clock,
+  Inbox, MessageSquare, UserCheck, Clock, Megaphone, Trophy, BookOpen,
+  Sparkles,
 } from 'lucide-react'
 import { AnimatePresence, motion } from 'motion/react'
 import Badge from '../components/ui/Badge'
@@ -20,7 +21,7 @@ import AdminEditor, { confirmDelete, type AdminField } from '../components/admin
 import { useAuth } from '../context/AuthContext'
 import { useAsyncData } from '../hooks/useAsyncData'
 import { adminApi, catalogApi } from '../lib/catalog'
-import { PLAN_LABELS, ROLE_LABELS, MEMBERSHIP_STATUS_LABELS } from '../lib/plans'
+import { PLAN_LABELS, ROLE_LABELS, MEMBERSHIP_STATUS_LABELS, canAccessAdminPanel, canAccessFinance } from '../lib/plans'
 import { safeHref } from '../lib/safe'
 import { springs, useMotionSafe } from '../lib/motion'
 import SafeImg from '../components/ui/SafeImg'
@@ -51,11 +52,11 @@ type NavItem = {
   hint: string
 }
 
-const navGroups: { label: string; items: NavItem[] }[] = [
+const navGroups: { label: string; items: NavItem[]; financeOnly?: boolean }[] = [
   {
     label: 'المنصة',
     items: [
-      { id: 'overview', label: 'نظرة عامة', icon: LayoutDashboard, hint: 'ملخص الأداء والنشاط الأخير' },
+      { id: 'overview', label: 'نظرة عامة', icon: LayoutDashboard, hint: 'ملخص النشاط والإحصائيات التشغيلية' },
       { id: 'users', label: 'المستخدمات', icon: Users, hint: 'إدارة الحسابات والأدوار والخطط' },
       { id: 'brands', label: 'العلامات', icon: Building2, hint: 'العلامات التجارية المعروضة في الدليل' },
       { id: 'events', label: 'الفعاليات', icon: Calendar, hint: 'إنشاء ونشر وإدارة الفعاليات' },
@@ -66,19 +67,23 @@ const navGroups: { label: string; items: NavItem[] }[] = [
     items: [
       { id: 'partnerships', label: 'الشراكات', icon: Handshake, hint: 'الشركاء والطلبات ومستويات الرعاية' },
       { id: 'consultations', label: 'الاستشارات', icon: MessageSquare, hint: 'طلبات الاستشارة والردود والأرشفة' },
-      { id: 'plans', label: 'خطط العضوية', icon: CreditCard, hint: 'الأسعار والمزايا وصلاحيات الدخول' },
+      { id: 'plans', label: 'خطط العضوية', icon: CreditCard, hint: 'مزايا الخطط وصلاحيات الدخول' },
     ],
   },
   {
-    label: 'المحتوى والتحليل',
+    label: 'المحتوى',
     items: [
       { id: 'content', label: 'المحتوى', icon: FileText, hint: 'الإعلانات وقصص النجاح والإحصائيات' },
-      { id: 'revenue', label: 'الإيرادات', icon: DollarSign, hint: 'تحليل الاشتراكات والإيرادات التقديرية' },
+    ],
+  },
+  {
+    label: 'المالية',
+    financeOnly: true,
+    items: [
+      { id: 'revenue', label: 'الإحصائيات المالية', icon: DollarSign, hint: 'إيرادات الاشتراكات والتقديرات المالية' },
     ],
   },
 ]
-
-const adminNav = navGroups.flatMap((g) => g.items)
 
 const planLabel = PLAN_LABELS
 const roleLabel = ROLE_LABELS
@@ -90,12 +95,8 @@ const brandFallback =
 const eventFallback =
   'https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=800&h=500&fit=crop'
 
-function isAdminRole(role?: string) {
-  return role === 'admin' || role === 'super_admin'
-}
-
 function money(value: number) {
-  return `${value.toLocaleString('ar-DZ')} دج`
+  return `${Number(value || 0).toLocaleString('ar-DZ')} دج`
 }
 
 type Editor =
@@ -369,9 +370,16 @@ export default function AdminDashboardPage() {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [userSearch, setUserSearch] = useState('')
   const [editor, setEditor] = useState<Editor>(null)
-  const allowed = isAdminRole(user?.role)
+  const allowed = canAccessAdminPanel(user?.role)
+  const financeAllowed = canAccessFinance(user?.role)
+  const visibleNavGroups = navGroups.filter((g) => !g.financeOnly || financeAllowed)
+  const visibleNav = visibleNavGroups.flatMap((g) => g.items)
   const { reduce } = useMotionSafe()
-  const activeNav = adminNav.find((i) => i.id === active)
+  const activeNav = visibleNav.find((i) => i.id === active) || visibleNav[0]
+
+  useEffect(() => {
+    if (!financeAllowed && active === 'revenue') setActive('overview')
+  }, [financeAllowed, active])
 
   const {
     data: overview,
@@ -389,8 +397,8 @@ export default function AdminDashboardPage() {
     error: revenueError,
     reload: reloadRevenue,
   } = useAsyncData(
-    () => (allowed && (active === 'revenue' || active === 'overview') ? adminApi.revenue() : Promise.resolve(null)),
-    [user?.id, user?.role, active],
+    () => (allowed && financeAllowed && active === 'revenue' ? adminApi.revenue() : Promise.resolve(null)),
+    [user?.id, user?.role, active, financeAllowed],
   )
 
   const {
@@ -587,7 +595,7 @@ export default function AdminDashboardPage() {
     )
   }
 
-  if (!isAdminRole(user.role)) {
+  if (!canAccessAdminPanel(user.role)) {
     return (
       <AdminChrome onLogout={() => logout()} userEmail={user.email}>
         <SeoHead
@@ -640,6 +648,7 @@ export default function AdminDashboardPage() {
   const consultationList = consultationsPayload?.data ?? []
   const memberOptions = (membersPayload?.data ?? []).map((m) => ({ value: m.id, label: m.name }))
   const recentMembers = overview?.recentMembers ?? []
+  const recentConsultations = overview?.recentConsultations ?? []
   const planDistribution = overview?.planDistribution ?? []
   const kpis = overview?.kpis
 
@@ -709,10 +718,18 @@ export default function AdminDashboardPage() {
   }
 
   const kpiCards = [
-    { label: 'إجمالي العضوات', value: String(kpis?.members ?? '—'), change: '', icon: Users },
-    { label: 'العلامات التجارية', value: String(kpis?.brands ?? '—'), change: '', icon: Building2 },
-    { label: 'الشركاء', value: String(kpis?.partners ?? '—'), change: '', icon: Handshake },
-    { label: 'فعاليات نشطة', value: String(kpis?.activeEvents ?? '—'), change: '', icon: Calendar },
+    { label: 'عضوات معتمدات', value: String(kpis?.members ?? '—'), icon: UserCheck },
+    { label: 'زائرات', value: String(kpis?.guests ?? '—'), icon: Users },
+    { label: 'بانتظار الموافقة', value: String(kpis?.pendingMemberships ?? '—'), icon: Clock },
+    { label: 'استشارات جديدة', value: String(kpis?.consultationsNew ?? '—'), icon: Inbox },
+    { label: 'العلامات', value: String(kpis?.brands ?? '—'), icon: Building2 },
+    { label: 'فعاليات منشورة', value: String(kpis?.activeEvents ?? '—'), icon: Calendar },
+    { label: 'الشركاء', value: String(kpis?.partners ?? '—'), icon: Handshake },
+    { label: 'الإعلانات', value: String(kpis?.announcements ?? '—'), icon: Megaphone },
+    { label: 'الفرص', value: String(kpis?.opportunities ?? '—'), icon: Trophy },
+    { label: 'البرامج', value: String(kpis?.programs ?? '—'), icon: BookOpen },
+    { label: 'فريق العمل', value: String(kpis?.workers ?? '—'), icon: Sparkles },
+    { label: 'كل الاستشارات', value: String(kpis?.consultationsTotal ?? '—'), icon: MessageSquare },
   ]
 
   const userStatCards = [
@@ -763,7 +780,10 @@ export default function AdminDashboardPage() {
     { name: 'category', label: 'التصنيف' },
     { name: 'image', label: 'صورة الملف', type: 'image' },
     { name: 'cover', label: 'صورة الغلاف', type: 'image' },
-    ...(!currentRole || currentRole === 'member' || currentRole === 'guest'
+    ...(!currentRole ||
+    currentRole === 'member' ||
+    currentRole === 'guest' ||
+    (currentRole === 'worker' && financeAllowed)
       ? [
           {
             name: 'role',
@@ -772,6 +792,8 @@ export default function AdminDashboardPage() {
             options: [
               { value: 'guest', label: 'زائرة' },
               { value: 'member', label: 'عضوة' },
+              ...(financeAllowed ? [{ value: 'worker', label: 'موظفة' }] : []),
+              ...(user?.role === 'super_admin' ? [{ value: 'admin', label: 'مديرة' }] : []),
             ],
           },
         ]
@@ -819,7 +841,7 @@ export default function AdminDashboardPage() {
     { name: 'time', label: 'الوقت' },
     { name: 'location', label: 'المكان', required: true },
     { name: 'category', label: 'التصنيف', required: true },
-    { name: 'price', label: 'السعر' },
+    ...(financeAllowed ? [{ name: 'price', label: 'السعر' } as AdminField] : []),
     { name: 'capacity', label: 'السعة', type: 'number' },
     { name: 'image', label: 'صورة الفعالية', type: 'image' },
     { name: 'registration_url', label: 'رابط منصة التسجيل' },
@@ -861,10 +883,14 @@ export default function AdminDashboardPage() {
         ]
       : []),
     { name: 'name_ar', label: 'الاسم بالعربية', required: true },
-    { name: 'price', label: 'سعر الإطلاق / الحالي', required: true },
-    { name: 'original_price', label: 'السعر الأصلي' },
-    { name: 'launch_price', label: 'سعر الإطلاق' },
-    { name: 'launch_savings', label: 'قيمة التوفير' },
+    ...(financeAllowed
+      ? ([
+          { name: 'price', label: 'سعر الإطلاق / الحالي', required: true },
+          { name: 'original_price', label: 'السعر الأصلي' },
+          { name: 'launch_price', label: 'سعر الإطلاق' },
+          { name: 'launch_savings', label: 'قيمة التوفير' },
+        ] as AdminField[])
+      : []),
     { name: 'period', label: 'الفترة', required: true },
     { name: 'description', label: 'الوصف', type: 'textarea', required: true },
     { name: 'features', label: 'المزايا (سطر لكل ميزة)', type: 'lines' },
@@ -891,8 +917,12 @@ export default function AdminDashboardPage() {
     { name: 'duration', label: 'المدة' },
     { name: 'mode', label: 'النمط' },
     { name: 'level', label: 'المستوى' },
-    { name: 'member_price', label: 'سعر العضوات' },
-    { name: 'public_price', label: 'السعر العام' },
+    ...(financeAllowed
+      ? ([
+          { name: 'member_price', label: 'سعر العضوات' },
+          { name: 'public_price', label: 'السعر العام' },
+        ] as AdminField[])
+      : []),
     { name: 'field', label: 'المجال' },
     { name: 'month', label: 'الشهر' },
     { name: 'sort_order', label: 'الترتيب', type: 'number' },
@@ -1209,10 +1239,17 @@ export default function AdminDashboardPage() {
         <aside className="hidden lg:flex w-[268px] shrink-0 flex-col border-l border-navy/[0.07] bg-[#0A1328] text-white">
           <div className="px-4 pt-5 pb-3">
             <p className="text-[10px] font-semibold tracking-[0.2em] text-gold/80 uppercase">Console</p>
-            <p className="mt-1 text-[13px] text-white/55 leading-snug">إدارة RAIDA بالكامل من مكان واحد</p>
+            <p className="mt-1 text-[13px] text-white/55 leading-snug">
+              {financeAllowed ? 'إدارة RAIDA بالكامل من مكان واحد' : 'لوحة تشغيل فريق العمل — بدون بيانات مالية'}
+            </p>
+            {!financeAllowed && (
+              <p className="mt-2 inline-flex items-center gap-1.5 text-[11px] font-semibold text-gold/90 bg-gold/10 ring-1 ring-gold/20 rounded-full px-2.5 py-1">
+                <Shield className="w-3 h-3" /> دور الموظفة
+              </p>
+            )}
           </div>
           <nav className="flex-1 overflow-y-auto px-2.5 pb-4 space-y-4">
-            {navGroups.map((group) => (
+            {visibleNavGroups.map((group) => (
               <div key={group.label}>
                 <p className="px-3 mb-1.5 text-[10px] font-semibold tracking-[0.14em] text-white/35 uppercase">
                   {group.label}
@@ -1301,7 +1338,7 @@ export default function AdminDashboardPage() {
                   </button>
                 </div>
                 <nav className="flex-1 overflow-y-auto p-3 space-y-4">
-                  {navGroups.map((group) => (
+                  {visibleNavGroups.map((group) => (
                     <div key={group.label}>
                       <p className="px-3 mb-1.5 text-[10px] font-semibold tracking-[0.14em] text-white/35 uppercase">
                         {group.label}
@@ -1361,21 +1398,55 @@ export default function AdminDashboardPage() {
               <>
               {active === 'overview' && (
                 <div className="space-y-5 animate-fade-up">
-                  <div className="grid grid-cols-2 xl:grid-cols-4 gap-3 sm:gap-4">
+                  <div className="rounded-[20px] bg-navy text-white p-5 sm:p-7 relative overflow-hidden">
+                    <div className="pointer-events-none absolute -top-16 -left-10 h-48 w-48 rounded-full bg-gold/20 blur-3xl" />
+                    <div className="pointer-events-none absolute -bottom-20 -right-8 h-52 w-52 rounded-full bg-rose/25 blur-3xl" />
+                    <div className="relative flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
+                      <div>
+                        <p className="text-[12px] font-semibold text-gold tracking-[0.08em]">لوحة التشغيل</p>
+                        <h2 className="mt-1 font-display text-2xl sm:text-3xl font-extrabold tracking-[-0.03em]">
+                          مرحباً{user.email ? `،` : ''} نظرة سريعة على المنصة
+                        </h2>
+                        <p className="mt-2 text-[14px] text-white/65 max-w-xl leading-relaxed">
+                          إحصائيات تشغيلية بدون بيانات مالية — راقبي العضوات، الطلبات، المحتوى، والفعاليات من مكان واحد.
+                        </p>
+                      </div>
+                      <div className="flex flex-wrap gap-2">
+                        <Button type="button" variant="gold" size="sm" onClick={() => setActive('users')}>
+                          المستخدمات
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="glass"
+                          size="sm"
+                          className="!text-white !border-white/20 !bg-white/10"
+                          onClick={() => setActive('consultations')}
+                        >
+                          الاستشارات
+                        </Button>
+                        {financeAllowed && (
+                          <Button
+                            type="button"
+                            variant="glass"
+                            size="sm"
+                            className="!text-white !border-white/20 !bg-white/10"
+                            onClick={() => setActive('revenue')}
+                          >
+                            المالية
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4">
                     {kpiCards.map((k) => {
                       const Icon = k.icon
                       return (
                         <Panel key={k.label} className="relative p-4 sm:p-5">
                           <div className="absolute top-0 inset-x-0 h-0.5 bg-gradient-to-l from-gold via-rose/80 to-transparent" />
-                          <div className="flex items-center justify-between gap-2">
-                            <div className="w-10 h-10 rounded-[12px] bg-navy/[0.04] ring-1 ring-navy/8 flex items-center justify-center">
-                              <Icon className="w-[18px] h-[18px] text-navy" />
-                            </div>
-                            {k.change && (
-                              <span className="text-[11px] font-semibold text-emerald-600 flex items-center gap-0.5">
-                                <ArrowUpRight className="w-3 h-3" /> {k.change}
-                              </span>
-                            )}
+                          <div className="w-10 h-10 rounded-[12px] bg-navy/[0.04] ring-1 ring-navy/8 flex items-center justify-center">
+                            <Icon className="w-[18px] h-[18px] text-navy" />
                           </div>
                           <p className="mt-3 text-2xl sm:text-[1.65rem] font-extrabold text-navy tracking-[-0.03em] tabular-nums">
                             {k.value}
@@ -1388,40 +1459,15 @@ export default function AdminDashboardPage() {
 
                   <div className="grid lg:grid-cols-3 gap-4 sm:gap-5">
                     <Panel className="lg:col-span-2 p-5 sm:p-6">
-                      <div className="flex items-center justify-between mb-6">
+                      <div className="flex items-center justify-between mb-5">
                         <div>
-                          <h3 className="font-bold text-navy tracking-[-0.01em]">الإيرادات حسب الخطة</h3>
-                          <p className="text-[12px] text-muted mt-0.5">تقدير شهري للاشتراكات النشطة</p>
+                          <h3 className="font-bold text-navy tracking-[-0.01em]">توزيع خطط العضوية</h3>
+                          <p className="text-[12px] text-muted mt-0.5">عدد العضوات حسب نوع الاشتراك (بدون مبالغ)</p>
                         </div>
                         <div className="w-10 h-10 rounded-[12px] bg-gold/15 ring-1 ring-gold/25 flex items-center justify-center">
-                          <TrendingUp className="w-5 h-5 text-gold-dark" />
+                          <CreditCard className="w-5 h-5 text-gold-dark" />
                         </div>
                       </div>
-                      <div className="flex items-end gap-3 h-48">
-                        {(revenue?.breakdown ?? []).map((row) => (
-                          <div key={row.plan} className="flex-1 flex flex-col items-center gap-2 min-w-0">
-                            <div
-                              className="w-full rounded-t-[10px] bg-gradient-to-t from-navy to-gold"
-                              style={{ height: `${Math.max(8, (row.monthlyRevenue / maxRevenue) * 100)}%` }}
-                            />
-                            <span className="text-[10px] text-muted text-center truncate w-full">{row.nameAr}</span>
-                          </div>
-                        ))}
-                        {(revenue?.breakdown ?? []).length === 0 && (
-                          <p className="w-full text-center text-sm text-muted self-center">لا توجد بيانات إيرادات بعد</p>
-                        )}
-                      </div>
-                      <div className="mt-5 pt-4 border-t border-navy/[0.06] flex items-center justify-between gap-3">
-                        <p className="text-[13px] text-muted">الإجمالي الشهري</p>
-                        <p className="text-[15px] font-extrabold text-navy tabular-nums">
-                          {money(revenue?.monthlyRevenue ?? 0)}
-                        </p>
-                      </div>
-                    </Panel>
-
-                    <Panel className="p-5 sm:p-6">
-                      <h3 className="font-bold text-navy mb-1 tracking-[-0.01em]">توزيع الخطط</h3>
-                      <p className="text-[12px] text-muted mb-5">نسبة العضوات حسب الاشتراك</p>
                       <div className="space-y-4">
                         {(planDistribution.length
                           ? planDistribution
@@ -1434,10 +1480,10 @@ export default function AdminDashboardPage() {
                           const pct = Math.round((Number(p.count) / totalPlanCount) * 100)
                           const color = ['bg-navy/30', 'bg-rose', 'bg-gold'][i % 3]
                           return (
-                            <div key={p.plan}>
+                            <div key={String(p.plan)}>
                               <div className="flex justify-between text-[13px] mb-1.5">
-                                <span className="text-navy font-medium">{planLabel[p.plan] || p.plan}</span>
-                                <span className="text-muted tabular-nums">{pct}%</span>
+                                <span className="text-navy font-medium">{planLabel[p.plan as string] || p.plan || '—'}</span>
+                                <span className="text-muted tabular-nums">{Number(p.count)} · {pct}%</span>
                               </div>
                               <div className="h-2 rounded-full bg-ivory overflow-hidden ring-1 ring-navy/5">
                                 <div className={`h-full rounded-full ${color}`} style={{ width: `${pct}%` }} />
@@ -1446,9 +1492,49 @@ export default function AdminDashboardPage() {
                           )
                         })}
                       </div>
-                      <div className="mt-6 p-4 rounded-[14px] bg-navy text-white">
-                        <p className="text-[11px] text-white/50">إجمالي العضوات</p>
-                        <p className="text-2xl font-extrabold text-gold mt-1 tabular-nums">{kpis?.members ?? 0}</p>
+                      <div className="mt-6 grid grid-cols-3 gap-3">
+                        <div className="rounded-[14px] bg-ivory p-3 ring-1 ring-navy/5">
+                          <p className="text-[11px] text-muted">فعاليات منشورة</p>
+                          <p className="text-lg font-extrabold text-navy tabular-nums">{kpis?.activeEvents ?? 0}</p>
+                        </div>
+                        <div className="rounded-[14px] bg-ivory p-3 ring-1 ring-navy/5">
+                          <p className="text-[11px] text-muted">كل الفعاليات</p>
+                          <p className="text-lg font-extrabold text-navy tabular-nums">{kpis?.totalEvents ?? 0}</p>
+                        </div>
+                        <div className="rounded-[14px] bg-ivory p-3 ring-1 ring-navy/5">
+                          <p className="text-[11px] text-muted">استشارات جديدة</p>
+                          <p className="text-lg font-extrabold text-navy tabular-nums">{kpis?.consultationsNew ?? 0}</p>
+                        </div>
+                      </div>
+                    </Panel>
+
+                    <Panel className="p-5 sm:p-6">
+                      <div className="flex items-center justify-between mb-4">
+                        <div>
+                          <h3 className="font-bold text-navy tracking-[-0.01em]">آخر الاستشارات</h3>
+                          <p className="text-[12px] text-muted mt-0.5">أحدث الطلبات الواردة</p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => setActive('consultations')}
+                          className="text-[12px] font-semibold text-gold-dark hover:text-navy"
+                        >
+                          الكل
+                        </button>
+                      </div>
+                      <div className="space-y-3">
+                        {recentConsultations.slice(0, 5).map((c: { id: string; guestName?: string; subject?: string; status?: string }) => (
+                          <div key={c.id} className="rounded-[12px] bg-ivory/90 ring-1 ring-navy/5 px-3 py-2.5">
+                            <p className="text-[13px] font-semibold text-navy truncate">{c.guestName || '—'}</p>
+                            <p className="text-[11px] text-muted truncate mt-0.5">{c.subject || 'بدون موضوع'}</p>
+                            <Badge variant={c.status === 'new' ? 'gold' : 'soft'} className="mt-1.5">
+                              {c.status === 'new' ? 'جديدة' : c.status === 'read' ? 'مقروءة' : c.status || '—'}
+                            </Badge>
+                          </div>
+                        ))}
+                        {recentConsultations.length === 0 && (
+                          <p className="text-sm text-muted text-center py-6">لا توجد استشارات بعد</p>
+                        )}
                       </div>
                     </Panel>
                   </div>
@@ -1456,7 +1542,7 @@ export default function AdminDashboardPage() {
                   <Panel>
                     <div className="px-5 sm:px-6 py-4 border-b border-navy/[0.06] flex items-center justify-between">
                       <div>
-                        <h3 className="font-bold text-navy tracking-[-0.01em]">آخر العضوات المسجّلات</h3>
+                        <h3 className="font-bold text-navy tracking-[-0.01em]">آخر التسجيلات</h3>
                         <p className="text-[12px] text-muted mt-0.5">أحدث الحسابات في المنصة</p>
                       </div>
                       <button
@@ -1478,7 +1564,7 @@ export default function AdminDashboardPage() {
                           </tr>
                         </thead>
                         <tbody>
-                          {recentMembers.slice(0, 5).map((m) => (
+                          {recentMembers.slice(0, 8).map((m) => (
                             <tr key={m.id} className="border-b border-navy/[0.04] hover:bg-blush/40 transition-colors">
                               <td className="px-5 py-3">
                                 <div className="flex items-center gap-3">
@@ -1693,7 +1779,11 @@ export default function AdminDashboardPage() {
                         <p className="text-[12px] text-muted mt-0.5">{e.date} — {e.category}</p>
                       </div>
                       <Badge variant={e.isPublished === false ? 'soft' : 'rose'}>
-                        {e.isPublished === false ? 'مسودة' : e.price || 'منشورة'}
+                        {e.isPublished === false
+                          ? 'مسودة'
+                          : financeAllowed
+                            ? e.price || 'منشورة'
+                            : 'منشورة'}
                       </Badge>
                       {safeHref(e.registrationUrl) && (
                         <a
@@ -1936,11 +2026,18 @@ export default function AdminDashboardPage() {
 
               {active === 'plans' && (
                 <div className="space-y-4 animate-fade-up">
-                  <div className="flex justify-end">
-                    <Button variant="gold" size="sm" onClick={() => setEditor({ kind: 'plan' })}>
-                      <Plus className="w-4 h-4" /> إضافة خطة
-                    </Button>
-                  </div>
+                  {financeAllowed && (
+                    <div className="flex justify-end">
+                      <Button variant="gold" size="sm" onClick={() => setEditor({ kind: 'plan' })}>
+                        <Plus className="w-4 h-4" /> إضافة خطة
+                      </Button>
+                    </div>
+                  )}
+                  {!financeAllowed && (
+                    <p className="text-[13px] text-muted rounded-[14px] bg-ivory ring-1 ring-navy/5 px-4 py-3">
+                      عرض الخطط متاح لفريق العمل. تعديل الأسعار والمبالغ محصور بالإدارة.
+                    </p>
+                  )}
                   <div className="grid md:grid-cols-3 gap-3 sm:gap-4">
                   {planList.map((p) => {
                     const members = planDistribution.find((row) => row.plan === p.name)?.count ?? 0
@@ -1951,18 +2048,26 @@ export default function AdminDashboardPage() {
                             <h3 className="font-bold text-navy text-lg tracking-[-0.02em]">{p.nameAr}</h3>
                             <p className="text-[11px] text-muted mt-0.5">{p.name}</p>
                           </div>
-                          <IconActions
-                            onEdit={() => setEditor({ kind: 'plan', item: p })}
-                            onDelete={async () => {
-                              if (!confirmDelete(p.nameAr || p.name)) return
-                              await adminApi.deletePlan(p.id)
-                              reloadPlans()
-                              reloadOverview()
-                            }}
-                          />
+                          {financeAllowed && (
+                            <IconActions
+                              onEdit={() => setEditor({ kind: 'plan', item: p })}
+                              onDelete={async () => {
+                                if (!confirmDelete(p.nameAr || p.name)) return
+                                await adminApi.deletePlan(p.id)
+                                reloadPlans()
+                                reloadOverview()
+                              }}
+                            />
+                          )}
                         </div>
-                        <p className="text-3xl font-extrabold text-navy mt-4 tracking-[-0.03em]">{p.price}</p>
-                        <p className="text-[12px] text-muted">{p.period}</p>
+                        {financeAllowed ? (
+                          <>
+                            <p className="text-3xl font-extrabold text-navy mt-4 tracking-[-0.03em]">{p.price}</p>
+                            <p className="text-[12px] text-muted">{p.period}</p>
+                          </>
+                        ) : (
+                          <p className="text-[13px] text-muted mt-4">الأسعار مخفية عن دور الموظفة</p>
+                        )}
                         <p className="text-[13px] text-muted mt-3 leading-relaxed">{p.description}</p>
                         <ul className="mt-4 space-y-1.5 text-[12px] text-navy">
                           {p.features.slice(0, 4).map((feature) => (
@@ -2137,13 +2242,28 @@ export default function AdminDashboardPage() {
                 </div>
               )}
 
-              {active === 'revenue' && (
+              {active === 'revenue' && financeAllowed && (
                 <div className="space-y-5 animate-fade-up">
-                  <div className="grid sm:grid-cols-3 gap-3 sm:gap-4">
+                  <div className="rounded-[20px] bg-navy text-white p-5 sm:p-7 relative overflow-hidden">
+                    <div className="pointer-events-none absolute -top-16 -left-10 h-48 w-48 rounded-full bg-gold/25 blur-3xl" />
+                    <div className="pointer-events-none absolute -bottom-20 -right-8 h-52 w-52 rounded-full bg-rose/20 blur-3xl" />
+                    <div className="relative">
+                      <p className="text-[12px] font-semibold text-gold tracking-[0.08em]">صفحة المالية</p>
+                      <h2 className="mt-1 font-display text-2xl sm:text-3xl font-extrabold tracking-[-0.03em]">
+                        الإحصائيات المالية
+                      </h2>
+                      <p className="mt-2 text-[14px] text-white/65 max-w-xl leading-relaxed">
+                        تقديرات الإيرادات من الاشتراكات النشطة — هذه الصفحة متاحة للإدارة فقط ولا تظهر لدور الموظفة.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
                     {[
                       { label: 'إيرادات شهرية تقديرية', value: money(revenue?.monthlyRevenue ?? 0) },
                       { label: 'متوسط الاشتراك', value: money(revenue?.averageSubscription ?? 0) },
                       { label: 'عضوات مدفوعات', value: String(revenue?.payingMembers ?? 0) },
+                      { label: 'إجمالي العضوات', value: String(revenue?.totalMembers ?? 0) },
                     ].map((s) => (
                       <Panel key={s.label} className="p-5">
                         <p className="text-[12px] text-muted">{s.label}</p>
@@ -2155,13 +2275,13 @@ export default function AdminDashboardPage() {
                   </div>
                   <Panel className="p-5 sm:p-6">
                     <h3 className="font-bold text-navy mb-1 tracking-[-0.01em]">تفصيل الإيرادات حسب الخطة</h3>
-                    <p className="text-[12px] text-muted mb-6">تقدير مبني على الاشتراكات النشطة</p>
+                    <p className="text-[12px] text-muted mb-6">تقدير مبني على الاشتراكات النشطة × سعر الخطة</p>
                     <div className="space-y-4">
                       {(revenue?.breakdown ?? []).map((row) => (
                         <div key={row.plan}>
                           <div className="flex justify-between text-[13px] mb-1.5 gap-3">
                             <span className="text-navy font-medium">
-                              {row.nameAr} · {row.members} عضوة
+                              {row.nameAr} · {row.members} عضوة · {row.price}
                             </span>
                             <span className="text-muted tabular-nums shrink-0">{money(row.monthlyRevenue)}</span>
                           </div>

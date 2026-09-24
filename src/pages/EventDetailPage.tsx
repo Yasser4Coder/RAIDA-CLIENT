@@ -12,6 +12,7 @@ import { asArray } from '../lib/normalize'
 import SeoHead from '../components/seo/SeoHead'
 import SafeImg from '../components/ui/SafeImg'
 import { absoluteImage, absoluteUrl, breadcrumbJsonLd } from '../lib/seo'
+import { canAccessAdminPanel } from '../lib/plans'
 
 const imageFallback =
   'https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=800&h=500&fit=crop'
@@ -64,7 +65,7 @@ export default function EventDetailPage() {
       navigate('/dashboard')
       return
     }
-    if (user.role === 'admin' || user.role === 'super_admin') {
+    if (canAccessAdminPanel(user.role)) {
       navigate('/admin')
       return
     }

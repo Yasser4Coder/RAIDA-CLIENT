@@ -9,7 +9,7 @@ const explore = navLinks
 const community = [
   { to: '/community', label: 'المجتمع' },
   { to: '/members', label: 'دليل الأعضاء' },
-  { to: '/experts', label: 'خبيرات رائدة' },
+  { to: '/experts', label: 'خبراء رائدة' },
   { to: '/academies', label: 'الأكاديميات' },
   { to: '/brands', label: 'العلامات' },
   { to: '/sos-store', label: 'SOS Store' },

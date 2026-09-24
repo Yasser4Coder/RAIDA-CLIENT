@@ -4,25 +4,55 @@ import { motion } from 'motion/react'
 import type { Member } from '../../types/api'
 import { springs, useMotionSafe } from '../../lib/motion'
 import SafeImg from './SafeImg'
+import type { ReactNode } from 'react'
 
 const placeholder =
   'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=400&h=400&fit=crop'
 
+function isWireframeMember(member: Member) {
+  return (
+    member.id.startsWith('wireframe-') ||
+    Boolean(member.image && member.image.includes('/experts/wireframe-'))
+  )
+}
+
+function CardShell({
+  member,
+  children,
+}: {
+  member: Member
+  children: ReactNode
+}) {
+  const className =
+    'group relative flex h-full flex-col overflow-hidden rounded-[22px] bg-white hairline shadow-sm pressable'
+
+  if (member.id.startsWith('wireframe-')) {
+    return (
+      <div className={className} role="group">
+        {children}
+      </div>
+    )
+  }
+
+  return (
+    <Link to={`/members/${member.id}`} className={className}>
+      {children}
+    </Link>
+  )
+}
+
 export default function MemberCard({ member }: { member: Member }) {
   const { reduce } = useMotionSafe()
+  const wireframe = isWireframeMember(member)
 
   return (
     <motion.div
       whileHover={reduce ? undefined : { y: -4 }}
-      whileTap={reduce ? undefined : { scale: 0.985 }}
+      whileTap={reduce || member.id.startsWith('wireframe-') ? undefined : { scale: 0.985 }}
       transition={springs.snappy}
       className="h-full"
     >
-      <Link
-        to={`/members/${member.id}`}
-        className="group relative flex h-full flex-col overflow-hidden rounded-[22px] bg-white hairline shadow-sm pressable"
-      >
-        {/* Cover */}
+      <CardShell member={member}>
         <div className="relative h-[5.5rem] overflow-hidden">
           <SafeImg
             src={member.cover || member.image}
@@ -32,6 +62,11 @@ export default function MemberCard({ member }: { member: Member }) {
             loading="lazy"
           />
           <div className="absolute inset-0 bg-gradient-to-t from-white via-transparent to-navy/15" />
+          {wireframe && (
+            <span className="absolute top-2.5 left-2.5 rounded-full bg-navy/80 px-2.5 py-1 text-[10px] font-semibold text-gold ring-1 ring-gold/30">
+              صورة قريبًا
+            </span>
+          )}
         </div>
 
         <div className="relative flex flex-1 flex-col px-5 pb-5 -mt-10">
@@ -41,7 +76,7 @@ export default function MemberCard({ member }: { member: Member }) {
             alt={member.name}
             width={80}
             height={80}
-            className="h-20 w-20 rounded-[18px] object-cover ring-[3px] ring-white shadow-md"
+            className="h-20 w-20 rounded-[18px] object-cover ring-[3px] ring-white shadow-md bg-navy"
           />
 
           <h3 className="mt-3 text-[16px] font-bold tracking-[-0.02em] text-navy leading-snug group-hover:text-navy-light transition-colors">
@@ -60,13 +95,17 @@ export default function MemberCard({ member }: { member: Member }) {
 
           <div className="mt-auto pt-4 flex items-center justify-between border-t border-separator/70">
             <span className="text-[11px] text-muted">{member.category}</span>
-            <span className="inline-flex items-center gap-0.5 text-[13px] font-semibold text-rose transition-all group-hover:gap-1.5">
-              الملف الشخصي
-              <ChevronLeft className="h-4 w-4 opacity-70" />
-            </span>
+            {member.id.startsWith('wireframe-') ? (
+              <span className="text-[12px] font-semibold text-muted">الملف قريبًا</span>
+            ) : (
+              <span className="inline-flex items-center gap-0.5 text-[13px] font-semibold text-rose transition-all group-hover:gap-1.5">
+                الملف الشخصي
+                <ChevronLeft className="h-4 w-4 opacity-70" />
+              </span>
+            )}
           </div>
         </div>
-      </Link>
+      </CardShell>
     </motion.div>
   )
 }

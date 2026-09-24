@@ -3,7 +3,7 @@ import { getApiOrigin } from './api'
 const UPLOAD_PATH =
   /^\/uploads\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\.(jpg|jpeg|png|webp|gif)$/i
 
-const PUBLIC_IMAGE_PATH = /^\/images\/[a-z0-9._-]+\.(jpg|jpeg|png|webp|gif)$/i
+const PUBLIC_IMAGE_PATH = /^\/images\/[a-z0-9._/-]+\.(jpg|jpeg|png|webp|gif|svg)$/i
 
 function normalizeUploadPath(value: string): string {
   const trimmed = value.trim()

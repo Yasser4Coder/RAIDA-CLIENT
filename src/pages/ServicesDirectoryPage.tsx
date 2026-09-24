@@ -70,7 +70,7 @@ export default function ServicesDirectoryPage() {
               <ChevronLeft className="w-4 h-4 opacity-70" />
             </Button>
             <Button to="/experts" variant="outline" size="lg">
-              تصفحي الخبيرات
+              تصفح الخبراء
             </Button>
           </div>
         </div>
@@ -157,7 +157,7 @@ export default function ServicesDirectoryPage() {
             <div className="rounded-[20px] bg-white hairline p-5 text-sm text-muted leading-relaxed">
               تبحثين عن خبيرة بعينها؟{' '}
               <Link to="/experts" className="font-semibold text-navy hover:text-gold-dark">
-                دليل الخبيرات
+                دليل الخبراء
               </Link>
             </div>
           </aside>

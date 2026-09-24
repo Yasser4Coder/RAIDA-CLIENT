@@ -33,7 +33,7 @@ const hubs: {
   icon: ElementType
 }[] = [
   { to: '/members', label: 'دليل الأعضاء', desc: 'رائدات أعمال ومشاريع', icon: Users },
-  { to: '/experts', label: 'خبيرات رائدة', desc: 'مدربات ومستشارات', icon: GraduationCap },
+  { to: '/experts', label: 'خبراء رائدة', desc: 'مدربون ومستشارون', icon: GraduationCap },
   { to: '/academies', label: 'الأكاديميات', desc: 'مراكز تدريب وبرامج', icon: Building2 },
   { to: '/brands', label: 'العلامات', desc: 'منتجات وخدمات', icon: Store },
   { to: '/opportunities', label: 'الفرص', desc: 'تمويل ومعارض وشراكات', icon: Briefcase },

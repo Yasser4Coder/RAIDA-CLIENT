@@ -196,7 +196,7 @@ export function ServicesSection() {
           <SectionHeader
             eyebrow="اطلبي خدمة"
             title="خدمات لمشروعكِ"
-            description="اختاري التصنيف وقدّمي طلبًا — يصل إلى الخبيرات المناسبات عبر رائدة."
+            description="اختر التصنيف وقدّم طلبًا — يصل إلى الخبراء المناسبين عبر رائدة."
             light
             centered
           />

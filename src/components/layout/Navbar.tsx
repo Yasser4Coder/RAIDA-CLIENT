@@ -11,6 +11,7 @@ import Button from '../ui/Button'
 import Logo from '../ui/Logo'
 import { springs, useMotionSafe } from '../../lib/motion'
 import { useAuth } from '../../context/AuthContext'
+import { canAccessAdminPanel } from '../../lib/plans'
 
 const linkIcons: Record<string, typeof Home> = {
   '/': Home,
@@ -32,7 +33,7 @@ export default function Navbar() {
   const location = useLocation()
   const { reduce, transition } = useMotionSafe()
   const { user } = useAuth()
-  const isStaff = user?.role === 'admin' || user?.role === 'super_admin'
+  const isStaff = canAccessAdminPanel(user?.role)
   const isAdminPath = location.pathname.startsWith('/admin')
 
   useEffect(() => {

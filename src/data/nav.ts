@@ -2,7 +2,7 @@ export const navLinks = [
   { to: '/', label: 'الرئيسية' },
   { to: '/opportunities', label: 'الفرص' },
   { to: '/programs', label: 'البرامج' },
-  { to: '/experts', label: 'الخبيرات' },
+  { to: '/experts', label: 'الخبراء' },
   { to: '/services', label: 'الخدمات' },
   { to: '/events', label: 'الفعاليات' },
   { to: '/membership', label: 'العضوية' },

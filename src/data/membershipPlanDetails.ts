@@ -206,7 +206,7 @@ export const membershipPlanDetails: Record<PlanKey, MembershipPlanDetail> = {
     heroImage:
       'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=1600&h=1000&fit=crop',
     relatedLinks: [
-      { to: '/experts', label: 'دليل الخبيرات' },
+      { to: '/experts', label: 'دليل الخبراء' },
       { to: '/consultations', label: 'الاستشارات' },
       { to: '/programs', label: 'البرامج' },
     ],

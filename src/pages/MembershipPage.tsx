@@ -14,6 +14,7 @@ import SeoHead from '../components/seo/SeoHead'
 import { breadcrumbJsonLd, routeSeo } from '../lib/seo'
 import { freeCommunityBenefits, joinSteps } from '../data/platformContent'
 import { planDetailPath } from '../data/membershipPlanDetails'
+import { canAccessAdminPanel } from '../lib/plans'
 
 const faqs = [
   {
@@ -62,7 +63,7 @@ export default function MembershipPage() {
       navigate('/dashboard')
       return
     }
-    if (user.role === 'admin' || user.role === 'super_admin') {
+    if (canAccessAdminPanel(user.role)) {
       navigate('/admin')
       return
     }
