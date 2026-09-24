@@ -1,9 +1,10 @@
 import { useState, useEffect, type FormEvent, type ReactNode } from 'react'
-import { Link, Navigate } from 'react-router-dom'
+import { Link, Navigate, useNavigate } from 'react-router-dom'
 import {
   LayoutDashboard, User, Briefcase, Calendar, Handshake, Bell,
   BarChart3, CreditCard, Settings, ChevronLeft, Eye, Users,
   TrendingUp, CalendarCheck, MessageSquare, Plus, Menu, X, Trash2, Sparkles, Trophy,
+  CheckCircle2,
 } from 'lucide-react'
 import { AnimatePresence, motion } from 'motion/react'
 import Badge from '../components/ui/Badge'
@@ -13,6 +14,13 @@ import { materialize, springs, useMotionSafe } from '../lib/motion'
 import { useAuth } from '../context/AuthContext'
 import { useAsyncData } from '../hooks/useAsyncData'
 import { PLAN_LABELS, ROLE_LABELS, canAccessAdminPanel } from '../lib/plans'
+import {
+  authFlashMessage,
+  consumeAuthFlash,
+  postAuthPath,
+  setAuthFlash,
+  type AuthFlash,
+} from '../lib/authRedirect'
 import { catalogApi, meApi } from '../lib/catalog'
 import { asArray } from '../lib/normalize'
 import type { Member } from '../types/api'
@@ -102,6 +110,7 @@ function MembershipAccessGate({
   const [plan, setPlan] = useState(user.plan || 'BUSINESS')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [welcome] = useState(() => consumeAuthFlash())
   const pending = user.membershipStatus === 'pending'
   const rejected = user.membershipStatus === 'rejected'
 
@@ -121,15 +130,23 @@ function MembershipAccessGate({
   return (
     <div className="pt-20 min-h-screen bg-ivory flex items-center justify-center px-4">
       <Surface className="p-8 max-w-md text-center space-y-4">
+        {welcome && (
+          <div className="rounded-[14px] bg-navy text-white p-4 text-right">
+            <p className="font-bold text-[14px]">{authFlashMessage(welcome).title}</p>
+            <p className="mt-1 text-[12px] text-white/65 leading-relaxed">
+              {authFlashMessage(welcome).body}
+            </p>
+          </div>
+        )}
         <h2 className="text-lg font-bold text-navy">
-          {pending ? 'طلب العضوية قيد المراجعة' : rejected ? 'تم رفض طلب العضوية' : 'حساب زائرة'}
+          {pending ? 'طلب العضوية قيد المراجعة' : rejected ? 'تم رفض طلب العضوية' : 'حساب زائر'}
         </h2>
         <p className="text-sm text-muted leading-relaxed">
           {pending
-            ? 'استلمنا طلب عضويتكِ. ستظهرين في دليل رائدة ولوحة العضوة بعد موافقة الإدارة.'
+            ? 'استلمنا طلب عضويتك. ستظهر في دليل رائدة ولوحة العضو بعد موافقة الإدارة.'
             : rejected
-              ? 'يمكنكِ إعادة التقديم على عضوية مدفوعة ليراجعها فريق رائدة.'
-              : 'هذا حساب زائرة. للظهور في الدليل والحصول على مزايا العضوية، قدّمي طلب عضوية لإدارة رائدة.'}
+              ? 'يمكنك إعادة التقديم على عضوية مدفوعة ليراجعها فريق رائدة.'
+              : 'هذا حساب زائر. للظهور في الدليل والحصول على مزايا العضوية، قدّم طلب عضوية لإدارة رائدة.'}
         </p>
         {!pending && (
           <select
@@ -536,9 +553,66 @@ function PublicProfileToggle({
 
 export default function DashboardPage() {
   const { user, profile: authProfile, loading: authLoading, login, register, logout, refreshMe } = useAuth()
+  const navigate = useNavigate()
   const [active, setActive] = useState('overview')
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [welcome, setWelcome] = useState<AuthFlash | null>(null)
+  const [authBridge, setAuthBridge] = useState<'login' | 'register' | null>(null)
   const { reduce, transition } = useMotionSafe()
+
+  useEffect(() => {
+    if (!user || authBridge) return
+    if (canAccessAdminPanel(user.role)) return
+    if (user.role === 'member' && user.hasAccess === false) return
+    const flash = consumeAuthFlash()
+    if (flash) setWelcome(flash)
+  }, [user?.id, user?.role, user?.hasAccess, authBridge])
+
+  useEffect(() => {
+    if (!welcome) return
+    const t = window.setTimeout(() => setWelcome(null), 8000)
+    return () => window.clearTimeout(t)
+  }, [welcome])
+
+  const handleLogin = async (email: string, password: string) => {
+    const result = await login(email, password)
+    setAuthBridge('login')
+    setAuthFlash({
+      kind: 'login',
+      name: result.profile?.name,
+      role: result.user.role,
+      membershipStatus: result.user.membershipStatus,
+    })
+    window.setTimeout(() => {
+      setAuthBridge(null)
+      navigate(postAuthPath(result.user.role), { replace: true })
+    }, 900)
+    return result
+  }
+
+  const handleRegister = async (payload: {
+    email: string
+    password: string
+    name: string
+    phone: string
+    accountType: 'guest' | 'member'
+    plan?: string
+  }) => {
+    const result = await register(payload)
+    if (result.requiresEmailVerification || !result.user) return result
+    setAuthBridge('register')
+    setAuthFlash({
+      kind: 'register',
+      name: result.profile?.name || payload.name,
+      role: result.user.role,
+      membershipStatus: result.user.membershipStatus,
+    })
+    window.setTimeout(() => {
+      setAuthBridge(null)
+      navigate(postAuthPath(result.user.role), { replace: true })
+    }, 900)
+    return result
+  }
 
   const {
     data: dashboard,
@@ -671,14 +745,52 @@ export default function DashboardPage() {
     )
   }
 
+  if (authBridge) {
+    return (
+      <>
+        {seo}
+        <div className="relative isolate min-h-screen overflow-hidden bg-ivory pt-20">
+          <div className="mx-auto flex min-h-[60vh] max-w-md flex-col items-center justify-center px-4 text-center">
+            <motion.div
+              initial={reduce ? false : { opacity: 0, scale: 0.94 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={springs.settle}
+              className="w-full rounded-[24px] bg-white p-8 shadow-sm ring-1 ring-navy/8"
+            >
+              <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-[18px] bg-navy text-gold">
+                <CheckCircle2 className="h-7 w-7" />
+              </div>
+              <h1 className="mt-4 font-display text-2xl font-extrabold text-navy tracking-[-0.03em]">
+                {authBridge === 'login' ? 'تم تسجيل الدخول' : 'تم إنشاء الحساب'}
+              </h1>
+              <p className="mt-2 text-[14px] text-muted leading-relaxed">
+                {canAccessAdminPanel(user?.role)
+                  ? 'جاري تحويلك إلى لوحة الإدارة...'
+                  : 'جاري تحويلك إلى لوحة التحكم...'}
+              </p>
+              <div className="mx-auto mt-6 h-1 w-36 overflow-hidden rounded-full bg-navy/10">
+                <motion.div
+                  className="h-full rounded-full bg-gold"
+                  initial={{ width: '0%' }}
+                  animate={{ width: '100%' }}
+                  transition={{ duration: 0.85, ease: 'easeOut' }}
+                />
+              </div>
+            </motion.div>
+          </div>
+        </div>
+      </>
+    )
+  }
+
   if (!user) {
     return (
       <>
         {seo}
         <LoginRegisterForm
           hint={import.meta.env.DEV ? 'sara@raida.local / Password123!' : undefined}
-          onLogin={login}
-          onRegister={register}
+          onLogin={handleLogin}
+          onRegister={handleRegister}
         />
       </>
     )
@@ -875,6 +987,33 @@ export default function DashboardPage() {
               </Button>
             )}
           </div>
+
+          {welcome && (
+            <motion.div
+              initial={reduce ? false : { opacity: 0, y: -8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0 }}
+              className="mb-5 flex items-start gap-3 rounded-[18px] bg-navy text-white p-4 sm:p-5 ring-1 ring-gold/25"
+            >
+              <span className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-[12px] bg-gold/15 text-gold">
+                <CheckCircle2 className="h-5 w-5" />
+              </span>
+              <div className="min-w-0 flex-1">
+                <p className="font-bold tracking-[-0.01em]">{authFlashMessage(welcome).title}</p>
+                <p className="mt-1 text-[13px] text-white/65 leading-relaxed">
+                  {authFlashMessage(welcome).body}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setWelcome(null)}
+                className="shrink-0 rounded-full p-1.5 text-white/50 hover:bg-white/10 hover:text-white"
+                aria-label="إغلاق"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </motion.div>
+          )}
 
           <AnimatePresence mode="wait">
             <motion.div

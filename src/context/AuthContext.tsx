@@ -3,11 +3,21 @@ import { authApi } from '../lib/catalog'
 import { getAccessToken } from '../lib/api'
 import type { Member, UserSafe } from '../types/api'
 
+export type RegisterResult =
+  | { ok: true; user: UserSafe; profile: Member | null; requiresEmailVerification: false }
+  | {
+      ok: true
+      user: null
+      profile: null
+      requiresEmailVerification: true
+      email: string
+    }
+
 type AuthState = {
   user: UserSafe | null
   profile: Member | null
   loading: boolean
-  login: (email: string, password: string) => Promise<void>
+  login: (email: string, password: string) => Promise<{ user: UserSafe; profile: Member | null }>
   register: (payload: {
     email: string
     password: string
@@ -15,7 +25,7 @@ type AuthState = {
     phone: string
     accountType: 'guest' | 'member'
     plan?: string
-  }) => Promise<void>
+  }) => Promise<RegisterResult>
   logout: () => Promise<void>
   refreshMe: () => Promise<void>
 }
@@ -60,6 +70,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const result = await authApi.login(email, password)
     setUser(result.user)
     setProfile(result.profile)
+    return { user: result.user, profile: result.profile }
   }, [])
 
   const register = useCallback(
@@ -70,15 +81,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       phone: string
       accountType: 'guest' | 'member'
       plan?: string
-    }) => {
+    }): Promise<RegisterResult> => {
       const result = await authApi.register(payload)
       if (result.requiresEmailVerification || !result.accessToken) {
         setUser(null)
         setProfile(null)
-        throw new Error('تحققِ من بريدكِ لتفعيل الحساب قبل تسجيل الدخول')
+        return {
+          ok: true,
+          user: null,
+          profile: null,
+          requiresEmailVerification: true,
+          email: payload.email,
+        }
       }
       setUser(result.user)
       setProfile(result.profile)
+      return {
+        ok: true,
+        user: result.user,
+        profile: result.profile,
+        requiresEmailVerification: false,
+      }
     },
     [],
   )

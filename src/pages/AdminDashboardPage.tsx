@@ -22,6 +22,7 @@ import { useAuth } from '../context/AuthContext'
 import { useAsyncData } from '../hooks/useAsyncData'
 import { adminApi, catalogApi } from '../lib/catalog'
 import { PLAN_LABELS, ROLE_LABELS, MEMBERSHIP_STATUS_LABELS, canAccessAdminPanel, canAccessFinance } from '../lib/plans'
+import { setAuthFlash } from '../lib/authRedirect'
 import { safeHref } from '../lib/safe'
 import { springs, useMotionSafe } from '../lib/motion'
 import SafeImg from '../components/ui/SafeImg'
@@ -126,6 +127,7 @@ function LoginForm({
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
+  const [done, setDone] = useState(false)
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
@@ -133,11 +135,26 @@ function LoginForm({
     setError(null)
     try {
       await onSubmit(email, password)
+      setDone(true)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'فشل تسجيل الدخول')
     } finally {
       setSubmitting(false)
     }
+  }
+
+  if (done) {
+    return (
+      <div className="h-full relative flex items-center justify-center px-4 py-10">
+        <div className="w-full max-w-[420px] rounded-[24px] bg-white hairline shadow-md p-8 text-center space-y-3">
+          <div className="mx-auto w-14 h-14 rounded-[16px] bg-navy text-gold flex items-center justify-center">
+            <Shield className="w-7 h-7" />
+          </div>
+          <h2 className="text-xl font-extrabold text-navy">تم تسجيل الدخول</h2>
+          <p className="text-[13px] text-muted">جاري فتح لوحة الإدارة...</p>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -590,7 +607,17 @@ export default function AdminDashboardPage() {
           path={routeSeo.admin.path}
           noindex
         />
-        <LoginForm hint={import.meta.env.DEV ? 'admin@raida.local / Password123!' : 'أدخلي بيانات حسابك الإداري'} onSubmit={login} />
+        <LoginForm
+          hint={import.meta.env.DEV ? 'admin@raida.local / Password123!' : 'أدخل بيانات حسابك الإداري'}
+          onSubmit={async (email, password) => {
+            const result = await login(email, password)
+            setAuthFlash({
+              kind: 'login',
+              name: result.profile?.name,
+              role: result.user.role,
+            })
+          }}
+        />
       </AdminChrome>
     )
   }

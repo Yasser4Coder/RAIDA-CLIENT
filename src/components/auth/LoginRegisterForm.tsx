@@ -10,12 +10,15 @@ import {
   UserRound,
   Phone,
   ChevronLeft,
+  ArrowLeft,
 } from 'lucide-react'
 import Button from '../ui/Button'
 import AuthShell, { AuthAlert, AuthField, authInputClass } from './AuthShell'
 import { useAsyncData } from '../../hooks/useAsyncData'
 import { catalogApi } from '../../lib/catalog'
 import { springs, useMotionSafe } from '../../lib/motion'
+import type { Member, UserSafe } from '../../types/api'
+import type { RegisterResult } from '../../context/AuthContext'
 
 type Mode = 'login' | 'register'
 
@@ -29,8 +32,8 @@ type RegisterPayload = {
 }
 
 type LoginRegisterFormProps = {
-  onLogin: (email: string, password: string) => Promise<void>
-  onRegister: (payload: RegisterPayload) => Promise<void>
+  onLogin: (email: string, password: string) => Promise<{ user: UserSafe; profile: Member | null }>
+  onRegister: (payload: RegisterPayload) => Promise<RegisterResult>
   hint?: string
   initialMode?: Mode
 }
@@ -62,6 +65,7 @@ export default function LoginRegisterForm({
   const [plan, setPlan] = useState('BUSINESS')
   const [error, setError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
+  const [verifyEmail, setVerifyEmail] = useState<string | null>(null)
   const { data: plans } = useAsyncData(() => catalogApi.plans(), [])
 
   const strength = useMemo(() => passwordStrength(password), [password])
@@ -69,6 +73,7 @@ export default function LoginRegisterForm({
   const switchMode = (next: Mode) => {
     setMode(next)
     setError(null)
+    setVerifyEmail(null)
   }
 
   const handleSubmit = async (e: FormEvent) => {
@@ -79,7 +84,7 @@ export default function LoginRegisterForm({
       if (mode === 'login') {
         await onLogin(email, password)
       } else {
-        await onRegister({
+        const result = await onRegister({
           email,
           password,
           name,
@@ -87,22 +92,71 @@ export default function LoginRegisterForm({
           accountType,
           plan: accountType === 'member' ? plan : undefined,
         })
+        if (result.requiresEmailVerification) {
+          setVerifyEmail(result.email)
+        }
       }
     } catch (err) {
       setError(
         err instanceof Error
           ? err.message
           : mode === 'login'
-            ? 'فشل تسجيل الدخول. تحقّقي من البريد وكلمة المرور.'
-            : 'تعذر إنشاء الحساب. حاولي مرة أخرى.',
+            ? 'فشل تسجيل الدخول. تحقّق من البريد وكلمة المرور.'
+            : 'تعذر إنشاء الحساب. حاول مرة أخرى.',
       )
     } finally {
       setSubmitting(false)
     }
   }
 
+  if (verifyEmail) {
+    return (
+      <AuthShell tagline="خطوة أخيرة قبل الدخول إلى مجتمع رائدة.">
+        <motion.div
+          initial={reduce ? false : { opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={springs.settle}
+          className="mx-auto w-full max-w-md space-y-5 text-center"
+        >
+          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-[18px] bg-gold/15 ring-1 ring-gold/30">
+            <Mail className="h-6 w-6 text-gold-dark" />
+          </div>
+          <div>
+            <h1 className="font-display text-2xl font-extrabold tracking-[-0.03em] text-navy">
+              تحقّق من بريدك
+            </h1>
+            <p className="mt-2 text-[14px] leading-relaxed text-muted">
+              أرسلنا رابط تفعيل إلى{' '}
+              <span className="font-semibold text-navy">{verifyEmail}</span>. بعد التأكيد يمكنك
+              تسجيل الدخول والوصول إلى لوحة التحكم.
+            </p>
+          </div>
+          <AuthAlert tone="success">الحساب جاهز — ينتظر تأكيد البريد فقط.</AuthAlert>
+          <div className="flex flex-col gap-2 sm:flex-row sm:justify-center">
+            <Button
+              type="button"
+              variant="gold"
+              size="md"
+              onClick={() => {
+                setVerifyEmail(null)
+                setMode('login')
+                setPassword('')
+              }}
+            >
+              الانتقال لتسجيل الدخول
+              <ChevronLeft className="h-4 w-4 opacity-70" />
+            </Button>
+            <Button to="/" variant="outline" size="md">
+              العودة للرئيسية
+            </Button>
+          </div>
+        </motion.div>
+      </AuthShell>
+    )
+  }
+
   return (
-    <AuthShell tagline="ادخلي لوحة تحكمكِ أو أنشئي حساباً للانضمام إلى مجتمع رائدة.">
+    <AuthShell tagline="ادخل لوحة التحكم أو أنشئ حسابًا للانضمام إلى مجتمع رائدة.">
       <form onSubmit={(e) => void handleSubmit(e)} className="mx-auto w-full max-w-md space-y-5">
         <div
           role="tablist"
@@ -142,12 +196,12 @@ export default function LoginRegisterForm({
 
         <div>
           <h1 className="font-display text-2xl font-extrabold tracking-[-0.03em] text-navy sm:text-[1.65rem]">
-            {mode === 'login' ? 'مرحباً بعودتكِ' : 'انضمي إلى رائدة'}
+            {mode === 'login' ? 'مرحباً بعودتك' : 'انضم إلى رائدة'}
           </h1>
           <p className="mt-1.5 text-[14px] leading-relaxed text-muted">
             {mode === 'login'
-              ? 'أدخلي بياناتكِ للوصول إلى فرصكِ وملفكِ ولوحة التحكم.'
-              : 'ابدئي بحساب زائرة مجاني، أو قدّمي على عضوية مهنية بموافقة الإدارة.'}
+              ? 'أدخل بياناتك للوصول إلى فرصك وملفك ولوحة التحكم.'
+              : 'ابدأ بحساب زائر مجاني، أو قدّم على عضوية مهنية بموافقة الإدارة.'}
           </p>
         </div>
 
@@ -211,7 +265,7 @@ export default function LoginRegisterForm({
                     >
                       <span className="flex items-center gap-2 text-[13px] font-bold">
                         <Sparkles className={`h-3.5 w-3.5 ${accountType === 'guest' ? 'text-gold' : 'text-rose'}`} />
-                        زائرة
+                        زائر / زائرة
                       </span>
                       <span
                         className={`mt-1.5 block text-[11px] leading-relaxed ${
@@ -232,7 +286,7 @@ export default function LoginRegisterForm({
                     >
                       <span className="flex items-center gap-2 text-[13px] font-bold">
                         <UserRound className={`h-3.5 w-3.5 ${accountType === 'member' ? 'text-gold' : 'text-rose'}`} />
-                        عضوة
+                        عضوية مهنية
                       </span>
                       <span
                         className={`mt-1.5 block text-[11px] leading-relaxed ${
@@ -260,7 +314,7 @@ export default function LoginRegisterForm({
                       ))}
                     </select>
                     <p className="mt-2 text-[12px] text-muted">
-                      تعرّفي على المزايا من{' '}
+                      تعرّف على المزايا من{' '}
                       <Link to="/membership" className="font-semibold text-rose hover:underline">
                         صفحة العضوية
                       </Link>
@@ -341,14 +395,12 @@ export default function LoginRegisterForm({
               to="/forgot-password"
               className="text-[12px] font-semibold text-rose hover:underline underline-offset-2"
             >
-              نسيتِ كلمة المرور أو رابط التأكيد؟
+              نسيت كلمة المرور أو رابط التأكيد؟
             </Link>
           </div>
         )}
 
-        {import.meta.env.DEV && hint && (
-          <AuthAlert tone="info">تجريبي: {hint}</AuthAlert>
-        )}
+        {import.meta.env.DEV && hint && <AuthAlert tone="info">تجريبي: {hint}</AuthAlert>}
 
         <Button type="submit" variant="gold" size="lg" className="w-full" disabled={submitting}>
           {submitting
@@ -356,35 +408,45 @@ export default function LoginRegisterForm({
               ? 'جاري الدخول...'
               : 'جاري إنشاء الحساب...'
             : mode === 'login'
-              ? 'دخول إلى لوحة التحكم'
-              : 'إنشاء الحساب'}
+              ? 'تسجيل الدخول'
+              : 'إنشاء الحساب والبدء'}
           {!submitting && <ChevronLeft className="h-4 w-4 opacity-70" />}
         </Button>
 
         <p className="text-center text-[12px] text-muted leading-relaxed">
           {mode === 'login' ? (
             <>
-              ليس لديكِ حساب؟{' '}
+              ليس لديك حساب؟{' '}
               <button
                 type="button"
                 onClick={() => switchMode('register')}
                 className="font-semibold text-navy hover:text-rose transition-colors"
               >
-                أنشئي حساباً
+                أنشئ حسابًا
               </button>
             </>
           ) : (
             <>
-              لديكِ حساب مسبقاً؟{' '}
+              لديك حساب مسبقًا؟{' '}
               <button
                 type="button"
                 onClick={() => switchMode('login')}
                 className="font-semibold text-navy hover:text-rose transition-colors"
               >
-                سجّلي الدخول
+                سجّل الدخول
               </button>
             </>
           )}
+        </p>
+
+        <p className="text-center">
+          <Link
+            to="/"
+            className="inline-flex items-center gap-1 text-[12px] font-medium text-muted hover:text-navy"
+          >
+            <ArrowLeft className="h-3.5 w-3.5" />
+            العودة للموقع
+          </Link>
         </p>
       </form>
     </AuthShell>
