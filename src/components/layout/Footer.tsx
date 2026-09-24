@@ -117,13 +117,24 @@ export default function Footer() {
                 </li>
                 <li>
                   <a
-                    href="tel:+213555000000"
+                    href="tel:+213563578682"
                     className="inline-flex items-center gap-2.5 text-[13px] text-white/50 hover:text-white/90 transition-colors pressable-soft"
                   >
                     <span className="w-8 h-8 rounded-[10px] bg-white/[0.06] flex items-center justify-center">
                       <Phone className="w-3.5 h-3.5 text-rose" />
                     </span>
-                    +213 555 000 000
+                    0563 57 86 82
+                  </a>
+                </li>
+                <li>
+                  <a
+                    href="tel:+213563580128"
+                    className="inline-flex items-center gap-2.5 text-[13px] text-white/50 hover:text-white/90 transition-colors pressable-soft"
+                  >
+                    <span className="w-8 h-8 rounded-[10px] bg-white/[0.06] flex items-center justify-center">
+                      <Phone className="w-3.5 h-3.5 text-rose" />
+                    </span>
+                    0563 58 01 28
                   </a>
                 </li>
                 <li className="inline-flex items-start gap-2.5 text-[13px] text-white/50">
