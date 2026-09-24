@@ -3,14 +3,14 @@ import { Link, Navigate, useNavigate } from 'react-router-dom'
 import {
   LayoutDashboard, User, Briefcase, Calendar, Handshake, Bell,
   BarChart3, CreditCard, Settings, ChevronLeft, Eye, Users,
-  TrendingUp, CalendarCheck, MessageSquare, Plus, Menu, X, Trash2, Sparkles, Trophy,
-  CheckCircle2,
+  CalendarCheck, MessageSquare, Plus, Menu, X, Trash2, Sparkles, Trophy,
+  CheckCircle2, LogOut, ArrowUpLeft, MoreHorizontal,
 } from 'lucide-react'
 import { AnimatePresence, motion } from 'motion/react'
 import Badge from '../components/ui/Badge'
 import Button from '../components/ui/Button'
 import { LoadingBlock, ErrorBlock } from '../components/ui/StateBlocks'
-import { materialize, springs, useMotionSafe } from '../lib/motion'
+import { springs, useMotionSafe } from '../lib/motion'
 import { useAuth } from '../context/AuthContext'
 import { useAsyncData } from '../hooks/useAsyncData'
 import { PLAN_LABELS, ROLE_LABELS, canAccessAdminPanel } from '../lib/plans'
@@ -38,30 +38,63 @@ type SidebarItem = {
   label: string
   icon: typeof LayoutDashboard
   badge?: number
+  hint?: string
 }
 
-const memberSidebarItems: SidebarItem[] = [
-  { id: 'overview', label: 'نظرة عامة', icon: LayoutDashboard },
-  { id: 'opportunities', label: 'الفرص', icon: Trophy },
-  { id: 'consultations', label: 'الاستشارات', icon: MessageSquare },
-  { id: 'profile', label: 'الملف الشخصي', icon: User },
-  { id: 'services', label: 'الخدمات', icon: Briefcase },
-  { id: 'events', label: 'الفعاليات', icon: Calendar },
-  { id: 'partnerships', label: 'الشراكات', icon: Handshake },
-  { id: 'notifications', label: 'الإشعارات', icon: Bell },
-  { id: 'analytics', label: 'التحليلات', icon: BarChart3 },
-  { id: 'subscription', label: 'الاشتراك', icon: CreditCard },
-  { id: 'settings', label: 'الإعدادات', icon: Settings },
+type NavGroup = { label: string; items: SidebarItem[] }
+
+const memberNavGroups: NavGroup[] = [
+  {
+    label: 'الرئيسية',
+    items: [
+      { id: 'overview', label: 'نظرة عامة', icon: LayoutDashboard, hint: 'ملخص سريع لنشاطك' },
+      { id: 'opportunities', label: 'الفرص', icon: Trophy, hint: 'فرص ومنح ومبادرات' },
+      { id: 'consultations', label: 'الاستشارات', icon: MessageSquare, hint: 'طلب ومتابعة الاستشارات' },
+    ],
+  },
+  {
+    label: 'حسابك',
+    items: [
+      { id: 'profile', label: 'الملف الشخصي', icon: User, hint: 'بياناتك وظهورك' },
+      { id: 'services', label: 'الخدمات والمنتجات', icon: Briefcase },
+      { id: 'events', label: 'فعالياتي', icon: Calendar },
+      { id: 'partnerships', label: 'الشراكات', icon: Handshake },
+    ],
+  },
+  {
+    label: 'المزيد',
+    items: [
+      { id: 'notifications', label: 'الإشعارات', icon: Bell },
+      { id: 'analytics', label: 'التحليلات', icon: BarChart3 },
+      { id: 'subscription', label: 'الاشتراك', icon: CreditCard },
+      { id: 'settings', label: 'الإعدادات', icon: Settings },
+    ],
+  },
 ]
 
-const guestSidebarItems: SidebarItem[] = [
-  { id: 'overview', label: 'نظرة عامة', icon: LayoutDashboard },
-  { id: 'opportunities', label: 'الفرص', icon: Trophy },
-  { id: 'consultations', label: 'الاستشارات', icon: MessageSquare },
-  { id: 'profile', label: 'الملف الشخصي', icon: User },
-  { id: 'notifications', label: 'الإشعارات', icon: Bell },
-  { id: 'membership', label: 'الترقية للعضوية', icon: Sparkles },
+const guestNavGroups: NavGroup[] = [
+  {
+    label: 'الرئيسية',
+    items: [
+      { id: 'overview', label: 'نظرة عامة', icon: LayoutDashboard },
+      { id: 'opportunities', label: 'الفرص', icon: Trophy },
+      { id: 'consultations', label: 'الاستشارات', icon: MessageSquare },
+    ],
+  },
+  {
+    label: 'حسابك',
+    items: [
+      { id: 'profile', label: 'الملف الشخصي', icon: User },
+      { id: 'notifications', label: 'الإشعارات', icon: Bell },
+      { id: 'membership', label: 'الترقية للعضوية', icon: Sparkles },
+    ],
+  },
 ]
+
+const memberSidebarItems = memberNavGroups.flatMap((g) => g.items)
+const guestSidebarItems = guestNavGroups.flatMap((g) => g.items)
+
+const mobileTabs = ['overview', 'consultations', 'opportunities', 'profile'] as const
 
 const toneClass: Record<string, string> = {
   rose: 'bg-rose-soft text-rose ring-rose/25',
@@ -91,10 +124,29 @@ function profileCompleteness(m: Member): number {
 
 function Surface({ children, className = '' }: { children: ReactNode; className?: string }) {
   return (
-    <div className={`rounded-[18px] bg-white hairline shadow-xs ${className}`}>
+    <div className={`rounded-[20px] bg-white hairline shadow-xs overflow-hidden ${className}`}>
       {children}
     </div>
   )
+}
+
+function SectionTitle({
+  title,
+  action,
+}: {
+  title: string
+  action?: ReactNode
+}) {
+  return (
+    <div className="flex items-center justify-between gap-3 mb-3.5">
+      <h3 className="font-bold text-navy tracking-[-0.01em]">{title}</h3>
+      {action}
+    </div>
+  )
+}
+
+function EmptyHint({ children }: { children: ReactNode }) {
+  return <p className="text-sm text-muted py-8 text-center leading-relaxed px-4">{children}</p>
 }
 
 function MembershipAccessGate({
@@ -200,7 +252,7 @@ function GuestUpgradePanel({
   }
 
   return (
-    <Surface className="p-5 sm:p-6 max-w-lg space-y-4">
+    <Surface className="p-5 sm:p-6 space-y-4">
       <div className="flex items-start gap-3">
         <div className="w-11 h-11 rounded-[12px] bg-gold/15 ring-1 ring-gold/25 flex items-center justify-center shrink-0">
           <Sparkles className="w-5 h-5 text-gold-dark" />
@@ -208,7 +260,7 @@ function GuestUpgradePanel({
         <div>
           <h3 className="font-bold text-navy">الترقية إلى عضوية رائدة</h3>
           <p className="text-sm text-muted mt-1 leading-relaxed">
-            حساب الزائرة للاستشارات فقط. العضوية تُظهركِ في الدليل وتتيح الخدمات والمنتجات والملف العام بعد موافقة الإدارة.
+            حساب الزائر للاستشارات والاستكشاف. العضوية تُظهرك في الدليل وتتيح الخدمات والملف العام بعد موافقة الإدارة.
           </p>
         </div>
       </div>
@@ -558,7 +610,7 @@ export default function DashboardPage() {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [welcome, setWelcome] = useState<AuthFlash | null>(null)
   const [authBridge, setAuthBridge] = useState<'login' | 'register' | null>(null)
-  const { reduce, transition } = useMotionSafe()
+  const { reduce } = useMotionSafe()
 
   useEffect(() => {
     if (!user || authBridge) return
@@ -656,6 +708,7 @@ export default function DashboardPage() {
   )
 
   const isGuest = user?.role === 'guest'
+  const navGroups = isGuest ? guestNavGroups : memberNavGroups
   const sidebarItems = isGuest ? guestSidebarItems : memberSidebarItems
   const member = dashboard?.profile || authProfile
   const notifications = notificationsPayload?.data ?? []
@@ -847,82 +900,106 @@ export default function DashboardPage() {
     setSidebarOpen(false)
   }
 
-  const navItems = sidebarItems.map((item) => {
-    if (item.id === 'notifications') return { ...item, badge: unreadCount || undefined }
-    if (item.id === 'consultations') return { ...item, badge: unreadConsultations || undefined }
-    return item
-  })
+  const withBadges = (items: SidebarItem[]) =>
+    items.map((item) => {
+      if (item.id === 'notifications') return { ...item, badge: unreadCount || undefined }
+      if (item.id === 'consultations') return { ...item, badge: unreadConsultations || undefined }
+      return item
+    })
+
+  const firstName = member.name.split(/\s+/)[0] || member.name
+  const membershipLabel = isGuest
+    ? ROLE_LABELS.guest
+    : planLabel[user.plan || ''] || user.plan || ROLE_LABELS.member
+  const completeness = profileCompleteness(member)
 
   const SidebarNav = (
     <>
-      <div className="p-4 border-b border-separator">
+      <div className="p-4 border-b border-white/10">
         <div className="flex items-center gap-3">
           <SafeImg
             src={member.image}
             fallback={imageFallback}
             alt=""
-            className="w-10 h-10 rounded-[12px] object-cover ring-1 ring-rose/20"
+            className="w-11 h-11 rounded-[14px] object-cover ring-2 ring-gold/25"
           />
-          <div className="min-w-0">
-            <p className="font-bold text-navy text-[13px] truncate tracking-[-0.01em]">{member.name}</p>
-            <Badge variant="gold" className="mt-1">
-              {isGuest
-                ? ROLE_LABELS.guest
-                : planLabel[user.plan || ''] || user.plan || ROLE_LABELS.member}
-            </Badge>
+          <div className="min-w-0 flex-1">
+            <p className="font-bold text-white text-[13px] truncate tracking-[-0.01em]">{member.name}</p>
+            <p className="mt-1 inline-flex rounded-full bg-gold/15 px-2 py-0.5 text-[10px] font-semibold text-gold ring-1 ring-gold/20">
+              {membershipLabel}
+            </p>
           </div>
         </div>
+        {!isGuest && (
+          <Link
+            to={`/members/${member.id}`}
+            className="mt-3 flex items-center justify-center gap-1.5 h-9 rounded-[12px] bg-white/8 text-[12px] font-semibold text-white/80 hover:bg-white/12 hover:text-white transition-colors"
+          >
+            <Eye className="w-3.5 h-3.5" />
+            عرض الملف العام
+          </Link>
+        )}
       </div>
 
-      <nav className="p-2.5 space-y-0.5 overflow-y-auto flex-1">
-        {navItems.map((item) => {
-          const Icon = item.icon
-          const isActive = active === item.id
-          return (
-            <button
-              key={item.id}
-              type="button"
-              onClick={() => select(item.id)}
-              className={`relative w-full flex items-center gap-3 px-3 py-2.5 rounded-[12px] text-[13px] font-medium pressable-soft cursor-pointer ${
-                isActive ? 'text-navy' : 'text-muted hover:text-navy'
-              }`}
-            >
-              {isActive && (
-                <motion.span
-                  layoutId={reduce ? undefined : 'dash-nav-pill'}
-                  className="absolute inset-0 rounded-[12px] bg-rose-soft ring-1 ring-rose/20"
-                  transition={springs.snappy}
-                />
-              )}
-              <Icon className="relative z-10 w-4 h-4 shrink-0" />
-              <span className="relative z-10">{item.label}</span>
-              {item.badge ? (
-                <span className="relative z-10 mr-auto w-5 h-5 rounded-full bg-rose text-navy text-[10px] flex items-center justify-center font-bold">
-                  {item.badge}
-                </span>
-              ) : null}
-            </button>
-          )
-        })}
-
-        <div className="pt-3 mt-2 border-t border-separator space-y-0.5">
-          <button
-            type="button"
-            onClick={() => logout()}
-            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-[12px] text-[13px] font-medium text-muted hover:text-navy hover:bg-blush pressable-soft"
-          >
-            تسجيل الخروج
-          </button>
-        </div>
+      <nav className="p-2.5 space-y-4 overflow-y-auto flex-1">
+        {navGroups.map((group) => (
+          <div key={group.label}>
+            <p className="px-3 mb-1.5 text-[10px] font-semibold tracking-[0.14em] text-white/35 uppercase">
+              {group.label}
+            </p>
+            <div className="space-y-0.5">
+              {withBadges(group.items).map((item) => {
+                const Icon = item.icon
+                const isActive = active === item.id
+                return (
+                  <button
+                    key={item.id}
+                    type="button"
+                    onClick={() => select(item.id)}
+                    className={`relative w-full flex items-center gap-3 px-3 py-2.5 rounded-[12px] text-[13px] font-medium pressable-soft cursor-pointer ${
+                      isActive ? 'text-white' : 'text-white/55 hover:text-white/90'
+                    }`}
+                  >
+                    {isActive && (
+                      <motion.span
+                        layoutId={reduce ? undefined : 'dash-nav-pill'}
+                        className="absolute inset-0 rounded-[12px] bg-white/12 ring-1 ring-white/10"
+                        transition={springs.snappy}
+                      />
+                    )}
+                    <Icon className="relative z-10 w-4 h-4 shrink-0" />
+                    <span className="relative z-10 flex-1 text-right">{item.label}</span>
+                    {item.badge ? (
+                      <span className="relative z-10 min-w-5 h-5 px-1 rounded-full bg-gold text-navy text-[10px] flex items-center justify-center font-bold">
+                        {item.badge}
+                      </span>
+                    ) : null}
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+        ))}
       </nav>
+
+      <div className="p-3 border-t border-white/10">
+        <button
+          type="button"
+          onClick={() => void logout()}
+          className="w-full flex items-center gap-3 px-3 py-2.5 rounded-[12px] text-[13px] font-medium text-white/50 hover:text-white hover:bg-white/8 pressable-soft"
+        >
+          <LogOut className="w-4 h-4" />
+          تسجيل الخروج
+        </button>
+      </div>
     </>
   )
 
   return (
-    <div className="pt-20 min-h-screen bg-ivory">
+    <div className="pt-16 sm:pt-20 min-h-screen bg-[#F3EEE8]">
       {seo}
-      <div className="max-w-[1400px] mx-auto flex">
-        <aside className="hidden lg:flex sticky top-20 h-[calc(100vh-5rem)] w-[260px] shrink-0 flex-col border-l border-separator bg-white/80 backdrop-blur-xl">
+      <div className="max-w-[1400px] mx-auto flex pb-24 lg:pb-0">
+        <aside className="hidden lg:flex sticky top-20 h-[calc(100vh-5rem)] w-[268px] shrink-0 flex-col bg-[#0A1328] text-white">
           {SidebarNav}
         </aside>
 
@@ -930,7 +1007,7 @@ export default function DashboardPage() {
           {sidebarOpen && (
             <>
               <motion.div
-                className="fixed inset-0 z-40 bg-navy/30 lg:hidden"
+                className="fixed inset-0 z-40 bg-navy/40 lg:hidden"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
@@ -938,22 +1015,21 @@ export default function DashboardPage() {
                 onClick={() => setSidebarOpen(false)}
               />
               <motion.aside
-                className="fixed top-20 bottom-0 right-0 z-50 w-[min(86vw,280px)] lg:hidden flex flex-col material-thick shadow-xl ring-1 ring-navy/10"
-                initial={reduce ? { opacity: 0 } : { ...materialize.initial, x: 24 }}
-                animate={reduce ? { opacity: 1 } : { ...materialize.animate, x: 0 }}
-                exit={reduce ? { opacity: 0 } : { ...materialize.exit, x: 16 }}
-                transition={transition}
-                style={{ transformOrigin: 'right center' }}
+                className="fixed top-0 bottom-0 right-0 z-50 w-[min(88vw,300px)] lg:hidden flex flex-col bg-[#0A1328] text-white shadow-xl"
+                initial={reduce ? { opacity: 0 } : { opacity: 0, x: 28 }}
+                animate={reduce ? { opacity: 1 } : { opacity: 1, x: 0 }}
+                exit={reduce ? { opacity: 0 } : { opacity: 0, x: 20 }}
+                transition={springs.snappy}
               >
-                <div className="flex items-center justify-between px-4 pt-3">
-                  <p className="text-[12px] font-semibold text-muted">القائمة</p>
+                <div className="flex items-center justify-between px-4 h-16 border-b border-white/10">
+                  <p className="text-[13px] font-semibold text-white/80">قائمة التحكم</p>
                   <button
                     type="button"
                     onClick={() => setSidebarOpen(false)}
-                    className="w-9 h-9 rounded-full bg-white/70 ring-1 ring-separator flex items-center justify-center pressable"
+                    className="w-9 h-9 rounded-full bg-white/10 flex items-center justify-center pressable"
                     aria-label="إغلاق"
                   >
-                    <X className="w-4 h-4 text-navy" />
+                    <X className="w-4 h-4" />
                   </button>
                 </div>
                 {SidebarNav}
@@ -963,29 +1039,36 @@ export default function DashboardPage() {
         </AnimatePresence>
 
         <div className="flex-1 p-4 sm:p-6 lg:p-8 min-w-0">
-          <div className="flex items-center justify-between gap-3 mb-6">
+          <div className="flex items-start justify-between gap-3 mb-5 sm:mb-6">
             <div className="min-w-0">
+              <p className="text-[12px] font-semibold text-muted">
+                مرحباً {firstName}
+                <span className="mx-1.5 text-navy/20">·</span>
+                {activeItem?.label}
+              </p>
+              <h1 className="mt-1 text-2xl sm:text-[1.85rem] font-extrabold text-navy tracking-[-0.03em] font-display">
+                {active === 'overview' ? 'لوحة التحكم' : activeItem?.label}
+              </h1>
+              {activeItem?.hint && active !== 'overview' && (
+                <p className="mt-1 text-[13px] text-muted">{activeItem.hint}</p>
+              )}
+            </div>
+            <div className="flex items-center gap-2 shrink-0">
               <button
                 type="button"
-                className="lg:hidden mb-2 inline-flex items-center gap-1.5 h-9 px-3 rounded-full bg-white hairline text-[13px] font-medium text-navy pressable"
+                className="lg:hidden inline-flex items-center gap-1.5 h-10 px-3.5 rounded-full bg-white hairline text-[13px] font-semibold text-navy pressable shadow-xs"
                 onClick={() => setSidebarOpen(true)}
               >
                 <Menu className="w-4 h-4" />
                 القائمة
               </button>
-              <h1 className="text-2xl sm:text-[1.75rem] font-extrabold text-navy tracking-[-0.02em]">
-                {activeItem?.label}
-              </h1>
-              <p className="text-[13px] text-muted mt-0.5">
-                مرحباً بعودتك، {member.name.split(' ')[0]}
-              </p>
+              {!isGuest && (
+                <Button to={`/members/${member.id}`} variant="outline" size="sm" className="hidden sm:inline-flex !rounded-full">
+                  <Eye className="w-4 h-4" />
+                  الملف العام
+                </Button>
+              )}
             </div>
-            {!isGuest && (
-              <Button to={`/members/${member.id}`} variant="outline" size="sm" className="shrink-0 !rounded-full">
-                <Eye className="w-4 h-4" />
-                <span className="hidden sm:inline">عرض الملف</span>
-              </Button>
-            )}
           </div>
 
           {welcome && (
@@ -1024,301 +1107,360 @@ export default function DashboardPage() {
               transition={springs.snappy}
             >
               {active === 'overview' && (
-                <div className="space-y-4">
+                <div className="space-y-5">
                   {(() => {
-                    const completeness = profileCompleteness(member)
-                    const membershipLabel = isGuest
-                      ? ROLE_LABELS.guest
-                      : planLabel[user.plan || ''] || user.plan || ROLE_LABELS.member
                     let nextLabel = 'استكشفي الفرص المتاحة'
-                    let nextAction: () => void = () => select('opportunities')
+                    let nextHint = 'منح، مسابقات، ومبادرات تناسب مرحلتك'
+                    let nextAction: (() => void) | null = () => select('opportunities')
                     let nextTo: string | null = null
                     if (completeness < 70) {
-                      nextLabel = 'أكملي ملفكِ الشخصي لزيادة ظهوركِ'
+                      nextLabel = 'أكملي ملفك الشخصي'
+                      nextHint = 'الملف المكتمل يزيد ظهورك في الدليل'
                       nextAction = () => select('profile')
                     } else if (isGuest) {
-                      nextLabel = 'ترقّي للعضوية المهنية للظهور في الدليل'
+                      nextLabel = 'ترقّي للعضوية المهنية'
+                      nextHint = 'الظهور في الدليل ومزايا العضوية بعد الموافقة'
                       nextTo = '/membership'
+                      nextAction = null
+                    } else if (unreadConsultations > 0) {
+                      nextLabel = 'راجعي الاستشارات الجديدة'
+                      nextHint = `${unreadConsultations} طلب بانتظارك`
+                      nextAction = () => select('consultations')
                     } else if (upcomingEvents.length === 0) {
-                      nextLabel = 'اطلبي خدمة أو استشارة لدعم مشروعكِ'
+                      nextLabel = 'اطلبي استشارة أو خدمة'
+                      nextHint = 'ادعمي مشروعك مع خبراء رائدة'
                       nextTo = '/services'
+                      nextAction = null
                     }
+
+                    const quickActions = isGuest
+                      ? [
+                          { id: 'consultations', label: 'طلب استشارة', hint: 'من رائدة أو خبيرة', icon: MessageSquare, tone: 'gold' },
+                          { id: 'opportunities', label: 'الفرص', hint: 'منح ومبادرات', icon: Trophy, tone: 'rose' },
+                          { id: 'profile', label: 'بياناتك', hint: 'الاسم والصورة', icon: User, tone: 'mauve' },
+                          { id: 'membership', label: 'الترقية', hint: 'عضوية مهنية', icon: Sparkles, tone: 'navy' },
+                        ]
+                      : [
+                          { id: 'consultations', label: 'الاستشارات', hint: unreadConsultations ? `${unreadConsultations} جديدة` : 'طلب ومتابعة', icon: MessageSquare, tone: 'gold' },
+                          { id: 'opportunities', label: 'الفرص', hint: 'منح ومبادرات', icon: Trophy, tone: 'rose' },
+                          { id: 'services', label: 'خدماتي', hint: 'خدمات ومنتجات', icon: Briefcase, tone: 'mauve' },
+                          { id: 'profile', label: 'الملف', hint: `${completeness}% مكتمل`, icon: User, tone: 'navy' },
+                        ]
+
                     return (
                       <>
-                        <div className="grid sm:grid-cols-2 gap-3">
+                        <section className="relative overflow-hidden rounded-[24px] bg-[#0A1328] text-white p-5 sm:p-7">
+                          <div
+                            className="pointer-events-none absolute inset-0 opacity-[0.35]"
+                            style={{
+                              background:
+                                'radial-gradient(ellipse 70% 80% at 0% 0%, rgba(201,162,77,0.35), transparent 55%), radial-gradient(ellipse 50% 60% at 100% 100%, rgba(232,180,184,0.18), transparent 50%)',
+                            }}
+                          />
+                          <div className="relative flex flex-col sm:flex-row sm:items-end sm:justify-between gap-5">
+                            <div className="min-w-0">
+                              <p className="text-[12px] font-semibold text-white/45">مرحباً بعودتك</p>
+                              <h2 className="mt-1 text-2xl sm:text-[1.85rem] font-extrabold tracking-[-0.03em] font-display">
+                                {firstName}
+                              </h2>
+                              <p className="mt-2 inline-flex items-center gap-2 text-[12px] text-white/60">
+                                <span className="rounded-full bg-gold/20 px-2.5 py-0.5 font-semibold text-gold ring-1 ring-gold/25">
+                                  {membershipLabel}
+                                </span>
+                                {!isGuest && (
+                                  <span>اكتمال الملف {completeness}%</span>
+                                )}
+                              </p>
+                              <p className="mt-3 max-w-md text-[13px] text-white/55 leading-relaxed">
+                                {nextHint}
+                              </p>
+                            </div>
+                            <div className="flex flex-wrap gap-2 shrink-0">
+                              {nextTo ? (
+                                <Button to={nextTo} variant="gold" size="sm" className="!rounded-full">
+                                  {nextLabel}
+                                  <ChevronLeft className="w-4 h-4 opacity-70" />
+                                </Button>
+                              ) : (
+                                <Button
+                                  variant="gold"
+                                  size="sm"
+                                  className="!rounded-full"
+                                  onClick={() => nextAction?.()}
+                                >
+                                  {nextLabel}
+                                  <ChevronLeft className="w-4 h-4 opacity-70" />
+                                </Button>
+                              )}
+                              {!isGuest && (
+                                <Button
+                                  to={`/members/${member.id}`}
+                                  variant="outline"
+                                  size="sm"
+                                  className="!rounded-full !border-white/20 !text-white hover:!bg-white/10"
+                                >
+                                  <Eye className="w-4 h-4" />
+                                  الملف العام
+                                </Button>
+                              )}
+                            </div>
+                          </div>
+
+                          {!isGuest && completeness < 100 && (
+                            <div className="relative mt-5 pt-4 border-t border-white/10">
+                              <div className="flex items-center justify-between gap-3 mb-2">
+                                <p className="text-[12px] font-semibold text-white/70">اكتمال الملف</p>
+                                <button
+                                  type="button"
+                                  onClick={() => select('profile')}
+                                  className="text-[12px] font-semibold text-gold pressable-soft"
+                                >
+                                  إكمال الآن
+                                </button>
+                              </div>
+                              <div className="h-2 rounded-full bg-white/10 overflow-hidden">
+                                <div
+                                  className="h-full rounded-full bg-gold transition-all"
+                                  style={{ width: `${completeness}%` }}
+                                />
+                              </div>
+                            </div>
+                          )}
+                        </section>
+
+                        <section>
+                          <SectionTitle title="إجراءات سريعة" />
+                          <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-3">
+                            {quickActions.map((action) => {
+                              const Icon = action.icon
+                              return (
+                                <button
+                                  key={action.id}
+                                  type="button"
+                                  onClick={() => select(action.id)}
+                                  className="group text-right rounded-[18px] bg-white hairline shadow-xs p-4 sm:p-5 pressable-soft hover:ring-1 hover:ring-navy/10 transition-shadow"
+                                >
+                                  <div
+                                    className={`w-10 h-10 rounded-[12px] ring-1 flex items-center justify-center ${toneClass[action.tone]}`}
+                                  >
+                                    <Icon className="w-[18px] h-[18px]" />
+                                  </div>
+                                  <p className="mt-3 text-[14px] font-bold text-navy tracking-[-0.01em]">
+                                    {action.label}
+                                  </p>
+                                  <p className="mt-0.5 text-[11px] text-muted flex items-center gap-1">
+                                    {action.hint}
+                                    <ArrowUpLeft className="w-3 h-3 opacity-0 group-hover:opacity-60 transition-opacity" />
+                                  </p>
+                                </button>
+                              )
+                            })}
+                          </div>
+                        </section>
+
+                        <div className={`grid grid-cols-2 ${isGuest ? '' : 'lg:grid-cols-4'} gap-2.5 sm:gap-3`}>
+                          {overviewStats.map((s) => {
+                            const Icon = s.icon
+                            return (
+                              <Surface key={s.label} className="p-4">
+                                <div className="flex items-center justify-between gap-2">
+                                  <div
+                                    className={`w-9 h-9 rounded-[11px] ring-1 flex items-center justify-center ${toneClass[s.tone]}`}
+                                  >
+                                    <Icon className="w-4 h-4" />
+                                  </div>
+                                  <p className="text-xl sm:text-2xl font-extrabold text-navy tracking-[-0.03em] tabular-nums">
+                                    {s.value}
+                                  </p>
+                                </div>
+                                <p className="mt-2 text-[11px] text-muted">{s.label}</p>
+                              </Surface>
+                            )
+                          })}
+                        </div>
+
+                        {isGuest && (
+                          <GuestUpgradePanel
+                            onApplied={async () => {
+                              await refreshMe()
+                              reloadDash()
+                            }}
+                          />
+                        )}
+
+                        <div className={`grid gap-4 ${isGuest ? '' : 'lg:grid-cols-2'}`}>
                           <Surface className="p-5">
-                            <div className="flex items-center justify-between gap-3">
-                              <div>
-                                <p className="text-[11px] font-semibold text-muted">اكتمال الملف</p>
-                                <p className="mt-1 text-3xl font-extrabold text-navy tabular-nums tracking-[-0.03em]">
-                                  {completeness}%
-                                </p>
-                              </div>
-                              <div className="relative w-14 h-14">
-                                <svg viewBox="0 0 36 36" className="w-14 h-14 -rotate-90">
-                                  <circle cx="18" cy="18" r="15.5" fill="none" stroke="currentColor" className="text-navy/10" strokeWidth="3" />
-                                  <circle
-                                    cx="18"
-                                    cy="18"
-                                    r="15.5"
-                                    fill="none"
-                                    stroke="currentColor"
-                                    className="text-gold"
-                                    strokeWidth="3"
-                                    strokeDasharray={`${completeness} ${100 - completeness}`}
-                                    strokeLinecap="round"
-                                  />
-                                </svg>
-                              </div>
+                            <SectionTitle
+                              title="فرص مقترحة"
+                              action={
+                                <button
+                                  type="button"
+                                  onClick={() => select('opportunities')}
+                                  className="text-[12px] text-rose font-semibold pressable-soft"
+                                >
+                                  عرض الكل
+                                </button>
+                              }
+                            />
+                            <div className="space-y-2">
+                              {(opportunitiesList ?? []).slice(0, 3).map((o) => (
+                                <Link
+                                  key={o.id}
+                                  to="/opportunities"
+                                  className="flex items-start gap-3 p-3 rounded-[14px] bg-[#F7F3EE] hover:bg-blush/60 transition-colors"
+                                >
+                                  <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-[10px] bg-gold/15 text-gold-dark">
+                                    <Trophy className="w-3.5 h-3.5" />
+                                  </span>
+                                  <div className="min-w-0">
+                                    <p className="text-[13px] font-semibold text-navy truncate">{o.title}</p>
+                                    <p className="text-[11px] text-muted mt-0.5">
+                                      {o.type}
+                                      {o.deadline ? ` · حتى ${o.deadline}` : ''}
+                                    </p>
+                                  </div>
+                                </Link>
+                              ))}
+                              {(opportunitiesList ?? []).length === 0 && (
+                                <EmptyHint>لا توجد فرص منشورة حالياً</EmptyHint>
+                              )}
                             </div>
-                            <div className="mt-3 h-2 rounded-full bg-ivory overflow-hidden ring-1 ring-navy/5">
-                              <div
-                                className="h-full rounded-full bg-gold transition-all"
-                                style={{ width: `${completeness}%` }}
-                              />
-                            </div>
-                            {completeness < 100 && (
-                              <button
-                                type="button"
-                                onClick={() => select('profile')}
-                                className="mt-3 text-[12px] font-semibold text-rose pressable-soft"
-                              >
-                                إكمال الملف
-                              </button>
-                            )}
                           </Surface>
 
                           <Surface className="p-5">
-                            <p className="text-[11px] font-semibold text-muted">العضوية</p>
-                            <p className="mt-1 text-lg font-extrabold text-navy">{membershipLabel}</p>
-                            <p className="mt-3 text-[13px] text-muted leading-relaxed">الخطوة التالية</p>
-                            {nextTo ? (
-                              <Link
-                                to={nextTo}
-                                className="mt-1 inline-flex items-center gap-1 text-[14px] font-bold text-navy hover:text-rose"
-                              >
-                                {nextLabel}
-                                <ChevronLeft className="w-4 h-4" />
-                              </Link>
-                            ) : (
-                              <button
-                                type="button"
-                                onClick={nextAction}
-                                className="mt-1 inline-flex items-center gap-1 text-[14px] font-bold text-navy hover:text-rose text-right"
-                              >
-                                {nextLabel}
-                                <ChevronLeft className="w-4 h-4" />
-                              </button>
-                            )}
+                            <SectionTitle
+                              title="آخر الإشعارات"
+                              action={
+                                <button
+                                  type="button"
+                                  onClick={() => select('notifications')}
+                                  className="text-[12px] text-rose font-semibold pressable-soft"
+                                >
+                                  عرض الكل
+                                </button>
+                              }
+                            />
+                            <div className="space-y-2">
+                              {notifications.slice(0, 4).map((n) => (
+                                <button
+                                  key={n.id}
+                                  type="button"
+                                  onClick={async () => {
+                                    if (n.unread) {
+                                      await meApi.markNotificationRead(n.id)
+                                      reloadNotifs()
+                                      reloadDash()
+                                    }
+                                  }}
+                                  className={`w-full text-right flex items-start gap-3 p-3 rounded-[14px] ${
+                                    n.unread ? 'bg-rose-soft/60' : 'bg-[#F7F3EE]'
+                                  }`}
+                                >
+                                  <div
+                                    className={`w-2 h-2 rounded-full mt-1.5 shrink-0 ${
+                                      n.unread ? 'bg-rose' : 'bg-transparent'
+                                    }`}
+                                  />
+                                  <div>
+                                    <p className="text-[13px] text-navy leading-snug">{n.text}</p>
+                                    <p className="text-[11px] text-muted mt-0.5">{n.time || ''}</p>
+                                  </div>
+                                </button>
+                              ))}
+                              {notifications.length === 0 && (
+                                <EmptyHint>لا توجد إشعارات جديدة</EmptyHint>
+                              )}
+                            </div>
                           </Surface>
                         </div>
+
+                        {!isGuest && (
+                          <div className="grid lg:grid-cols-2 gap-4">
+                            <Surface className="p-5">
+                              <SectionTitle
+                                title="فعالياتك القادمة"
+                                action={
+                                  <button
+                                    type="button"
+                                    onClick={() => select('events')}
+                                    className="text-[12px] text-rose font-semibold pressable-soft"
+                                  >
+                                    الكل
+                                  </button>
+                                }
+                              />
+                              <div className="space-y-2">
+                                {upcomingEvents.slice(0, 3).map((e) => (
+                                  <Link
+                                    key={e.id}
+                                    to={`/events/${e.id}`}
+                                    className="flex items-center gap-3 p-3 rounded-[14px] bg-[#F7F3EE] hover:bg-blush/60 transition-colors pressable-soft"
+                                  >
+                                    <SafeImg
+                                      src={e.image}
+                                      fallback={eventImageFallback}
+                                      alt=""
+                                      className="w-11 h-11 rounded-[10px] object-cover"
+                                    />
+                                    <div className="min-w-0 flex-1">
+                                      <p className="text-[13px] font-semibold text-navy truncate">{e.title}</p>
+                                      <p className="text-[11px] text-muted">{e.date}</p>
+                                    </div>
+                                    <ChevronLeft className="w-4 h-4 text-muted shrink-0" />
+                                  </Link>
+                                ))}
+                                {upcomingEvents.length === 0 && (
+                                  <EmptyHint>لا توجد فعاليات قادمة — تصفّحي الفعاليات للتسجيل</EmptyHint>
+                                )}
+                              </div>
+                            </Surface>
+
+                            <Surface className="p-5">
+                              <SectionTitle title="اختصارات المنصة" />
+                              <div className="grid grid-cols-2 gap-2">
+                                {[
+                                  { to: '/programs', label: 'البرامج' },
+                                  { to: '/experts', label: 'الخبراء' },
+                                  { to: '/services', label: 'اطلبي خدمة' },
+                                  { to: '/sos-store', label: 'SOS Store' },
+                                  { to: '/membership', label: 'العضوية' },
+                                  { to: '/project-check', label: 'اختبري مشروعك' },
+                                ].map((link) => (
+                                  <Link
+                                    key={link.to}
+                                    to={link.to}
+                                    className="flex items-center justify-between gap-2 rounded-[14px] bg-[#F7F3EE] px-3.5 py-3 text-[13px] font-semibold text-navy hover:bg-blush/70 transition-colors"
+                                  >
+                                    {link.label}
+                                    <ChevronLeft className="w-3.5 h-3.5 text-muted" />
+                                  </Link>
+                                ))}
+                              </div>
+                            </Surface>
+                          </div>
+                        )}
                       </>
                     )
                   })()}
-
-                  <div className={`grid grid-cols-2 ${isGuest ? '' : 'lg:grid-cols-4'} gap-3`}>
-                    {overviewStats.map((s) => {
-                      const Icon = s.icon
-                      return (
-                        <Surface key={s.label} className="p-4 sm:p-5">
-                          <div className={`w-10 h-10 rounded-[12px] ring-1 flex items-center justify-center ${toneClass[s.tone]}`}>
-                            <Icon className="w-[18px] h-[18px]" />
-                          </div>
-                          <p className="mt-3 text-2xl font-extrabold text-navy tracking-[-0.03em] tabular-nums">
-                            {s.value}
-                          </p>
-                          <div className="mt-1 flex items-center justify-between gap-2">
-                            <p className="text-[11px] text-muted">{s.label}</p>
-                            {s.change && (
-                              <span className="text-[11px] font-semibold text-emerald-600">{s.change}</span>
-                            )}
-                          </div>
-                        </Surface>
-                      )
-                    })}
-                  </div>
-
-                  {isGuest && (
-                    <GuestUpgradePanel
-                      onApplied={async () => {
-                        await refreshMe()
-                        reloadDash()
-                      }}
-                    />
-                  )}
-
-                  <Surface className="p-5">
-                    <div className="flex items-center justify-between mb-3">
-                      <h3 className="font-bold text-navy tracking-[-0.01em]">فرص مقترحة</h3>
-                      <button
-                        type="button"
-                        onClick={() => select('opportunities')}
-                        className="text-[12px] text-rose font-semibold pressable-soft"
-                      >
-                        عرض الكل
-                      </button>
-                    </div>
-                    <div className="space-y-2">
-                      {(opportunitiesList ?? []).slice(0, 3).map((o) => (
-                        <Link
-                          key={o.id}
-                          to="/opportunities"
-                          className="flex items-start gap-3 p-3 rounded-[12px] bg-ivory hover:bg-blush/70 transition-colors"
-                        >
-                          <Trophy className="w-4 h-4 text-gold-dark mt-0.5 shrink-0" />
-                          <div className="min-w-0">
-                            <p className="text-[13px] font-semibold text-navy truncate">{o.title}</p>
-                            <p className="text-[11px] text-muted mt-0.5">
-                              {o.type}
-                              {o.deadline ? ` · حتى ${o.deadline}` : ''}
-                            </p>
-                          </div>
-                        </Link>
-                      ))}
-                      {(opportunitiesList ?? []).length === 0 && (
-                        <p className="text-sm text-muted py-3 text-center">لا توجد فرص منشورة حاليًا</p>
-                      )}
-                    </div>
-                  </Surface>
-
-                  <Surface className="p-5">
-                    <div className="flex items-center justify-between mb-3">
-                      <h3 className="font-bold text-navy tracking-[-0.01em]">
-                        {isGuest ? 'استشاراتك' : 'استكشفي المنصة'}
-                      </h3>
-                      {isGuest && (
-                        <button
-                          type="button"
-                          onClick={() => select('consultations')}
-                          className="text-[12px] text-rose font-semibold pressable-soft"
-                        >
-                          فتح الصندوق
-                        </button>
-                      )}
-                    </div>
-                    {isGuest ? (
-                      <p className="text-sm text-muted leading-relaxed">
-                        اطلبي استشارة من إدارة رائدة أو خبيرة، وتابعي الردود من هنا. لا يمكن إضافة خدمات أو منتجات على حساب الزائرة.
-                      </p>
-                    ) : (
-                      <div className="flex flex-wrap gap-2">
-                        {[
-                          { to: '/programs', label: 'البرامج' },
-                          { to: '/experts', label: 'الخبراء' },
-                          { to: '/opportunities', label: 'الفرص' },
-                          { to: '/services', label: 'اطلبي خدمة' },
-                          { to: '/sos-store', label: 'SOS Store' },
-                          { to: '/membership', label: 'العضوية' },
-                          { to: '/project-check', label: 'اختبري مشروعك' },
-                        ].map((link) => (
-                          <Link
-                            key={link.to}
-                            to={link.to}
-                            className="rounded-full bg-rose-soft/70 px-3.5 py-1.5 text-[12px] font-semibold text-navy hover:bg-blush"
-                          >
-                            {link.label}
-                          </Link>
-                        ))}
-                      </div>
-                    )}
-                  </Surface>
-
-                  <div className={`grid ${isGuest ? '' : 'lg:grid-cols-2'} gap-4`}>
-                    <Surface className="p-5">
-                      <div className="flex items-center justify-between mb-4">
-                        <h3 className="font-bold text-navy tracking-[-0.01em]">آخر الإشعارات</h3>
-                        <button
-                          type="button"
-                          onClick={() => select('notifications')}
-                          className="text-[12px] text-rose font-semibold pressable-soft"
-                        >
-                          عرض الكل
-                        </button>
-                      </div>
-                      <div className="space-y-2">
-                        {notifications.slice(0, 4).map((n) => (
-                          <button
-                            key={n.id}
-                            type="button"
-                            onClick={async () => {
-                              if (n.unread) {
-                                await meApi.markNotificationRead(n.id)
-                                reloadNotifs()
-                                reloadDash()
-                              }
-                            }}
-                            className={`w-full text-right flex items-start gap-3 p-3 rounded-[12px] ${
-                              n.unread ? 'bg-rose-soft/60' : 'bg-ivory'
-                            }`}
-                          >
-                            <div className={`w-2 h-2 rounded-full mt-1.5 shrink-0 ${n.unread ? 'bg-rose' : 'bg-transparent'}`} />
-                            <div>
-                              <p className="text-[13px] text-navy leading-snug">{n.text}</p>
-                              <p className="text-[11px] text-muted mt-0.5">{n.time || ''}</p>
-                            </div>
-                          </button>
-                        ))}
-                        {notifications.length === 0 && (
-                          <p className="text-sm text-muted py-4 text-center">لا توجد إشعارات</p>
-                        )}
-                      </div>
-                    </Surface>
-
-                    {!isGuest && (
-                      <Surface className="p-5">
-                        <h3 className="font-bold text-navy tracking-[-0.01em] mb-4">فعالياتك القادمة</h3>
-                        <div className="space-y-2">
-                          {upcomingEvents.slice(0, 3).map((e) => (
-                            <Link
-                              key={e.id}
-                              to={`/events/${e.id}`}
-                              className="flex items-center gap-3 p-3 rounded-[12px] bg-ivory hover:bg-blush/70 transition-colors pressable-soft"
-                            >
-                              <SafeImg src={e.image} fallback={eventImageFallback} alt="" className="w-11 h-11 rounded-[10px] object-cover" />
-                              <div className="min-w-0 flex-1">
-                                <p className="text-[13px] font-semibold text-navy truncate">{e.title}</p>
-                                <p className="text-[11px] text-muted">{e.date}</p>
-                              </div>
-                              <ChevronLeft className="w-4 h-4 text-muted shrink-0" />
-                            </Link>
-                          ))}
-                          {upcomingEvents.length === 0 && (
-                            <p className="text-sm text-muted py-4 text-center">لا توجد فعاليات قادمة</p>
-                          )}
-                        </div>
-                      </Surface>
-                    )}
-                  </div>
-
-                  {!isGuest && (
-                    <Surface className="p-5">
-                      <div className="flex items-center justify-between mb-2">
-                        <h3 className="font-bold text-navy tracking-[-0.01em]">مشاهدات الملف</h3>
-                        <TrendingUp className="w-5 h-5 text-gold" />
-                      </div>
-                      <p className="text-3xl font-extrabold text-navy tracking-[-0.03em] tabular-nums">
-                        {dashboard?.stats.profileViews ?? member.profileViews ?? 0}
-                      </p>
-                      <p className="text-[12px] text-muted mt-1">إجمالي المشاهدات منذ نشر الملف</p>
-                    </Surface>
-                  )}
                 </div>
               )}
 
               {active === 'opportunities' && (
                 <Surface className="p-5">
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="font-bold text-navy">الفرص المتاحة</h3>
-                    <Button to="/opportunities" variant="outline" size="sm">
-                      الصفحة الكاملة
-                    </Button>
-                  </div>
+                  <SectionTitle
+                    title="الفرص المتاحة"
+                    action={
+                      <Button to="/opportunities" variant="outline" size="sm">
+                        الصفحة الكاملة
+                      </Button>
+                    }
+                  />
                   <div className="space-y-2">
                     {(opportunitiesList ?? []).slice(0, 12).map((o) => (
                       <Link
                         key={o.id}
                         to="/opportunities"
-                        className="block p-4 rounded-[14px] bg-ivory hover:bg-blush/60 transition-colors"
+                        className="block p-4 rounded-[14px] bg-[#F7F3EE] hover:bg-blush/60 transition-colors"
                       >
                         <div className="flex items-center gap-2 text-[11px] text-muted">
                           <span className="font-semibold text-gold-dark">{o.type}</span>
@@ -1331,7 +1473,7 @@ export default function DashboardPage() {
                       </Link>
                     ))}
                     {(opportunitiesList ?? []).length === 0 && (
-                      <p className="text-sm text-muted py-8 text-center">لا توجد فرص منشورة حاليًا</p>
+                      <EmptyHint>لا توجد فرص منشورة حالياً</EmptyHint>
                     )}
                   </div>
                 </Surface>
@@ -1406,9 +1548,9 @@ export default function DashboardPage() {
                       )
                     })}
                     {consultations.length === 0 && (
-                      <p className="p-8 text-center text-sm text-muted">
-                        صندوق الاستشارات فارغ. أرسلي طلبًا أعلاه أو من صفحة خبيرة.
-                      </p>
+                      <EmptyHint>
+                        صندوق الاستشارات فارغ. أرسلي طلباً أعلاه أو من صفحة خبيرة.
+                      </EmptyHint>
                     )}
                   </Surface>
                 </div>
@@ -1497,7 +1639,7 @@ export default function DashboardPage() {
                     </button>
                   ))}
                   {notifications.length === 0 && (
-                    <p className="p-8 text-center text-sm text-muted">لا توجد إشعارات</p>
+                    <EmptyHint>لا توجد إشعارات</EmptyHint>
                   )}
                 </Surface>
               )}
@@ -1562,6 +1704,54 @@ export default function DashboardPage() {
           </AnimatePresence>
         </div>
       </div>
+
+      <nav
+        className="fixed bottom-0 inset-x-0 z-30 lg:hidden border-t border-navy/10 bg-white/95 backdrop-blur-xl pb-[env(safe-area-inset-bottom)]"
+        aria-label="التنقل السريع"
+      >
+        <div className="mx-auto max-w-[1400px] grid grid-cols-5 px-1 pt-1.5 pb-1.5">
+          {mobileTabs.map((id) => {
+            const item = sidebarItems.find((s) => s.id === id)
+            if (!item) return null
+            const Icon = item.icon
+            const isActive = active === id
+            const badge = id === 'consultations' ? unreadConsultations || undefined : undefined
+            return (
+              <button
+                key={id}
+                type="button"
+                onClick={() => select(id)}
+                className={`relative flex flex-col items-center gap-0.5 py-1.5 rounded-[12px] pressable-soft ${
+                  isActive ? 'text-navy' : 'text-muted'
+                }`}
+              >
+                <span className="relative">
+                  <Icon className={`w-[20px] h-[20px] ${isActive ? 'text-navy' : ''}`} />
+                  {badge ? (
+                    <span className="absolute -top-1.5 -left-2 min-w-4 h-4 px-0.5 rounded-full bg-gold text-navy text-[9px] font-bold flex items-center justify-center">
+                      {badge > 9 ? '9+' : badge}
+                    </span>
+                  ) : null}
+                </span>
+                <span className={`text-[10px] font-semibold ${isActive ? 'text-navy' : 'text-muted'}`}>
+                  {item.label}
+                </span>
+                {isActive && (
+                  <span className="absolute bottom-0.5 w-1 h-1 rounded-full bg-gold" />
+                )}
+              </button>
+            )
+          })}
+          <button
+            type="button"
+            onClick={() => setSidebarOpen(true)}
+            className="flex flex-col items-center gap-0.5 py-1.5 rounded-[12px] text-muted pressable-soft"
+          >
+            <MoreHorizontal className="w-[20px] h-[20px]" />
+            <span className="text-[10px] font-semibold">المزيد</span>
+          </button>
+        </div>
+      </nav>
     </div>
   )
 }
