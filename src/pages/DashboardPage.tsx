@@ -1,4 +1,4 @@
-import { useState, useEffect, type FormEvent, type ReactNode } from 'react'
+import { useState, useEffect, type ReactNode } from 'react'
 import { Link, Navigate, useNavigate } from 'react-router-dom'
 import {
   LayoutDashboard, User, Briefcase, Calendar, Handshake, Bell,
@@ -24,7 +24,7 @@ import {
 import { catalogApi, meApi } from '../lib/catalog'
 import { asArray } from '../lib/normalize'
 import type { Member } from '../types/api'
-import ImageUpload from '../components/ui/ImageUpload'
+import ProfilePreviewEditor from '../components/ui/ProfilePreviewEditor'
 import SafeImg from '../components/ui/SafeImg'
 import ConsultationRequestForm from '../components/ui/ConsultationRequestForm'
 import SeoHead from '../components/seo/SeoHead'
@@ -288,143 +288,6 @@ function GuestUpgradePanel({
   )
 }
 
-const fieldClass =
-  'w-full h-11 px-4 rounded-[12px] border border-separator bg-ivory text-sm focus:outline-none focus:border-rose/40 focus:ring-2 focus:ring-rose/15'
-
-function ProfileEditor({
-  member,
-  onSaved,
-  simple = false,
-}: {
-  member: Member
-  onSaved: () => Promise<void>
-  simple?: boolean
-}) {
-  const [name, setName] = useState(member.name)
-  const [title, setTitle] = useState(member.title)
-  const [specialty, setSpecialty] = useState(member.specialty)
-  const [city, setCity] = useState(member.city)
-  const [website, setWebsite] = useState(member.website || '')
-  const [instagram, setInstagram] = useState(member.social?.instagram || '')
-  const [linkedin, setLinkedin] = useState(member.social?.linkedin || '')
-  const [bio, setBio] = useState(member.bio || '')
-  const [image, setImage] = useState(member.image || '')
-  const [cover, setCover] = useState(member.cover || '')
-  const [saving, setSaving] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const [ok, setOk] = useState(false)
-
-  useEffect(() => {
-    setName(member.name)
-    setTitle(member.title)
-    setSpecialty(member.specialty)
-    setCity(member.city)
-    setWebsite(member.website || '')
-    setInstagram(member.social?.instagram || '')
-    setLinkedin(member.social?.linkedin || '')
-    setBio(member.bio || '')
-    setImage(member.image || '')
-    setCover(member.cover || '')
-  }, [member])
-
-  const handleSubmit = async (e: FormEvent) => {
-    e.preventDefault()
-    setSaving(true)
-    setError(null)
-    setOk(false)
-    try {
-      if (simple) {
-        await meApi.updateProfile({
-          name,
-          city,
-        })
-      } else {
-        await meApi.updateProfile({
-          name,
-          title,
-          specialty,
-          city,
-          website: website.trim() || null,
-          bio: bio.trim() || null,
-          image: image || null,
-          cover: cover || null,
-          social: {
-            ...member.social,
-            instagram: instagram.trim(),
-            linkedin: linkedin.trim(),
-          },
-        })
-      }
-      await onSaved()
-      setOk(true)
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'تعذر حفظ الملف')
-    } finally {
-      setSaving(false)
-    }
-  }
-
-  const simpleFields = [
-    { label: 'الاسم', value: name, set: setName },
-    { label: 'المدينة', value: city, set: setCity },
-  ]
-  const memberFields = [
-    { label: 'الاسم', value: name, set: setName },
-    { label: 'الصفة المهنية', value: title, set: setTitle },
-    { label: 'التخصص', value: specialty, set: setSpecialty },
-    { label: 'المدينة', value: city, set: setCity },
-    { label: 'الموقع', value: website, set: setWebsite },
-    { label: 'Instagram', value: instagram, set: setInstagram },
-    { label: 'LinkedIn', value: linkedin, set: setLinkedin },
-  ]
-
-  return (
-    <Surface className="p-5 sm:p-6 max-w-2xl">
-      <h3 className="font-bold text-navy mb-2">{simple ? 'بياناتك' : 'إدارة الملف الشخصي'}</h3>
-      {simple && (
-        <p className="text-sm text-muted mb-6">
-          حساب زائرة بسيط: الاسم والصورة فقط. الخدمات والمنتجات والملف العام متاحة بعد الترقية للعضوية.
-        </p>
-      )}
-      <form onSubmit={handleSubmit} className={`space-y-3.5 ${simple ? '' : 'mt-4'}`}>
-        {!simple && (
-          <>
-            <ImageUpload label="صورة الملف" value={image} onChange={setImage} />
-            <ImageUpload label="صورة الغلاف" value={cover} onChange={setCover} />
-          </>
-        )}
-        {(simple ? simpleFields : memberFields).map((f) => (
-          <div key={f.label}>
-            <label className="block text-[11px] font-semibold text-muted mb-1.5 tracking-[0.01em]">
-              {f.label}
-            </label>
-            <input
-              value={f.value}
-              onChange={(e) => f.set(e.target.value)}
-              className={fieldClass}
-            />
-          </div>
-        ))}
-        {!simple && (
-          <div>
-            <label className="block text-[11px] font-semibold text-muted mb-1.5">نبذة تعريفية</label>
-            <textarea
-              value={bio}
-              onChange={(e) => setBio(e.target.value)}
-              rows={4}
-              className="w-full px-4 py-3 rounded-[12px] border border-separator bg-ivory text-sm focus:outline-none focus:border-rose/40 focus:ring-2 focus:ring-rose/15 resize-none"
-            />
-          </div>
-        )}
-        {error && <p className="text-sm text-rose">{error}</p>}
-        {ok && <p className="text-sm text-emerald-700">تم حفظ التغييرات</p>}
-        <Button type="submit" variant="gold" size="md" disabled={saving}>
-          {saving ? 'جاري الحفظ...' : 'حفظ التغييرات'}
-        </Button>
-      </form>
-    </Surface>
-  )
-}
 
 function ServicesEditor({
   member,
@@ -1557,13 +1420,15 @@ export default function DashboardPage() {
               )}
 
               {active === 'profile' && (
-                <ProfileEditor
+                <ProfilePreviewEditor
                   member={member}
                   simple={isGuest}
                   onSaved={async () => {
                     await refreshMe()
                     reloadDash()
                   }}
+                  onEditServices={isGuest ? undefined : () => select('services')}
+                  onOpenSettings={isGuest ? undefined : () => select('settings')}
                 />
               )}
 
