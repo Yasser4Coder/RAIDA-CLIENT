@@ -8,6 +8,7 @@ import {
   CommunitySection,
   FeaturedMembers,
   FeaturedBrands,
+  FeaturedAcademies,
   ServicesSection,
   EventsSection,
   SuccessStories,
@@ -38,6 +39,7 @@ export default function HomePage() {
       <CommunityManagerSection />
       <FeaturedMembers />
       <FeaturedBrands />
+      <FeaturedAcademies />
       <ServicesSection />
       <EventsSection />
       <SuccessStories />

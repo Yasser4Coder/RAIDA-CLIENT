@@ -7,6 +7,7 @@ import {
   MapPin,
   Pencil,
   Briefcase,
+  GraduationCap,
   X,
 } from 'lucide-react'
 import Badge from './Badge'
@@ -207,6 +208,7 @@ export default function ProfilePreviewEditor({
   onEditServices,
   onOpenSettings,
   onPersist,
+  onEditPrograms,
   eyebrow = 'معاينة الملف العام',
   hint = 'هكذا سيظهر الملف للزوار — انقري على أي حقل أو صورة لتعديله مباشرة.',
   asideSlot,
@@ -219,6 +221,7 @@ export default function ProfilePreviewEditor({
   onEditServices?: () => void
   onOpenSettings?: () => void
   onPersist?: (payload: ProfilePersistPayload) => Promise<void>
+  onEditPrograms?: () => void
   eyebrow?: string
   hint?: string
   asideSlot?: ReactNode
@@ -245,6 +248,7 @@ export default function ProfilePreviewEditor({
   const dirty = isDirty(draft, baseline)
   const services = asArray(member.services)
   const products = asArray(member.products)
+  const programs = asArray(member.programs)
 
   const setField = <K extends keyof Draft>(key: K, value: Draft[K]) => {
     setDraft((prev) => ({ ...prev, [key]: value }))
@@ -493,6 +497,52 @@ export default function ProfilePreviewEditor({
                       ))}
                     </div>
                   </div>
+                )}
+              </section>
+            )}
+
+            {!simple && (onEditPrograms || programs.length > 0) && (
+              <section className="rounded-[16px] bg-[#F7F3EE] p-4 sm:p-5">
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="font-bold text-navy inline-flex items-center gap-2">
+                    <GraduationCap className="w-4 h-4 text-gold-dark" />
+                    البرامج والدورات
+                  </h3>
+                  {onEditPrograms && (
+                    <button
+                      type="button"
+                      onClick={onEditPrograms}
+                      className="text-[12px] font-semibold text-rose pressable-soft"
+                    >
+                      إدارة البرامج
+                    </button>
+                  )}
+                </div>
+                {programs.length > 0 ? (
+                  <ul className="space-y-2">
+                    {programs.map((p) => (
+                      <li key={p} className="flex items-center gap-2 text-[13px] text-navy">
+                        <span className="w-1.5 h-1.5 rounded-full bg-gold shrink-0" />
+                        {p}
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="text-sm text-muted">
+                    لم تُضف برامج بعد.
+                    {onEditPrograms && (
+                      <>
+                        {' '}
+                        <button
+                          type="button"
+                          onClick={onEditPrograms}
+                          className="font-semibold text-navy underline-offset-2 hover:underline"
+                        >
+                          أضيفي الآن
+                        </button>
+                      </>
+                    )}
+                  </p>
                 )}
               </section>
             )}

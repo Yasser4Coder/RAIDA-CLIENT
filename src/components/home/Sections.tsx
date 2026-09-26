@@ -14,6 +14,7 @@ import { LoadingBlock, ErrorBlock } from '../ui/StateBlocks'
 import { useAsyncData } from '../../hooks/useAsyncData'
 import { catalogApi } from '../../lib/catalog'
 import { planDetailPath } from '../../data/membershipPlanDetails'
+import { mergeFeaturedAcademies } from '../../data/featuredAcademies'
 import {
   Rocket, GraduationCap, Lightbulb, Handshake, Calendar, Sparkles,
   Megaphone, Briefcase, Palette, Code, Calculator, Scale, TrendingUp,
@@ -173,6 +174,40 @@ export function FeaturedBrands() {
             {data.map((b) => (
               <StaggerItem key={b.id}>
                 <BrandCard brand={b} />
+              </StaggerItem>
+            ))}
+          </Stagger>
+        )}
+      </div>
+    </section>
+  )
+}
+
+export function FeaturedAcademies() {
+  const { data, loading, error, reload } = useAsyncData(async () => {
+    const result = await catalogApi.members({ limit: 4, plan: 'ACADEMY' })
+    return mergeFeaturedAcademies(result.data).slice(0, 4)
+  }, [])
+
+  return (
+    <section className="py-16 lg:py-24 bg-ivory">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <Reveal>
+          <SectionHeader
+            eyebrow="أكاديميات ومراكز تدريب"
+            title="أكاديميات ومراكز تدريب تستحق الاكتشاف"
+            description="مؤسسات تدريب وكوتشينق وبرامج مهنية داخل مجتمع رائدة."
+            linkTo="/academies"
+            linkLabel="كل الأكاديميات"
+          />
+        </Reveal>
+        {loading && <LoadingBlock />}
+        {error && <ErrorBlock message={error} onRetry={reload} />}
+        {data && data.length > 0 && (
+          <Stagger className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {data.map((m) => (
+              <StaggerItem key={m.id}>
+                <MemberCard member={m} />
               </StaggerItem>
             ))}
           </Stagger>

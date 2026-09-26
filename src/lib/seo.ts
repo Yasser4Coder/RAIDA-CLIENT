@@ -124,10 +124,11 @@ export const routeSeo = {
     keywords: ['اطلبي خدمة', 'خدمات', 'خبراء', 'RAIDA'],
   },
   academies: {
-    title: `الأكاديميات | ${SITE_NAME}`,
-    description: 'دليل أكاديميات ومراكز تدريب رائدة — برامج وتعاون داخل المجتمع.',
+    title: `أكاديميات ومراكز تدريب تستحق الاكتشاف | ${SITE_NAME}`,
+    description:
+      'اكتشفي أكاديميات ومراكز تدريب رائدة — كوتشينق، إدارة مشاريع، وبرامج مهنية داخل مجتمع رائدة.',
     path: '/academies',
-    keywords: ['أكاديميات', 'مراكز تدريب', 'RAIDA'],
+    keywords: ['أكاديميات', 'مراكز تدريب', 'كوتشينق', 'CPS', 'RAIDA'],
   },
   sosStore: {
     title: `SOS Store | ${SITE_NAME}`,

@@ -4,7 +4,7 @@ import {
   LayoutDashboard, User, Briefcase, Calendar, Handshake, Bell,
   BarChart3, CreditCard, Settings, ChevronLeft, Eye, Users,
   CalendarCheck, MessageSquare, Plus, Menu, X, Trash2, Sparkles, Trophy,
-  CheckCircle2, LogOut, ArrowUpLeft, MoreHorizontal,
+  CheckCircle2, LogOut, ArrowUpLeft, MoreHorizontal, GraduationCap,
 } from 'lucide-react'
 import { AnimatePresence, motion } from 'motion/react'
 import Badge from '../components/ui/Badge'
@@ -57,6 +57,7 @@ const memberNavGroups: NavGroup[] = [
     items: [
       { id: 'profile', label: 'الملف الشخصي', icon: User, hint: 'بياناتك وظهورك' },
       { id: 'services', label: 'الخدمات والمنتجات', icon: Briefcase },
+      { id: 'programs', label: 'البرامج والدورات', icon: GraduationCap, hint: 'برامج أكاديميتك' },
       { id: 'events', label: 'فعالياتي', icon: Calendar },
       { id: 'partnerships', label: 'الشراكات', icon: Handshake },
     ],
@@ -71,6 +72,32 @@ const memberNavGroups: NavGroup[] = [
     ],
   },
 ]
+
+function buildMemberNavGroups(plan: string | null | undefined): NavGroup[] {
+  const isAcademy = plan === 'ACADEMY'
+  return memberNavGroups.map((group) => {
+    if (group.label !== 'حسابك') return group
+    return {
+      ...group,
+      items: group.items
+        .filter((item) => (isAcademy ? true : item.id !== 'programs'))
+        .map((item) => {
+          if (!isAcademy) return item
+          if (item.id === 'profile') {
+            return {
+              ...item,
+              label: 'ملف الأكاديمية',
+              hint: 'اسم المركز، النبذة، والغلاف كما يظهر للزوار',
+            }
+          }
+          if (item.id === 'services') {
+            return { ...item, label: 'خدمات المركز', hint: 'خدمات ومنتجات الأكاديمية' }
+          }
+          return item
+        }),
+    }
+  })
+}
 
 const guestNavGroups: NavGroup[] = [
   {
@@ -91,7 +118,6 @@ const guestNavGroups: NavGroup[] = [
   },
 ]
 
-const memberSidebarItems = memberNavGroups.flatMap((g) => g.items)
 const guestSidebarItems = guestNavGroups.flatMap((g) => g.items)
 
 const mobileTabs = ['overview', 'consultations', 'opportunities', 'profile'] as const
@@ -405,6 +431,99 @@ function ServicesEditor({
   )
 }
 
+function ProgramsEditor({
+  member,
+  onSaved,
+}: {
+  member: Member
+  onSaved: () => Promise<void>
+}) {
+  const [programs, setPrograms] = useState(asArray<string>(member.programs))
+  const [draft, setDraft] = useState('')
+  const [error, setError] = useState<string | null>(null)
+  const [busy, setBusy] = useState(false)
+
+  useEffect(() => {
+    setPrograms(asArray<string>(member.programs))
+  }, [member])
+
+  const persist = async (next: string[]) => {
+    setBusy(true)
+    setError(null)
+    try {
+      await meApi.updateProfile({ programs: next })
+      setPrograms(next)
+      await onSaved()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'تعذر التحديث')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  const addItem = async () => {
+    const value = draft.trim()
+    if (!value) return
+    setDraft('')
+    await persist([...programs, value])
+  }
+
+  return (
+    <div>
+      <div className="mb-2">
+        <h3 className="font-bold text-navy">برامج ودورات الأكاديمية</h3>
+        <p className="mt-1 text-[13px] text-muted leading-relaxed">
+          أضيفي أسماء البرامج والدورات التي تقدّمها مؤسستكِ — تظهر في ملف الأكاديمية ودليل الأكاديميات.
+        </p>
+      </div>
+      <div className="flex flex-col sm:flex-row sm:items-center gap-3 mb-4 mt-4">
+        <input
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
+          placeholder="مثال: كوتشينق احترافي"
+          className="h-9 px-3 rounded-full border border-separator bg-white text-[13px] flex-1 min-w-0"
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') {
+              e.preventDefault()
+              void addItem()
+            }
+          }}
+        />
+        <Button variant="gold" size="sm" className="!rounded-full shrink-0" onClick={() => void addItem()} disabled={busy}>
+          <Plus className="w-4 h-4" /> إضافة برنامج
+        </Button>
+      </div>
+      {error && <p className="text-sm text-rose mb-3">{error}</p>}
+      <div className="grid sm:grid-cols-2 gap-3">
+        {programs.map((label) => (
+          <Surface key={label} className="p-4 flex items-center justify-between gap-3">
+            <div className="flex items-center gap-3 min-w-0">
+              <div className={`w-10 h-10 rounded-[12px] ring-1 flex items-center justify-center shrink-0 ${toneClass.gold}`}>
+                <GraduationCap className="w-4 h-4" />
+              </div>
+              <p className="font-semibold text-navy text-[13px] truncate">{label}</p>
+            </div>
+            <button
+              type="button"
+              className="p-2 rounded-[10px] hover:bg-blush pressable"
+              aria-label="حذف"
+              disabled={busy}
+              onClick={() => void persist(programs.filter((p) => p !== label))}
+            >
+              <Trash2 className="w-4 h-4 text-muted" />
+            </button>
+          </Surface>
+        ))}
+      </div>
+      {programs.length === 0 && (
+        <Surface className="p-8 text-center text-sm text-muted">
+          لم تضيفي برامج بعد — أضيفي أول برنامج لتظهر أكاديميتكِ بشكل أوضح.
+        </Surface>
+      )}
+    </div>
+  )
+}
+
 function PublicProfileToggle({
   isPublic,
   onSaved,
@@ -571,8 +690,9 @@ export default function DashboardPage() {
   )
 
   const isGuest = user?.role === 'guest'
-  const navGroups = isGuest ? guestNavGroups : memberNavGroups
-  const sidebarItems = isGuest ? guestSidebarItems : memberSidebarItems
+  const isAcademy = !isGuest && user?.plan === 'ACADEMY'
+  const navGroups = isGuest ? guestNavGroups : buildMemberNavGroups(user?.plan)
+  const sidebarItems = navGroups.flatMap((g) => g.items)
   const member = dashboard?.profile || authProfile
   const notifications = notificationsPayload?.data ?? []
   const consultations = consultationsPayload?.data ?? []
@@ -1423,17 +1543,34 @@ export default function DashboardPage() {
                 <ProfilePreviewEditor
                   member={member}
                   simple={isGuest}
+                  eyebrow={isAcademy ? 'معاينة ملف الأكاديمية' : undefined}
+                  hint={
+                    isAcademy
+                      ? 'هكذا ستظهر أكاديميتكِ أو مركز التدريب للزوار — اسم المؤسسة، النبذة، البرامج، وروابط التواصل.'
+                      : undefined
+                  }
                   onSaved={async () => {
                     await refreshMe()
                     reloadDash()
                   }}
                   onEditServices={isGuest ? undefined : () => select('services')}
+                  onEditPrograms={isAcademy ? () => select('programs') : undefined}
                   onOpenSettings={isGuest ? undefined : () => select('settings')}
                 />
               )}
 
               {!isGuest && active === 'services' && (
                 <ServicesEditor
+                  member={member}
+                  onSaved={async () => {
+                    await refreshMe()
+                    reloadDash()
+                  }}
+                />
+              )}
+
+              {isAcademy && active === 'programs' && (
+                <ProgramsEditor
                   member={member}
                   onSaved={async () => {
                     await refreshMe()

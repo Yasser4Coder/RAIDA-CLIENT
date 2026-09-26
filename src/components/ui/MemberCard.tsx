@@ -12,7 +12,8 @@ const placeholder =
 function isWireframeMember(member: Member) {
   return (
     member.id.startsWith('wireframe-') ||
-    Boolean(member.image && member.image.includes('/experts/wireframe-'))
+    Boolean(member.image && member.image.includes('/experts/wireframe-')) ||
+    Boolean(member.image && member.image.includes('/academies/wireframe-'))
   )
 }
 

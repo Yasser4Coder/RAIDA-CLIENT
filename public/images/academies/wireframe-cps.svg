@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="400" height="400" viewBox="0 0 400 400" role="img" aria-label="CPS Academy">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#0A1328"/>
+      <stop offset="100%" stop-color="#1A2744"/>
+    </linearGradient>
+  </defs>
+  <rect width="400" height="400" fill="url(#bg)"/>
+  <rect x="70" y="95" width="260" height="160" rx="24" fill="#C9A84C" opacity="0.12" stroke="#C9A84C" stroke-width="1.5"/>
+  <text x="200" y="175" text-anchor="middle" fill="#F5E6C8" font-family="Georgia, serif" font-size="56" font-weight="700">CPS</text>
+  <text x="200" y="215" text-anchor="middle" fill="#C9A84C" font-family="Segoe UI, Tahoma, sans-serif" font-size="14" letter-spacing="2">COACHING &amp; PROJECTS</text>
+  <text x="200" y="310" text-anchor="middle" fill="#F5E6C8" font-family="Segoe UI, Tahoma, sans-serif" font-size="15" opacity="0.85">Academy · Training Center</text>
+</svg>

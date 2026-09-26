@@ -6,6 +6,7 @@ import {
   GraduationCap,
   Calendar,
   CreditCard,
+  School,
   ChevronLeft,
 } from 'lucide-react'
 import Reveal, { Stagger, StaggerItem } from '../ui/Reveal'
@@ -15,6 +16,7 @@ const paths = [
   { to: '/programs', label: 'البرامج', desc: 'دورات وورشات', icon: BookOpen },
   { to: '/services', label: 'اطلبي خدمة', desc: 'طلب مباشر', icon: Briefcase },
   { to: '/experts', label: 'الخبراء', desc: 'استشارات', icon: GraduationCap },
+  { to: '/academies', label: 'الأكاديميات', desc: 'مراكز تدريب', icon: School },
   { to: '/events', label: 'الفعاليات', desc: 'ملتقيات', icon: Calendar },
   { to: '/membership', label: 'العضوية', desc: 'خطط سنوية', icon: CreditCard },
 ]
@@ -28,7 +30,7 @@ export default function LandingQuickPaths() {
             ابدئي من هنا
           </p>
         </Reveal>
-        <Stagger className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5 sm:gap-3">
+        <Stagger className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-2.5 sm:gap-3">
           {paths.map((path) => {
             const Icon = path.icon
             return (
