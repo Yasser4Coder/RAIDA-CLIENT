@@ -7,6 +7,7 @@ import {
   StatsSection,
   CommunitySection,
   FeaturedMembers,
+  FeaturedExperts,
   FeaturedBrands,
   FeaturedAcademies,
   ServicesSection,
@@ -31,20 +32,21 @@ export default function HomePage() {
         jsonLd={[organizationJsonLd(), websiteJsonLd()]}
       />
       <Hero />
-      <SosGroupOriginSection />
-      <AnnouncementsSection />
       <StatsSection />
+      <AnnouncementsSection />
       <LandingQuickPaths />
       <CommunitySection />
       <CommunityManagerSection />
       <FeaturedMembers />
-      <FeaturedBrands />
+      <FeaturedExperts />
       <FeaturedAcademies />
+      <FeaturedBrands />
       <ServicesSection />
       <EventsSection />
       <SuccessStories />
       <PartnersSection />
       <PricingSection />
+      <SosGroupOriginSection />
       <FinalCTA />
     </>
   )

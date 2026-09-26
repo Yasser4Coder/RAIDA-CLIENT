@@ -1,4 +1,4 @@
-import { useMemo, useState, type FormEvent } from 'react'
+import { useMemo, useState, type FormEvent, type KeyboardEvent } from 'react'
 import { Link } from 'react-router-dom'
 import { AnimatePresence, motion } from 'motion/react'
 import {
@@ -11,6 +11,13 @@ import {
   Phone,
   ChevronLeft,
   ArrowLeft,
+  School,
+  Briefcase,
+  GraduationCap,
+  Globe,
+  Check,
+  Plus,
+  X,
 } from 'lucide-react'
 import Button from '../ui/Button'
 import AuthShell, { AuthAlert, AuthField, authInputClass } from './AuthShell'
@@ -29,6 +36,13 @@ type RegisterPayload = {
   phone: string
   accountType: 'guest' | 'member'
   plan?: string
+  title?: string
+  specialty?: string
+  city?: string
+  website?: string
+  bio?: string
+  programs?: string[]
+  category?: string
 }
 
 type LoginRegisterFormProps = {
@@ -36,6 +50,20 @@ type LoginRegisterFormProps = {
   onRegister: (payload: RegisterPayload) => Promise<RegisterResult>
   hint?: string
   initialMode?: Mode
+}
+
+const ACADEMY_BENEFITS = [
+  'صفحة رسمية خاصة بالأكاديمية أو مركز التدريب',
+  'التعريف بالمؤسسة وبرامجها',
+  'عرض الدورات والتكوينات',
+  'الموقع الرسمي ومعلومات التواصل',
+  'الظهور في دليل أكاديميات رائدة',
+]
+
+const PLAN_ICONS: Record<string, typeof School> = {
+  BUSINESS: Briefcase,
+  EXPERT: GraduationCap,
+  ACADEMY: School,
 }
 
 function passwordStrength(password: string): { score: number; label: string } {
@@ -63,17 +91,43 @@ export default function LoginRegisterForm({
   const [phone, setPhone] = useState('')
   const [accountType, setAccountType] = useState<'guest' | 'member'>('guest')
   const [plan, setPlan] = useState('BUSINESS')
+  const [title, setTitle] = useState('أكاديمية ومؤسسة تدريب')
+  const [specialty, setSpecialty] = useState('')
+  const [city, setCity] = useState('')
+  const [website, setWebsite] = useState('')
+  const [bio, setBio] = useState('')
+  const [programs, setPrograms] = useState<string[]>([])
+  const [programDraft, setProgramDraft] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
   const [verifyEmail, setVerifyEmail] = useState<string | null>(null)
   const { data: plans } = useAsyncData(() => catalogApi.plans(), [])
 
   const strength = useMemo(() => passwordStrength(password), [password])
+  const isAcademy = accountType === 'member' && plan === 'ACADEMY'
+  const sortedPlans = useMemo(
+    () => [...(plans ?? [])].sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0)),
+    [plans],
+  )
 
   const switchMode = (next: Mode) => {
     setMode(next)
     setError(null)
     setVerifyEmail(null)
+  }
+
+  const addProgram = () => {
+    const value = programDraft.trim()
+    if (!value || programs.includes(value) || programs.length >= 8) return
+    setPrograms((prev) => [...prev, value])
+    setProgramDraft('')
+  }
+
+  const onProgramKey = (e: KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      e.preventDefault()
+      addProgram()
+    }
   }
 
   const handleSubmit = async (e: FormEvent) => {
@@ -91,6 +145,17 @@ export default function LoginRegisterForm({
           phone,
           accountType,
           plan: accountType === 'member' ? plan : undefined,
+          ...(isAcademy
+            ? {
+                title: title.trim() || 'أكاديمية ومؤسسة تدريب',
+                specialty: specialty.trim(),
+                city: city.trim(),
+                website: website.trim() || undefined,
+                bio: bio.trim() || undefined,
+                programs,
+                category: 'أكاديميات ومراكز تدريب',
+              }
+            : {}),
         })
         if (result.requiresEmailVerification) {
           setVerifyEmail(result.email)
@@ -128,7 +193,7 @@ export default function LoginRegisterForm({
             <p className="mt-2 text-[14px] leading-relaxed text-muted">
               أرسلنا رابط تفعيل إلى{' '}
               <span className="font-semibold text-navy">{verifyEmail}</span>. بعد التأكيد يمكنك
-              تسجيل الدخول والوصول إلى لوحة التحكم.
+              تسجيل الدخول ومتابعة إعداد صفحة الأكاديمية.
             </p>
           </div>
           <AuthAlert tone="success">الحساب جاهز — ينتظر تأكيد البريد فقط.</AuthAlert>
@@ -157,7 +222,10 @@ export default function LoginRegisterForm({
 
   return (
     <AuthShell tagline="ادخل لوحة التحكم أو أنشئ حسابًا للانضمام إلى مجتمع رائدة.">
-      <form onSubmit={(e) => void handleSubmit(e)} className="mx-auto w-full max-w-md space-y-5">
+      <form
+        onSubmit={(e) => void handleSubmit(e)}
+        className={`mx-auto w-full space-y-5 ${isAcademy && mode === 'register' ? 'max-w-lg' : 'max-w-md'}`}
+      >
         <div
           role="tablist"
           aria-label="وضع الحساب"
@@ -196,18 +264,24 @@ export default function LoginRegisterForm({
 
         <div>
           <h1 className="font-display text-2xl font-extrabold tracking-[-0.03em] text-navy sm:text-[1.65rem]">
-            {mode === 'login' ? 'مرحباً بعودتك' : 'انضم إلى رائدة'}
+            {mode === 'login'
+              ? 'مرحباً بعودتك'
+              : isAcademy
+                ? 'سجّلي أكاديميتكِ في رائدة'
+                : 'انضم إلى رائدة'}
           </h1>
           <p className="mt-1.5 text-[14px] leading-relaxed text-muted">
             {mode === 'login'
               ? 'أدخل بياناتك للوصول إلى فرصك وملفك ولوحة التحكم.'
-              : 'ابدأ بحساب زائر مجاني، أو قدّم على عضوية مهنية بموافقة الإدارة.'}
+              : isAcademy
+                ? 'أدخلي معلومات المؤسسة الآن — الصفحة الرسمية تُكمَّل من لوحة التحكم بعد الموافقة.'
+                : 'ابدأ بحساب زائر مجاني، أو قدّم على عضوية مهنية بموافقة الإدارة.'}
           </p>
         </div>
 
         <AnimatePresence mode="wait" initial={false}>
           <motion.div
-            key={mode}
+            key={`${mode}-${accountType}-${plan}`}
             initial={reduce ? false : { opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={reduce ? undefined : { opacity: 0, y: -6 }}
@@ -216,41 +290,6 @@ export default function LoginRegisterForm({
           >
             {mode === 'register' && (
               <>
-                <AuthField label="الاسم الكامل" htmlFor="auth-name">
-                  <div className="relative">
-                    <UserRound className="pointer-events-none absolute top-1/2 right-3.5 h-4 w-4 -translate-y-1/2 text-muted/70" />
-                    <input
-                      id="auth-name"
-                      value={name}
-                      onChange={(e) => setName(e.target.value)}
-                      required
-                      minLength={2}
-                      autoComplete="name"
-                      placeholder="مثال: سارة بن عمر"
-                      className={`${authInputClass} pr-10`}
-                    />
-                  </div>
-                </AuthField>
-
-                <AuthField label="رقم الهاتف" htmlFor="auth-phone" hint="للتواصل عند الحاجة">
-                  <div className="relative">
-                    <Phone className="pointer-events-none absolute top-1/2 right-3.5 h-4 w-4 -translate-y-1/2 text-muted/70" />
-                    <input
-                      id="auth-phone"
-                      type="tel"
-                      value={phone}
-                      onChange={(e) => setPhone(e.target.value)}
-                      required
-                      minLength={8}
-                      maxLength={40}
-                      placeholder="05XXXXXXXX"
-                      inputMode="tel"
-                      autoComplete="tel"
-                      className={`${authInputClass} pr-10`}
-                    />
-                  </div>
-                </AuthField>
-
                 <div>
                   <p className="mb-2 text-[12px] font-semibold text-navy/70">نوع الحساب</p>
                   <div className="grid gap-2 sm:grid-cols-2">
@@ -293,35 +332,223 @@ export default function LoginRegisterForm({
                           accountType === 'member' ? 'text-white/65' : 'text-muted'
                         }`}
                       >
-                        خطة مدفوعة — تحتاج موافقة الإدارة
+                        أعمال · خبيرة · أكاديمية — بموافقة الإدارة
                       </span>
                     </button>
                   </div>
                 </div>
 
                 {accountType === 'member' && (
-                  <AuthField label="خطة العضوية" htmlFor="auth-plan">
-                    <select
-                      id="auth-plan"
-                      value={plan}
-                      onChange={(e) => setPlan(e.target.value)}
-                      className={authInputClass}
-                    >
-                      {(plans ?? []).map((item) => (
-                        <option key={item.name} value={item.name}>
-                          {item.nameAr} — {item.launchPrice || item.price} دج
-                        </option>
-                      ))}
-                    </select>
+                  <div>
+                    <p className="mb-2 text-[12px] font-semibold text-navy/70">اختاري خطة العضوية</p>
+                    <div className="grid gap-2">
+                      {sortedPlans.map((item) => {
+                        const Icon = PLAN_ICONS[item.name] || Briefcase
+                        const active = plan === item.name
+                        return (
+                          <button
+                            key={item.name}
+                            type="button"
+                            onClick={() => setPlan(item.name)}
+                            className={`rounded-[16px] p-3.5 text-right transition ring-1 ${
+                              active
+                                ? 'bg-white ring-gold/50 shadow-sm'
+                                : 'bg-ivory/80 ring-navy/8 hover:ring-navy/15'
+                            }`}
+                          >
+                            <span className="flex items-start gap-3">
+                              <span
+                                className={`mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-[12px] ${
+                                  active ? 'bg-gold/15 text-gold-dark' : 'bg-navy/5 text-navy'
+                                }`}
+                              >
+                                <Icon className="h-4 w-4" />
+                              </span>
+                              <span className="min-w-0 flex-1">
+                                <span className="flex items-center justify-between gap-2">
+                                  <span className="text-[13px] font-bold text-navy leading-snug">
+                                    {item.nameAr}
+                                  </span>
+                                  {active && (
+                                    <Check className="h-4 w-4 shrink-0 text-gold-dark" />
+                                  )}
+                                </span>
+                                <span className="mt-1 block text-[11px] text-muted leading-relaxed">
+                                  {item.name === 'ACADEMY'
+                                    ? 'صفحة رسمية · برامج ودورات · دليل الأكاديميات'
+                                    : item.description}
+                                </span>
+                                <span className="mt-1.5 block text-[12px] font-semibold text-navy">
+                                  {item.launchPrice || item.price} دج / {item.period}
+                                </span>
+                              </span>
+                            </span>
+                          </button>
+                        )
+                      })}
+                    </div>
                     <p className="mt-2 text-[12px] text-muted">
-                      تعرّف على المزايا من{' '}
-                      <Link to="/membership" className="font-semibold text-rose hover:underline">
+                      تفاصيل المزايا في{' '}
+                      <Link
+                        to={plan === 'ACADEMY' ? '/membership/academies' : '/membership'}
+                        className="font-semibold text-rose hover:underline"
+                      >
                         صفحة العضوية
                       </Link>
                       .
                     </p>
-                  </AuthField>
+                  </div>
                 )}
+
+                {isAcademy && (
+                  <div className="rounded-[18px] bg-navy p-4 text-white space-y-3">
+                    <p className="text-[12px] font-semibold text-gold">ماذا تحصلين مع عضوية الأكاديمية؟</p>
+                    <ul className="space-y-2">
+                      {ACADEMY_BENEFITS.map((item) => (
+                        <li key={item} className="flex items-start gap-2 text-[12px] text-white/80 leading-relaxed">
+                          <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-gold" />
+                          {item}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                <AuthField
+                  label={isAcademy ? 'اسم الأكاديمية / مركز التدريب' : 'الاسم الكامل'}
+                  htmlFor="auth-name"
+                >
+                  <div className="relative">
+                    <UserRound className="pointer-events-none absolute top-1/2 right-3.5 h-4 w-4 -translate-y-1/2 text-muted/70" />
+                    <input
+                      id="auth-name"
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                      required
+                      minLength={2}
+                      autoComplete="organization"
+                      placeholder={
+                        isAcademy ? 'مثال: مؤسسة CPS للكوتشينق وإدارة المشاريع' : 'مثال: سارة بن عمر'
+                      }
+                      className={`${authInputClass} pr-10`}
+                    />
+                  </div>
+                </AuthField>
+
+                {isAcademy && (
+                  <>
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      <AuthField label="نوع المؤسسة" htmlFor="auth-title">
+                        <input
+                          id="auth-title"
+                          value={title}
+                          onChange={(e) => setTitle(e.target.value)}
+                          placeholder="أكاديمية / مركز تدريب"
+                          className={authInputClass}
+                        />
+                      </AuthField>
+                      <AuthField label="التخصص" htmlFor="auth-specialty">
+                        <input
+                          id="auth-specialty"
+                          value={specialty}
+                          onChange={(e) => setSpecialty(e.target.value)}
+                          placeholder="كوتشينق، إدارة مشاريع…"
+                          className={authInputClass}
+                        />
+                      </AuthField>
+                    </div>
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      <AuthField label="المدينة" htmlFor="auth-city">
+                        <input
+                          id="auth-city"
+                          value={city}
+                          onChange={(e) => setCity(e.target.value)}
+                          placeholder="الجزائر العاصمة"
+                          className={authInputClass}
+                        />
+                      </AuthField>
+                      <AuthField label="الموقع الرسمي" htmlFor="auth-website" hint="اختياري">
+                        <div className="relative">
+                          <Globe className="pointer-events-none absolute top-1/2 right-3.5 h-4 w-4 -translate-y-1/2 text-muted/70" />
+                          <input
+                            id="auth-website"
+                            value={website}
+                            onChange={(e) => setWebsite(e.target.value)}
+                            placeholder="https://"
+                            dir="ltr"
+                            className={`${authInputClass} pr-10`}
+                          />
+                        </div>
+                      </AuthField>
+                    </div>
+                    <AuthField label="نبذة عن المؤسسة" htmlFor="auth-bio" hint="اختياري — يمكن إكمالها لاحقاً">
+                      <textarea
+                        id="auth-bio"
+                        value={bio}
+                        onChange={(e) => setBio(e.target.value)}
+                        rows={3}
+                        placeholder="عرّفي بالمؤسسة وبرامجها باختصار…"
+                        className={`${authInputClass} h-auto py-3 resize-none`}
+                      />
+                    </AuthField>
+                    <div>
+                      <p className="mb-1.5 text-[12px] font-semibold text-navy/70">
+                        برامج أو دورات أولية
+                        <span className="font-normal text-muted"> (اختياري)</span>
+                      </p>
+                      <div className="flex gap-2">
+                        <input
+                          value={programDraft}
+                          onChange={(e) => setProgramDraft(e.target.value)}
+                          onKeyDown={onProgramKey}
+                          placeholder="مثال: كوتشينق احترافي"
+                          className={`${authInputClass} flex-1`}
+                        />
+                        <Button type="button" variant="outline" size="sm" onClick={addProgram}>
+                          <Plus className="h-4 w-4" />
+                        </Button>
+                      </div>
+                      {programs.length > 0 && (
+                        <div className="mt-2 flex flex-wrap gap-1.5">
+                          {programs.map((p) => (
+                            <span
+                              key={p}
+                              className="inline-flex items-center gap-1 rounded-full bg-blush px-2.5 py-1 text-[11px] font-semibold text-navy"
+                            >
+                              {p}
+                              <button
+                                type="button"
+                                onClick={() => setPrograms((prev) => prev.filter((x) => x !== p))}
+                                aria-label="حذف"
+                              >
+                                <X className="h-3 w-3" />
+                              </button>
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </>
+                )}
+
+                <AuthField label="رقم الهاتف" htmlFor="auth-phone" hint="للتواصل عند الحاجة">
+                  <div className="relative">
+                    <Phone className="pointer-events-none absolute top-1/2 right-3.5 h-4 w-4 -translate-y-1/2 text-muted/70" />
+                    <input
+                      id="auth-phone"
+                      type="tel"
+                      value={phone}
+                      onChange={(e) => setPhone(e.target.value)}
+                      required
+                      minLength={8}
+                      maxLength={40}
+                      placeholder="05XXXXXXXX"
+                      inputMode="tel"
+                      autoComplete="tel"
+                      className={`${authInputClass} pr-10`}
+                    />
+                  </div>
+                </AuthField>
               </>
             )}
 
@@ -409,7 +636,9 @@ export default function LoginRegisterForm({
               : 'جاري إنشاء الحساب...'
             : mode === 'login'
               ? 'تسجيل الدخول'
-              : 'إنشاء الحساب والبدء'}
+              : isAcademy
+                ? 'إنشاء حساب الأكاديمية'
+                : 'إنشاء الحساب والبدء'}
           {!submitting && <ChevronLeft className="h-4 w-4 opacity-70" />}
         </Button>
 

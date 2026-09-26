@@ -35,6 +35,12 @@ export const catalogApi = {
   serviceCategories: () => apiRequest<ServiceCategory[]>('/service-categories', { auth: false }),
   communityCards: () => apiRequest<CommunityCard[]>('/community-cards', { auth: false }),
   stats: () => apiRequest<PlatformStat[]>('/stats', { auth: false }),
+  recordVisit: (visitorKey: string) =>
+    apiRequest<{ recorded: boolean; isNew: boolean }>('/analytics/visit', {
+      method: 'POST',
+      body: { visitorKey },
+      auth: false,
+    }),
   wilayas: () => apiRequest<string[]>('/wilayas', { auth: false }),
   programs: () => apiRequest<import('../types/api').CmsProgram[]>('/programs', { auth: false }),
   opportunities: () =>
@@ -65,6 +71,9 @@ export const authApi = {
     city?: string
     wilaya?: string
     category?: string
+    website?: string
+    bio?: string | null
+    programs?: string[]
   }) {
     const data = await apiRequest<{
       user: UserSafe
@@ -129,6 +138,7 @@ export const meApi = {
     apiRequest<{
       user: UserSafe | null
       profile: Member | null
+      brand: Brand | null
       stats: {
         profileViews: number
         upcomingEvents: number
@@ -142,10 +152,19 @@ export const meApi = {
     apiRequest<NotificationItem>(`/me/notifications/${id}/read`, { method: 'PATCH', body: {} }),
   updateProfile: (payload: Partial<Member>) =>
     apiRequest<Member>('/me/profile', { method: 'PATCH', body: payload }),
+  createBrand: (payload: Record<string, unknown>) =>
+    apiRequest<Brand>('/brands', { method: 'POST', body: payload }),
+  updateBrand: (id: string, payload: Record<string, unknown>) =>
+    apiRequest<Brand>(`/brands/${id}`, { method: 'PATCH', body: payload }),
   consultations: (query?: Record<string, string | number | undefined>) =>
     apiList<Consultation>('/me/consultations', query),
   markConsultationRead: (id: string) =>
     apiRequest<Consultation>(`/me/consultations/${id}/read`, { method: 'PATCH', body: {} }),
+  updateConsultationStatus: (id: string, status: Consultation['status']) =>
+    apiRequest<Consultation>(`/me/consultations/${id}/status`, {
+      method: 'PATCH',
+      body: { status },
+    }),
   updatePlan: (plan: string) =>
     apiRequest<UserSafe>('/me/plan', { method: 'PATCH', body: { plan } }),
   requestMembership: (plan: string) =>

@@ -78,7 +78,7 @@ export const samplePrograms = [
     title: 'التسويق وبناء العلامة التجارية',
     trainer: 'خبيرة رائدة',
     duration: '3 ساعات',
-    mode: 'Online',
+    mode: 'حضوري / أونلاين',
     level: 'مبتدئ / متوسط',
     memberPrice: 'مجاني للأعضاء',
     publicPrice: 'حسب البرنامج',
@@ -90,7 +90,7 @@ export const samplePrograms = [
     title: 'الذكاء الاصطناعي في الأعمال',
     trainer: 'خبيرة رائدة',
     duration: '4 ساعات',
-    mode: 'Online',
+    mode: 'أونلاين',
     level: 'متوسط',
     memberPrice: 'مجاني للأعضاء',
     publicPrice: 'حسب البرنامج',
@@ -102,7 +102,7 @@ export const samplePrograms = [
     title: 'التجارة الإلكترونية من الصفر',
     trainer: 'خبيرة رائدة',
     duration: '3 ساعات',
-    mode: 'Online',
+    mode: 'أونلاين',
     level: 'مبتدئ',
     memberPrice: 'مجاني للأعضاء',
     publicPrice: 'حسب البرنامج',
@@ -114,7 +114,7 @@ export const samplePrograms = [
     title: 'إدارة فرق العمل',
     trainer: 'خبيرة رائدة',
     duration: '2.5 ساعة',
-    mode: 'حضوري / Online',
+    mode: 'حضوري',
     level: 'متوسط',
     memberPrice: 'مجاني للأعضاء',
     publicPrice: 'حسب البرنامج',
@@ -349,9 +349,91 @@ export const programOutcomes = [
 ]
 
 export const sosStoreBenefits = [
-  'عرض المنتجات',
-  'استقبال الطلبات',
-  'الوصول إلى العملاء',
-  'الترويج داخل مجتمع رائدة',
-  'المشاركة في الحملات والمعارض',
-]
+  {
+    title: 'وصول لآلاف المشترين',
+    description: 'اعرضي منتجاتكِ أمام عملاء يثقون بمنصة SOS GROUP.',
+  },
+  {
+    title: 'لوحة تحكم سهلة',
+    description: 'تابعي الطلبات، المخزون، والمبيعات من مكان واحد.',
+  },
+  {
+    title: 'مراجعة جودة',
+    description: 'نضمن للعملاء منتجات موثوقة — وهذا يعزز ثقة متجركِ.',
+  },
+  {
+    title: 'دعم محلي',
+    description: 'فريق جزائري يفهم السوق ويساعدكِ في كل خطوة.',
+  },
+] as const
+
+export const sosStoreSteps = [
+  {
+    step: 1,
+    title: 'أرسلي طلبكِ',
+    description: 'تواصلي عبر نموذج الانضمام وشاركينا معلومات نشاطكِ التجاري.',
+  },
+  {
+    step: 2,
+    title: 'نتواصل معكِ',
+    description: 'فريق SOS يراجع طلبكِ ويتصل بكِ لمناقشة التفاصيل وسياسات المنصة.',
+  },
+  {
+    step: 3,
+    title: 'تفعيل حسابكِ',
+    description: 'بعد الموافقة، تحصلين على لوحة تحكم خاصة لإدارة منتجاتكِ وطلباتكِ.',
+  },
+  {
+    step: 4,
+    title: 'ابدئي البيع',
+    description: 'أضيفي منتجاتكِ — تُراجع وفق سياسة الجودة قبل الظهور للعملاء.',
+  },
+] as const
+
+export const sosStorePlans = [
+  {
+    id: 'starter',
+    name: 'Starter',
+    tagline: 'لمن تبدأ رحلتها في البيع عبر الإنترنت',
+    monthlyPriceLabel: '1.000 د.ج',
+    trialNote: '30 يومًا مجانًا — مرة واحدة',
+    popular: false,
+    features: [
+      'منتج واحد كحد أقصى',
+      '10 طلبات يوميًا',
+      'لوحة تحكم للبائع',
+      'إدارة الطلبات والمنتجات',
+      'تجربة مجانية كاملة 30 يومًا',
+    ],
+  },
+  {
+    id: 'premium',
+    name: 'Premium',
+    tagline: 'الأنسب للبائعات النشطات والمتاجر الصغيرة',
+    monthlyPriceLabel: '3.000 د.ج',
+    trialNote: null,
+    popular: true,
+    features: [
+      'حتى 10 منتجات',
+      '100 طلب يوميًا',
+      'شارة بائع موثّق',
+      'لوحة تحكم للبائع',
+      'إدارة الطلبات والمنتجات',
+    ],
+  },
+  {
+    id: 'business',
+    name: 'Business',
+    tagline: 'للعلامات التجارية والمتاجر الكبيرة',
+    monthlyPriceLabel: '5.000 د.ج',
+    trialNote: null,
+    popular: false,
+    features: [
+      'منتجات غير محدودة',
+      'طلبات يومية غير محدودة',
+      'شارة بائع موثّق',
+      'تحليلات متقدمة',
+      'إعلان منتج في الهيرو شهريًا',
+    ],
+  },
+] as const

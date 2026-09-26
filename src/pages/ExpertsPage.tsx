@@ -10,7 +10,7 @@ import {
   Check,
 } from 'lucide-react'
 import { motion } from 'motion/react'
-import MemberCard from '../components/ui/MemberCard'
+import ExpertSpotlightCard from '../components/ui/ExpertSpotlightCard'
 import Button from '../components/ui/Button'
 import Reveal, { Stagger, StaggerItem } from '../components/ui/Reveal'
 import { LoadingBlock, ErrorBlock } from '../components/ui/StateBlocks'
@@ -105,7 +105,7 @@ export default function ExpertsPage() {
                   <RaidaMark className="w-7 h-7" />
                 </span>
                 <span className="text-[12px] font-semibold tracking-[0.18em] text-gold uppercase">
-                  خبراء رائدة
+                  عضوية رائدة للمدربين والخبراء
                 </span>
                 {!loading && (
                   <span className="text-[12px] text-white/55 font-medium">
@@ -115,10 +115,10 @@ export default function ExpertsPage() {
               </div>
 
               <h1 className="text-4xl sm:text-5xl lg:text-[3.25rem] font-extrabold text-white tracking-[-0.03em] leading-[1.12]">
-                شبكة الخبراء والمدربين
+                دليل الخبراء والمدربين
               </h1>
               <p className="mt-4 text-[16px] sm:text-lg text-white/75 leading-relaxed max-w-xl">
-                اكتشف الخبراء حسب التخصص، اطّلع على الملفات المهنية، واطلب استشارة أو برنامجًا تدريبيًا — للنساء والرجال.
+                ابحثي حسب التخصص، اطّلعي على الملفات المهنية، واطلبي استشارة مباشرة — تصل الطلبات إلى وارد الخبيرة في لوحتها.
               </p>
 
               <div className="mt-8 flex flex-col sm:flex-row gap-3">
@@ -257,10 +257,10 @@ export default function ExpertsPage() {
             </div>
           </div>
         ) : (
-          <Stagger className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <Stagger className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
             {filtered.map((m) => (
               <StaggerItem key={m.id}>
-                <MemberCard member={m} />
+                <ExpertSpotlightCard member={m} tone="light" />
               </StaggerItem>
             ))}
           </Stagger>

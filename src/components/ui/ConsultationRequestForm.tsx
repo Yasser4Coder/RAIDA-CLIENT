@@ -59,13 +59,23 @@ export default function ConsultationRequestForm({
   const [submitting, setSubmitting] = useState(false)
 
   const needsExpertList = target === 'choose' && destination === 'expert' && !fixedMemberId
-  const { data: expertsPayload } = useAsyncData(
-    () => (needsExpertList ? catalogApi.members({ limit: 100, plan: 'EXPERT' }) : Promise.resolve({ data: [] })),
-    [needsExpertList],
-  )
+  const { data: consultantsPayload } = useAsyncData(async () => {
+    if (!needsExpertList) return { data: [] }
+    const [experts, academies] = await Promise.all([
+      catalogApi.members({ limit: 100, plan: 'EXPERT' }),
+      catalogApi.members({ limit: 100, plan: 'ACADEMY' }),
+    ])
+    const seen = new Set<string>()
+    const merged = [...(experts.data ?? []), ...(academies.data ?? [])].filter((m) => {
+      if (seen.has(m.id)) return false
+      seen.add(m.id)
+      return true
+    })
+    return { data: merged }
+  }, [needsExpertList])
   const { data: wilayas } = useAsyncData(() => catalogApi.wilayas(), [])
 
-  const experts = expertsPayload?.data ?? []
+  const consultants = consultantsPayload?.data ?? []
 
   const handleSubmit = async (event: FormEvent) => {
     event.preventDefault()
@@ -89,7 +99,7 @@ export default function ConsultationRequestForm({
       const expertId = fixedMemberId || memberId
       if (toExpert) {
         if (!expertId) {
-          setError('اختاري الخبيرة')
+          setError('اختاري الخبيرة أو الأكاديمية')
           setSubmitting(false)
           return
         }
@@ -115,8 +125,8 @@ export default function ConsultationRequestForm({
         </div>
         <p className="font-extrabold text-navy text-lg">تم استلام طلبكِ</p>
         <p className="mt-2 text-sm text-muted leading-relaxed">
-          المسار التالي: تأكيد الموعد ← الدفع عند الاقتضاء ← الجلسة. سيظهر الطلب في صندوق استشاراتكِ إن كنتِ
-          مسجّلة، وستتواصل معكِ الإدارة أو الخبيرة قريبًا.
+          المسار التالي: تأكيد الموعد ← الدفع عند الاقتضاء ← الجلسة. يصل الطلب إلى لوحة تحكّم الخبيرة أو
+          الأكاديمية المختارة، ويظهر أيضًا في صندوقكِ إن كنتِ مسجّلة.
         </p>
       </div>
     )
@@ -142,16 +152,20 @@ export default function ConsultationRequestForm({
               destination === 'expert' ? 'bg-navy text-white border-navy' : 'bg-ivory text-muted border-separator'
             }`}
           >
-            خبيرة رائدة
+            خبيرة أو أكاديمية
           </button>
         </div>
       )}
 
       {(target === 'expert' || destination === 'expert') && (
         <div>
-          <label className="block text-[11px] font-semibold text-muted mb-1.5">الخبيرة</label>
+          <label className="block text-[11px] font-semibold text-muted mb-1.5">
+            الخبيرة / الأكاديمية
+          </label>
           {fixedMemberId ? (
-            <p className="text-sm font-medium text-navy">{fixedMemberName || 'خبيرة مختارة'}</p>
+            <p className="text-sm font-medium text-navy">
+              {fixedMemberName || 'خبيرة أو أكاديمية مختارة'}
+            </p>
           ) : (
             <select
               required
@@ -159,9 +173,10 @@ export default function ConsultationRequestForm({
               onChange={(e) => setMemberId(e.target.value)}
               className={fieldClass}
             >
-              <option value="">اختاري الخبيرة</option>
-              {experts.map((m) => (
+              <option value="">اختاري الخبيرة أو الأكاديمية</option>
+              {consultants.map((m) => (
                 <option key={m.id} value={m.id}>
+                  {m.plan === 'ACADEMY' ? 'أكاديمية · ' : ''}
                   {m.name}
                   {m.specialty ? ` — ${m.specialty}` : ''}
                 </option>

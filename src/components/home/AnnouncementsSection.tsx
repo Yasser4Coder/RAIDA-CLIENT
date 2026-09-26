@@ -140,13 +140,14 @@ export default function AnnouncementsSection() {
                   <Reveal key={item.id} delay={i + 1}>
                     <Link
                       to={`/announcements#${item.id}`}
-                      className="group block rounded-[20px] bg-ivory hairline p-4 pressable-soft hover:shadow-sm transition-shadow h-full"
+                      className="group block h-full rounded-[20px] bg-ivory p-4 hairline transition-shadow pressable-soft hover:shadow-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-navy"
                     >
                       <div className="flex gap-3.5">
                         {item.image ? (
                           <SafeImg
                             src={item.image}
                             alt=""
+                            loading="lazy"
                             className="w-20 h-20 rounded-[14px] object-cover shrink-0"
                           />
                         ) : (

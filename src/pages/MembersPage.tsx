@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { Search, SlidersHorizontal, X, Users, Sparkles } from 'lucide-react'
 import { AnimatePresence, motion } from 'motion/react'
 import MemberCard from '../components/ui/MemberCard'
@@ -11,7 +12,13 @@ import { catalogApi } from '../lib/catalog'
 import SeoHead from '../components/seo/SeoHead'
 import { breadcrumbJsonLd, routeSeo } from '../lib/seo'
 
+const PLAN_FILTERS = new Set(['BUSINESS', 'EXPERT', 'ACADEMY'])
+
 export default function MembersPage() {
+  const [searchParams] = useSearchParams()
+  const planParam = searchParams.get('plan')?.toUpperCase() || ''
+  const plan = PLAN_FILTERS.has(planParam) ? planParam : undefined
+
   const [search, setSearch] = useState('')
   const [wilaya, setWilaya] = useState('')
   const [service, setService] = useState('')
@@ -19,7 +26,7 @@ export default function MembersPage() {
   const [showFilters, setShowFilters] = useState(false)
   const { reduce, transition } = useMotionSafe()
 
-  const filtersKey = `${search}|${wilaya}|${service}|${category}`
+  const filtersKey = `${search}|${wilaya}|${service}|${category}|${plan || ''}`
 
   const { data: membersPayload, loading, error, reload } = useAsyncData(
     () =>
@@ -29,6 +36,7 @@ export default function MembersPage() {
         wilaya: wilaya || undefined,
         service: service || undefined,
         category: category || undefined,
+        plan,
       }),
     [filtersKey],
   )

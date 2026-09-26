@@ -2060,7 +2060,13 @@ export default function AdminDashboardPage() {
                             </div>
                           </div>
                           <Badge variant={item.status === 'new' ? 'rose' : 'soft'}>
-                            {item.status === 'new' ? 'جديدة' : item.status === 'archived' ? 'مؤرشفة' : 'مقروءة'}
+                            {item.status === 'new'
+                              ? 'جديدة'
+                              : item.status === 'done'
+                                ? 'مكتملة'
+                                : item.status === 'archived'
+                                  ? 'مؤرشفة'
+                                  : 'قيد المتابعة'}
                           </Badge>
                         </div>
                       </div>

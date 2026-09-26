@@ -20,8 +20,10 @@ export type Member = {
   products: string[]
   programs: string[]
   projects: string[]
+  plan?: string
   isPublic?: boolean
   profileViews?: number
+  brand?: Brand | null
 }
 
 export type Brand = {
@@ -132,6 +134,7 @@ export type CommunityCard = {
 
 export type PlatformStat = {
   id: string
+  key?: string
   label: string
   value: number
   suffix: string
@@ -150,7 +153,7 @@ export type Consultation = {
   mode?: 'online' | 'in_person' | null
   preferredAt?: string | null
   wilaya?: string | null
-  status: 'new' | 'read' | 'archived'
+  status: 'new' | 'read' | 'done' | 'archived'
   targetType?: 'member' | 'raida'
   adminReply?: string | null
   repliedAt?: string | null
@@ -211,7 +214,7 @@ export type PartnershipInquiry = {
   organization: string
   tier: string | null
   message: string
-  status: 'new' | 'read' | 'archived'
+  status: 'new' | 'read' | 'done' | 'archived'
   createdAt: string
 }
 

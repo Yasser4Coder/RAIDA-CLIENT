@@ -25,6 +25,14 @@ type AuthState = {
     phone: string
     accountType: 'guest' | 'member'
     plan?: string
+    title?: string
+    specialty?: string
+    city?: string
+    wilaya?: string
+    category?: string
+    website?: string
+    bio?: string
+    programs?: string[]
   }) => Promise<RegisterResult>
   logout: () => Promise<void>
   refreshMe: () => Promise<void>
@@ -81,6 +89,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       phone: string
       accountType: 'guest' | 'member'
       plan?: string
+      title?: string
+      specialty?: string
+      city?: string
+      wilaya?: string
+      category?: string
+      website?: string
+      bio?: string
+      programs?: string[]
     }): Promise<RegisterResult> => {
       const result = await authApi.register(payload)
       if (result.requiresEmailVerification || !result.accessToken) {

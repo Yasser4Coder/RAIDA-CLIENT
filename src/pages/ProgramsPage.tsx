@@ -57,7 +57,7 @@ export default function ProgramsPage() {
         title: p.title,
         trainer: p.trainer || 'خبيرة رائدة',
         duration: p.duration || '',
-        mode: p.mode || 'Online',
+        mode: p.mode || 'حضوري / أونلاين',
         level: p.level || '',
         memberPrice: p.memberPrice || 'مجاني للأعضاء',
         publicPrice: p.publicPrice || '',
@@ -138,11 +138,20 @@ export default function ProgramsPage() {
               </div>
 
               <h1 className="text-4xl sm:text-5xl lg:text-[3.25rem] font-extrabold text-white tracking-[-0.03em] leading-[1.12]">
-                أكاديمية رقمية للنمو المهني
+                أكاديمية للنمو المهني
               </h1>
               <p className="mt-4 text-[16px] sm:text-lg text-white/75 leading-relaxed max-w-xl">
-                برامج سنوية ومتخصصة لرائدات الأعمال — الأعضاء يستفيدون من 4 دورات Online مجانية كل سنة.
+                برامج سنوية ومتخصصة لرائدات الأعمال — حضوريًا وأونلاين. الأعضاء يستفيدون من 4 دورات
+                مجانية كل سنة.
               </p>
+              <div className="mt-5 flex flex-wrap gap-2">
+                <span className="inline-flex items-center rounded-full bg-white/10 px-3 py-1 text-[12px] font-semibold text-white ring-1 ring-white/20">
+                  حضوري
+                </span>
+                <span className="inline-flex items-center rounded-full bg-white/10 px-3 py-1 text-[12px] font-semibold text-white ring-1 ring-white/20">
+                  أونلاين
+                </span>
+              </div>
 
               <div className="mt-8 flex flex-col sm:flex-row gap-3">
                 <Button to="/membership" variant="gold" size="lg">

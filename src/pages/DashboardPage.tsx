@@ -4,7 +4,7 @@ import {
   LayoutDashboard, User, Briefcase, Calendar, Handshake, Bell,
   BarChart3, CreditCard, Settings, ChevronLeft, Eye, Users,
   CalendarCheck, MessageSquare, Plus, Menu, X, Trash2, Sparkles, Trophy,
-  CheckCircle2, LogOut, ArrowUpLeft, MoreHorizontal, GraduationCap,
+  CheckCircle2, LogOut, ArrowUpLeft, MoreHorizontal, GraduationCap, Building2,
 } from 'lucide-react'
 import { AnimatePresence, motion } from 'motion/react'
 import Badge from '../components/ui/Badge'
@@ -27,6 +27,8 @@ import type { Member } from '../types/api'
 import ProfilePreviewEditor from '../components/ui/ProfilePreviewEditor'
 import SafeImg from '../components/ui/SafeImg'
 import ConsultationRequestForm from '../components/ui/ConsultationRequestForm'
+import AcademyConsultationInbox from '../components/dashboard/AcademyConsultationInbox'
+import MemberBrandEditor from '../components/dashboard/MemberBrandEditor'
 import SeoHead from '../components/seo/SeoHead'
 import { routeSeo } from '../lib/seo'
 import LoginRegisterForm from '../components/auth/LoginRegisterForm'
@@ -56,6 +58,7 @@ const memberNavGroups: NavGroup[] = [
     label: 'حسابك',
     items: [
       { id: 'profile', label: 'الملف الشخصي', icon: User, hint: 'بياناتك وظهورك' },
+      { id: 'brand', label: 'علامتي التجارية', icon: Building2, hint: 'صفحة علامتكِ (واحدة فقط)' },
       { id: 'services', label: 'الخدمات والمنتجات', icon: Briefcase },
       { id: 'programs', label: 'البرامج والدورات', icon: GraduationCap, hint: 'برامج أكاديميتك' },
       { id: 'events', label: 'فعالياتي', icon: Calendar },
@@ -75,13 +78,61 @@ const memberNavGroups: NavGroup[] = [
 
 function buildMemberNavGroups(plan: string | null | undefined): NavGroup[] {
   const isAcademy = plan === 'ACADEMY'
+  const isBusiness = plan === 'BUSINESS'
+  const isExpert = plan === 'EXPERT'
   return memberNavGroups.map((group) => {
+    if (group.label === 'الرئيسية') {
+      return {
+        ...group,
+        items: group.items.map((item) => {
+          if (item.id === 'consultations' && isBusiness) {
+            return {
+              ...item,
+              label: 'طلب استشارة',
+              hint: 'اطلبي من خبيرة أو أكاديمية — لا تستقبلين طلبات',
+            }
+          }
+          if (item.id === 'consultations' && isExpert) {
+            return {
+              ...item,
+              label: 'طلبات الاستشارة',
+              hint: 'وارد العملاء على ملف الخبيرة',
+            }
+          }
+          return item
+        }),
+      }
+    }
     if (group.label !== 'حسابك') return group
     return {
       ...group,
       items: group.items
-        .filter((item) => (isAcademy ? true : item.id !== 'programs'))
+        .filter((item) => {
+          if (item.id === 'programs') return isAcademy
+          if (item.id === 'brand') return isBusiness
+          return true
+        })
         .map((item) => {
+          if (isExpert) {
+            if (item.id === 'profile') {
+              return {
+                ...item,
+                label: 'ملف الخبيرة',
+                hint: 'الاسم، التخصص، والنبذة كما يظهر للزوار',
+              }
+            }
+            if (item.id === 'services') {
+              return { ...item, label: 'خدماتي', hint: 'خدمات واستشارات تقدّمينها' }
+            }
+            if (item.id === 'consultations') {
+              return {
+                ...item,
+                label: 'طلبات الاستشارة',
+                hint: 'الوارد من العملاء على ملفكِ',
+              }
+            }
+            return item
+          }
           if (!isAcademy) return item
           if (item.id === 'profile') {
             return {
@@ -92,6 +143,13 @@ function buildMemberNavGroups(plan: string | null | undefined): NavGroup[] {
           }
           if (item.id === 'services') {
             return { ...item, label: 'خدمات المركز', hint: 'خدمات ومنتجات الأكاديمية' }
+          }
+          if (item.id === 'consultations') {
+            return {
+              ...item,
+              label: 'طلبات الاستشارة',
+              hint: 'الوارد من العملاء على ملف الأكاديمية',
+            }
           }
           return item
         }),
@@ -631,6 +689,14 @@ export default function DashboardPage() {
     phone: string
     accountType: 'guest' | 'member'
     plan?: string
+    title?: string
+    specialty?: string
+    city?: string
+    wilaya?: string
+    category?: string
+    website?: string
+    bio?: string
+    programs?: string[]
   }) => {
     const result = await register(payload)
     if (result.requiresEmailVerification || !result.user) return result
@@ -691,9 +757,13 @@ export default function DashboardPage() {
 
   const isGuest = user?.role === 'guest'
   const isAcademy = !isGuest && user?.plan === 'ACADEMY'
+  const isBusiness = !isGuest && user?.plan === 'BUSINESS'
+  const isExpert = !isGuest && user?.plan === 'EXPERT'
+  const receivesConsultations = isAcademy || isExpert
   const navGroups = isGuest ? guestNavGroups : buildMemberNavGroups(user?.plan)
   const sidebarItems = navGroups.flatMap((g) => g.items)
   const member = dashboard?.profile || authProfile
+  const myBrand = dashboard?.brand ?? null
   const notifications = notificationsPayload?.data ?? []
   const consultations = consultationsPayload?.data ?? []
   const unreadCount = notifications.filter((n) => n.unread).length
@@ -762,6 +832,11 @@ export default function DashboardPage() {
       setActive('overview')
     }
   }, [isGuest, active])
+
+  useEffect(() => {
+    if (active === 'brand' && !isBusiness) setActive('overview')
+    if (active === 'programs' && !isAcademy) setActive('overview')
+  }, [active, isBusiness, isAcademy])
 
   const seo = (
     <SeoHead
@@ -1092,14 +1167,61 @@ export default function DashboardPage() {
               {active === 'overview' && (
                 <div className="space-y-5">
                   {(() => {
+                    const programsList = asArray(member.programs)
                     let nextLabel = 'استكشفي الفرص المتاحة'
                     let nextHint = 'منح، مسابقات، ومبادرات تناسب مرحلتك'
                     let nextAction: (() => void) | null = () => select('opportunities')
                     let nextTo: string | null = null
-                    if (completeness < 70) {
+                    if (isAcademy) {
+                      if (!member.bio?.trim() || completeness < 60) {
+                        nextLabel = 'أكملي صفحة الأكاديمية'
+                        nextHint = 'الاسم، النبذة، الغلاف والصورة كما يراها الزوار'
+                        nextAction = () => select('profile')
+                      } else if (programsList.length === 0) {
+                        nextLabel = 'أضيفي الدورات والتكوينات'
+                        nextHint = 'اعرضي برامجكِ في الصفحة الرسمية ودليل الأكاديميات'
+                        nextAction = () => select('programs')
+                      } else if (!member.website && !member.phone) {
+                        nextLabel = 'أضيفي الموقع أو رقم التواصل'
+                        nextHint = 'الموقع الرسمي ومعلومات التواصل جزء من صفحة الأكاديمية'
+                        nextAction = () => select('profile')
+                      } else if (member.isPublic === false) {
+                        nextLabel = 'فعّلي الظهور في الدليل'
+                        nextHint = 'بعد الموافقة، فعّلي الملف العام للظهور في دليل الأكاديميات'
+                        nextAction = () => select('settings')
+                      } else {
+                        nextLabel = 'عرض الصفحة الرسمية'
+                        nextHint = 'هكذا تظهر أكاديميتكِ للزوار في رائدة'
+                        nextTo = `/members/${member.id}`
+                        nextAction = null
+                      }
+                    } else if (isExpert) {
+                      if (!member.bio?.trim() || completeness < 60) {
+                        nextLabel = 'أكملي ملف الخبيرة'
+                        nextHint = 'التخصص، النبذة، والصورة تزيد ثقة طالبات الاستشارة'
+                        nextAction = () => select('profile')
+                      } else if (member.isPublic === false) {
+                        nextLabel = 'فعّلي الظهور في دليل الخبراء'
+                        nextHint = 'بعد الموافقة، فعّلي الملف العام لاستقبال طلبات الاستشارة'
+                        nextAction = () => select('settings')
+                      } else if (unreadConsultations > 0) {
+                        nextLabel = 'راجعي طلبات الاستشارة'
+                        nextHint = `${unreadConsultations} طلب بانتظاركِ في الوارد`
+                        nextAction = () => select('consultations')
+                      } else {
+                        nextLabel = 'عرض ملفكِ العام'
+                        nextHint = 'من هنا يطلب العملاء استشارتكِ مباشرة'
+                        nextTo = `/members/${member.id}`
+                        nextAction = null
+                      }
+                    } else if (completeness < 70) {
                       nextLabel = 'أكملي ملفك الشخصي'
                       nextHint = 'الملف المكتمل يزيد ظهورك في الدليل'
                       nextAction = () => select('profile')
+                    } else if (isBusiness && !myBrand) {
+                      nextLabel = 'أعدّي علامتكِ التجارية'
+                      nextHint = 'صفحة علامة واحدة تظهر في دليل العلامات — ضمن عضوية رائدة للأعمال'
+                      nextAction = () => select('brand')
                     } else if (isGuest) {
                       nextLabel = 'ترقّي للعضوية المهنية'
                       nextHint = 'الظهور في الدليل ومزايا العضوية بعد الموافقة'
@@ -1116,14 +1238,111 @@ export default function DashboardPage() {
                       nextAction = null
                     }
 
+                    const academyChecklist = isAcademy
+                      ? [
+                          {
+                            label: 'صفحة رسمية خاصة بالأكاديمية أو مركز التدريب',
+                            done: Boolean(member.name && (member.image || member.cover)),
+                            action: () => select('profile'),
+                          },
+                          {
+                            label: 'التعريف بالمؤسسة وبرامجها',
+                            done: Boolean(member.bio?.trim()),
+                            action: () => select('profile'),
+                          },
+                          {
+                            label: 'عرض الدورات والتكوينات',
+                            done: programsList.length > 0,
+                            action: () => select('programs'),
+                          },
+                          {
+                            label: 'الموقع الرسمي ومعلومات التواصل',
+                            done: Boolean(member.website || member.phone),
+                            action: () => select('profile'),
+                          },
+                          {
+                            label: 'الظهور في دليل أكاديميات رائدة',
+                            done: member.isPublic !== false && user.membershipStatus === 'approved',
+                            action: () => select('settings'),
+                          },
+                        ]
+                      : isExpert
+                        ? [
+                            {
+                              label: 'ملف خبيرة جاهز للاستشارة',
+                              done: Boolean(member.name && member.image),
+                              action: () => select('profile'),
+                            },
+                            {
+                              label: 'تخصص ونبذة مهنية',
+                              done: Boolean(member.specialty?.trim() && member.bio?.trim()),
+                              action: () => select('profile'),
+                            },
+                            {
+                              label: 'خدمات أو عروض استشارية',
+                              done: asArray(member.services).length > 0,
+                              action: () => select('services'),
+                            },
+                            {
+                              label: 'الظهور في دليل الخبراء واستقبال الطلبات',
+                              done: member.isPublic !== false && user.membershipStatus === 'approved',
+                              action: () => select('settings'),
+                            },
+                          ]
+                      : isBusiness
+                        ? [
+                            {
+                              label: 'الملف الشخصي في دليل الأعضاء',
+                              done: completeness >= 70,
+                              action: () => select('profile'),
+                            },
+                            {
+                              label: 'إعداد علامتكِ التجارية (علامة واحدة)',
+                              done: Boolean(myBrand?.id),
+                              action: () => select('brand'),
+                            },
+                            {
+                              label: 'شعار وغلاف للعلامة',
+                              done: Boolean(myBrand?.logo || myBrand?.cover),
+                              action: () => select('brand'),
+                            },
+                            {
+                              label: 'الظهور في الدليل العام',
+                              done: member.isPublic !== false && user.membershipStatus === 'approved',
+                              action: () => select('settings'),
+                            },
+                          ]
+                      : []
+
                     const quickActions = isGuest
                       ? [
-                          { id: 'consultations', label: 'طلب استشارة', hint: 'من رائدة أو خبيرة', icon: MessageSquare, tone: 'gold' },
+                          { id: 'consultations', label: 'طلب استشارة', hint: 'من خبيرة أو أكاديمية', icon: MessageSquare, tone: 'gold' },
                           { id: 'opportunities', label: 'الفرص', hint: 'منح ومبادرات', icon: Trophy, tone: 'rose' },
                           { id: 'profile', label: 'بياناتك', hint: 'الاسم والصورة', icon: User, tone: 'mauve' },
                           { id: 'membership', label: 'الترقية', hint: 'عضوية مهنية', icon: Sparkles, tone: 'navy' },
                         ]
-                      : [
+                      : isAcademy
+                        ? [
+                            { id: 'profile', label: 'صفحة الأكاديمية', hint: `${completeness}% مكتمل`, icon: User, tone: 'navy' },
+                            { id: 'programs', label: 'البرامج والدورات', hint: programsList.length ? `${programsList.length} برنامج` : 'أضيفي دورات', icon: GraduationCap, tone: 'gold' },
+                            { id: 'services', label: 'خدمات المركز', hint: 'خدمات ومنتجات', icon: Briefcase, tone: 'mauve' },
+                            { id: 'consultations', label: 'طلبات الاستشارة', hint: unreadConsultations ? `${unreadConsultations} جديدة` : 'وارد العملاء', icon: MessageSquare, tone: 'rose' },
+                          ]
+                        : isExpert
+                          ? [
+                              { id: 'profile', label: 'ملف الخبيرة', hint: `${completeness}% مكتمل`, icon: User, tone: 'navy' },
+                              { id: 'consultations', label: 'طلبات الاستشارة', hint: unreadConsultations ? `${unreadConsultations} جديدة` : 'وارد العملاء', icon: MessageSquare, tone: 'gold' },
+                              { id: 'services', label: 'خدماتي', hint: 'خدمات واستشارات', icon: Briefcase, tone: 'mauve' },
+                              { id: 'opportunities', label: 'الفرص', hint: 'منح ومبادرات', icon: Trophy, tone: 'rose' },
+                            ]
+                        : isBusiness
+                          ? [
+                              { id: 'profile', label: 'الملف الشخصي', hint: `${completeness}% مكتمل`, icon: User, tone: 'navy' },
+                              { id: 'brand', label: 'علامتي', hint: myBrand ? myBrand.name : 'أعدّي علامتكِ', icon: Building2, tone: 'gold' },
+                              { id: 'services', label: 'خدماتي', hint: 'خدمات ومنتجات', icon: Briefcase, tone: 'mauve' },
+                              { id: 'consultations', label: 'الاستشارات', hint: unreadConsultations ? `${unreadConsultations} جديدة` : 'طلب ومتابعة', icon: MessageSquare, tone: 'rose' },
+                            ]
+                        : [
                           { id: 'consultations', label: 'الاستشارات', hint: unreadConsultations ? `${unreadConsultations} جديدة` : 'طلب ومتابعة', icon: MessageSquare, tone: 'gold' },
                           { id: 'opportunities', label: 'الفرص', hint: 'منح ومبادرات', icon: Trophy, tone: 'rose' },
                           { id: 'services', label: 'خدماتي', hint: 'خدمات ومنتجات', icon: Briefcase, tone: 'mauve' },
@@ -1142,9 +1361,15 @@ export default function DashboardPage() {
                           />
                           <div className="relative flex flex-col sm:flex-row sm:items-end sm:justify-between gap-5">
                             <div className="min-w-0">
-                              <p className="text-[12px] font-semibold text-white/45">مرحباً بعودتك</p>
+                              <p className="text-[12px] font-semibold text-white/45">
+                                {isAcademy
+                                  ? 'لوحة الأكاديمية'
+                                  : isExpert
+                                    ? 'لوحة الخبيرة'
+                                    : 'مرحباً بعودتك'}
+                              </p>
                               <h2 className="mt-1 text-2xl sm:text-[1.85rem] font-extrabold tracking-[-0.03em] font-display">
-                                {firstName}
+                                {isAcademy || isExpert ? member.name : firstName}
                               </h2>
                               <p className="mt-2 inline-flex items-center gap-2 text-[12px] text-white/60">
                                 <span className="rounded-full bg-gold/20 px-2.5 py-0.5 font-semibold text-gold ring-1 ring-gold/25">
@@ -1183,7 +1408,7 @@ export default function DashboardPage() {
                                   className="!rounded-full !border-white/20 !text-white hover:!bg-white/10"
                                 >
                                   <Eye className="w-4 h-4" />
-                                  الملف العام
+                                  {isAcademy ? 'الصفحة الرسمية' : 'الملف العام'}
                                 </Button>
                               )}
                             </div>
@@ -1192,7 +1417,13 @@ export default function DashboardPage() {
                           {!isGuest && completeness < 100 && (
                             <div className="relative mt-5 pt-4 border-t border-white/10">
                               <div className="flex items-center justify-between gap-3 mb-2">
-                                <p className="text-[12px] font-semibold text-white/70">اكتمال الملف</p>
+                                <p className="text-[12px] font-semibold text-white/70">
+                                  {isAcademy
+                                    ? 'إعداد صفحة الأكاديمية'
+                                    : isExpert
+                                      ? 'إعداد ملف الخبيرة'
+                                      : 'اكتمال الملف'}
+                                </p>
                                 <button
                                   type="button"
                                   onClick={() => select('profile')}
@@ -1210,6 +1441,58 @@ export default function DashboardPage() {
                             </div>
                           )}
                         </section>
+
+                        {academyChecklist.length > 0 && (
+                          <Surface className="p-5">
+                            <SectionTitle
+                              title={
+                                isAcademy
+                                  ? 'مزايا عضوية الأكاديمية — قائمة الإعداد'
+                                  : isExpert
+                                    ? 'عضوية رائدة للمدربين والخبراء — قائمة الإعداد'
+                                    : 'عضوية رائدة للأعمال — قائمة الإعداد'
+                              }
+                            />
+                            <div className="space-y-2">
+                              {academyChecklist.map((item) => (
+                                <button
+                                  key={item.label}
+                                  type="button"
+                                  onClick={item.action}
+                                  className="w-full flex items-start gap-3 rounded-[14px] bg-[#F7F3EE] p-3.5 text-right pressable-soft hover:bg-blush/50 transition-colors"
+                                >
+                                  <span
+                                    className={`mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full ${
+                                      item.done ? 'bg-emerald-500/15 text-emerald-700' : 'bg-navy/5 text-muted'
+                                    }`}
+                                  >
+                                    <CheckCircle2 className="w-4 h-4" />
+                                  </span>
+                                  <span className="min-w-0 flex-1">
+                                    <span className={`block text-[13px] font-semibold ${item.done ? 'text-navy' : 'text-navy/80'}`}>
+                                      {item.label}
+                                    </span>
+                                    <span className="text-[11px] text-muted">
+                                      {item.done ? 'مكتمل' : 'اضغطي للإعداد'}
+                                    </span>
+                                  </span>
+                                  <ChevronLeft className="w-4 h-4 text-muted shrink-0 mt-1" />
+                                </button>
+                              ))}
+                            </div>
+                            <Link
+                              to={isAcademy ? '/academies' : isExpert ? '/experts' : '/brands'}
+                              className="mt-4 inline-flex items-center gap-1 text-[12px] font-semibold text-rose"
+                            >
+                              {isAcademy
+                                ? 'دليل أكاديميات رائدة'
+                                : isExpert
+                                  ? 'دليل خبراء رائدة'
+                                  : 'دليل العلامات التجارية'}
+                              <ChevronLeft className="w-3.5 h-3.5" />
+                            </Link>
+                          </Surface>
+                        )}
 
                         <section>
                           <SectionTitle title="إجراءات سريعة" />
@@ -1464,78 +1747,119 @@ export default function DashboardPage() {
 
               {active === 'consultations' && (
                 <div className="space-y-4">
-                  <Surface className="p-5">
-                    <h3 className="font-bold text-navy mb-2">اطلبي استشارة من إدارة رائدة أو خبيرة</h3>
-                    <p className="text-sm text-muted mb-4">
-                      المجال → الخبيرة/رائدة → الوقت → Online/حضوري → الدفع → الجلسة
-                    </p>
-                    <ConsultationRequestForm
-                      target="choose"
-                      compact
-                      onSent={() => {
+                  {receivesConsultations ? (
+                    <AcademyConsultationInbox
+                      items={consultations}
+                      variant={isExpert ? 'expert' : 'academy'}
+                      onChanged={() => {
                         reloadConsults()
                         reloadDash()
                       }}
                     />
-                  </Surface>
-                  <Surface className="divide-y divide-separator overflow-hidden">
-                    {consultations.map((item) => {
-                      const isSent = item.direction === 'sent'
-                      return (
-                        <button
-                          key={item.id}
-                          type="button"
-                          onClick={async () => {
-                            if (!isSent && item.status === 'new') {
-                              await meApi.markConsultationRead(item.id)
-                              reloadConsults()
-                              reloadDash()
-                            }
-                          }}
-                          className={`w-full text-right p-4 sm:p-5 ${
-                            !isSent && item.status === 'new' ? 'bg-rose-soft/35' : ''
-                          }`}
-                        >
-                          <div className="flex items-start justify-between gap-3">
-                            <div className="min-w-0">
-                              <p className="text-[13px] font-bold text-navy">{item.subject}</p>
-                              <p className="text-[12px] text-muted mt-0.5">
-                                {isSent
-                                  ? `إلى: ${item.consultantName || (item.targetType === 'raida' ? 'إدارة رائدة' : 'خبيرة')}`
-                                  : `${item.guestName} · ${item.guestEmail}${item.guestPhone ? ` · ${item.guestPhone}` : ''}`}
-                              </p>
-                              <p className="text-[12px] text-muted mt-1">
-                                {[item.field, item.consultationType, item.mode === 'online' ? 'Online' : item.mode === 'in_person' ? 'حضوري' : null]
-                                  .filter(Boolean)
-                                  .join(' · ')}
-                                {item.preferredAt
-                                  ? ` · ${new Date(item.preferredAt).toLocaleString('ar-DZ')}`
-                                  : ''}
-                              </p>
-                              <p className="text-[13px] text-navy mt-2 leading-relaxed">{item.message}</p>
-                              {item.adminReply && (
-                                <div className="mt-3 rounded-[12px] bg-navy/[0.04] p-3 text-[13px] text-navy">
-                                  <p className="text-[11px] font-bold text-rose mb-1">رد رائدة</p>
-                                  {item.adminReply}
+                  ) : (
+                    <>
+                      {isBusiness && (
+                        <Surface className="p-4 sm:p-5 bg-gold/5">
+                          <p className="text-[13px] font-semibold text-navy">
+                            عضوية الأعمال لا تستقبل طلبات استشارة
+                          </p>
+                          <p className="mt-1 text-[12px] text-muted leading-relaxed">
+                            يمكنكِ طلب استشارة من خبيرة أو أكاديمية أو إدارة رائدة. استقبال الطلبات متاح
+                            لعضوية الخبراء والأكاديميات فقط.
+                          </p>
+                        </Surface>
+                      )}
+                      <Surface className="divide-y divide-separator overflow-hidden">
+                        {(isBusiness
+                          ? consultations.filter((item) => item.direction === 'sent')
+                          : consultations
+                        ).map((item) => {
+                          const isSent = item.direction === 'sent'
+                          return (
+                            <button
+                              key={item.id}
+                              type="button"
+                              onClick={async () => {
+                                if (!isSent && item.status === 'new') {
+                                  await meApi.markConsultationRead(item.id)
+                                  reloadConsults()
+                                  reloadDash()
+                                }
+                              }}
+                              className={`w-full text-right p-4 sm:p-5 ${
+                                !isSent && item.status === 'new' ? 'bg-rose-soft/35' : ''
+                              }`}
+                            >
+                              <div className="flex items-start justify-between gap-3">
+                                <div className="min-w-0">
+                                  <p className="text-[13px] font-bold text-navy">{item.subject}</p>
+                                  <p className="text-[12px] text-muted mt-0.5">
+                                    {isSent
+                                      ? `إلى: ${item.consultantName || (item.targetType === 'raida' ? 'إدارة رائدة' : 'خبيرة / أكاديمية')}`
+                                      : `من: ${item.guestName} · ${item.guestEmail}${item.guestPhone ? ` · ${item.guestPhone}` : ''}`}
+                                  </p>
+                                  <p className="text-[12px] text-muted mt-1">
+                                    {[item.field, item.consultationType, item.mode === 'online' ? 'Online' : item.mode === 'in_person' ? 'حضوري' : null]
+                                      .filter(Boolean)
+                                      .join(' · ')}
+                                    {item.preferredAt
+                                      ? ` · ${new Date(item.preferredAt).toLocaleString('ar-DZ')}`
+                                      : ''}
+                                  </p>
+                                  <p className="text-[13px] text-navy mt-2 leading-relaxed">{item.message}</p>
+                                  {item.adminReply && (
+                                    <div className="mt-3 rounded-[12px] bg-navy/[0.04] p-3 text-[13px] text-navy">
+                                      <p className="text-[11px] font-bold text-rose mb-1">رد رائدة</p>
+                                      {item.adminReply}
+                                    </div>
+                                  )}
                                 </div>
-                              )}
-                            </div>
-                            <div className="flex flex-col gap-1 items-end shrink-0">
-                              <Badge variant={isSent ? 'soft' : item.status === 'new' ? 'rose' : 'soft'}>
-                                {isSent ? 'مرسَلة' : item.status === 'new' ? 'جديدة' : 'مقروءة'}
-                              </Badge>
-                              {item.adminReply && <Badge variant="gold">يوجد رد</Badge>}
-                            </div>
-                          </div>
-                        </button>
-                      )
-                    })}
-                    {consultations.length === 0 && (
-                      <EmptyHint>
-                        صندوق الاستشارات فارغ. أرسلي طلباً أعلاه أو من صفحة خبيرة.
-                      </EmptyHint>
-                    )}
-                  </Surface>
+                                <div className="flex flex-col gap-1 items-end shrink-0">
+                                  <Badge variant={isSent ? 'soft' : item.status === 'new' ? 'rose' : 'soft'}>
+                                    {isSent
+                                      ? 'مرسَلة'
+                                      : item.status === 'new'
+                                        ? 'جديدة'
+                                        : item.status === 'done'
+                                          ? 'مكتملة'
+                                          : item.status === 'archived'
+                                            ? 'مؤرشفة'
+                                            : 'قيد المتابعة'}
+                                  </Badge>
+                                  {!isSent && <Badge variant="gold">وارد</Badge>}
+                                  {item.adminReply && <Badge variant="gold">يوجد رد</Badge>}
+                                </div>
+                              </div>
+                            </button>
+                          )
+                        })}
+                        {(isBusiness
+                          ? consultations.filter((item) => item.direction === 'sent')
+                          : consultations
+                        ).length === 0 && (
+                          <EmptyHint>
+                            {isBusiness
+                              ? 'لا توجد طلبات مرسلة بعد. أرسلي طلباً أدناه إلى خبيرة أو أكاديمية أو إدارة رائدة.'
+                              : 'صندوق الاستشارات فارغ. أرسلي طلباً أدناه أو من صفحة خبيرة / أكاديمية.'}
+                          </EmptyHint>
+                        )}
+                      </Surface>
+                      <Surface className="p-5">
+                        <h3 className="font-bold text-navy mb-2">اطلبي استشارة من إدارة رائدة أو خبيرة / أكاديمية</h3>
+                        <p className="text-sm text-muted mb-4">
+                          المجال → الخبيرة أو الأكاديمية → الوقت → Online/حضوري → الدفع → الجلسة
+                        </p>
+                        <ConsultationRequestForm
+                          target="choose"
+                          compact
+                          onSent={() => {
+                            reloadConsults()
+                            reloadDash()
+                          }}
+                        />
+                      </Surface>
+                    </>
+                  )}
                 </div>
               )}
 
@@ -1543,11 +1867,38 @@ export default function DashboardPage() {
                 <ProfilePreviewEditor
                   member={member}
                   simple={isGuest}
-                  eyebrow={isAcademy ? 'معاينة ملف الأكاديمية' : undefined}
+                  eyebrow={
+                    isAcademy
+                      ? 'معاينة ملف الأكاديمية'
+                      : isExpert
+                        ? 'معاينة ملف الخبيرة'
+                        : undefined
+                  }
                   hint={
                     isAcademy
                       ? 'هكذا ستظهر أكاديميتكِ أو مركز التدريب للزوار — اسم المؤسسة، النبذة، البرامج، وروابط التواصل.'
-                      : undefined
+                      : isExpert
+                        ? 'هكذا يظهر ملفكِ في دليل الخبراء — من هنا يطلب العملاء استشارتكِ مباشرة.'
+                      : isBusiness
+                        ? 'هذا ملفكِ الشخصي في دليل الأعضاء. لإعداد صفحة علامتكِ التجارية، انتقلي إلى تبويب «علامتي التجارية».'
+                        : undefined
+                  }
+                  asideSlot={
+                    isBusiness ? (
+                      <button
+                        type="button"
+                        onClick={() => select('brand')}
+                        className="w-full rounded-[16px] bg-gold/10 ring-1 ring-gold/25 p-4 text-right pressable-soft"
+                      >
+                        <p className="text-[12px] font-semibold text-gold-dark">علامتكِ التجارية</p>
+                        <p className="mt-1 text-[13px] font-bold text-navy">
+                          {myBrand ? myBrand.name : 'أعدّي علامة واحدة ضمن عضوية الأعمال'}
+                        </p>
+                        <p className="mt-1 text-[12px] text-muted">
+                          {myBrand ? 'تحرير الصفحة العامة للعلامة' : 'الاسم، الشعار، القصة، والمنتجات'}
+                        </p>
+                      </button>
+                    ) : undefined
                   }
                   onSaved={async () => {
                     await refreshMe()
@@ -1556,6 +1907,16 @@ export default function DashboardPage() {
                   onEditServices={isGuest ? undefined : () => select('services')}
                   onEditPrograms={isAcademy ? () => select('programs') : undefined}
                   onOpenSettings={isGuest ? undefined : () => select('settings')}
+                />
+              )}
+
+              {isBusiness && active === 'brand' && (
+                <MemberBrandEditor
+                  brand={myBrand}
+                  onSaved={async () => {
+                    await refreshMe()
+                    reloadDash()
+                  }}
                 />
               )}
 

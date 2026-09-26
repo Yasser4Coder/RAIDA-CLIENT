@@ -22,9 +22,10 @@ const placeholder = '/images/academies/wireframe-cps.svg'
 function AcademyCard({ academy }: { academy: Member }) {
   const { reduce } = useMotionSafe()
   const programs = asArray(academy.programs).slice(0, 3)
-  const isWire =
-    academy.id.startsWith('wireframe-') ||
-    Boolean(academy.image?.includes('/academies/wireframe-'))
+  // Only client-side placeholders are non-linkable; seeded academies keep a real profile id
+  // even when they still use a wireframe image asset.
+  const isPlaceholder = academy.id.startsWith('wireframe-')
+  const hasPlaceholderArt = Boolean(academy.image?.includes('/academies/wireframe-'))
 
   const body = (
     <>
@@ -36,7 +37,7 @@ function AcademyCard({ academy }: { academy: Member }) {
           className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
         />
         <div className="absolute inset-0 bg-gradient-to-t from-navy/80 via-navy/20 to-transparent" />
-        {isWire && (
+        {hasPlaceholderArt && (
           <span className="absolute top-3 left-3 rounded-full bg-navy/80 px-2.5 py-1 text-[10px] font-semibold text-gold ring-1 ring-gold/30">
             صورة قريبًا
           </span>
@@ -77,9 +78,9 @@ function AcademyCard({ academy }: { academy: Member }) {
             ))}
           </div>
         )}
-        {!isWire && (
+        {!isPlaceholder && (
           <span className="mt-auto pt-4 inline-flex items-center gap-1 text-[12px] font-semibold text-rose">
-            عرض الملف
+            عرض الملف · اطلبي استشارة
             <ChevronLeft className="w-3.5 h-3.5" />
           </span>
         )}
@@ -92,11 +93,11 @@ function AcademyCard({ academy }: { academy: Member }) {
 
   return (
     <motion.div
-      whileHover={reduce || isWire ? undefined : { y: -4 }}
+      whileHover={reduce || isPlaceholder ? undefined : { y: -4 }}
       transition={springs.snappy}
       className="h-full"
     >
-      {isWire ? (
+      {isPlaceholder ? (
         <div className={className}>{body}</div>
       ) : (
         <Link to={`/members/${academy.id}`} className={className}>

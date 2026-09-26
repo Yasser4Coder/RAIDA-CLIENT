@@ -2,7 +2,7 @@ import { useParams, Link } from 'react-router-dom'
 import { useState } from 'react'
 import {
   MapPin, Globe, Mail, QrCode,
-  Award, Briefcase, FolderKanban, GraduationCap, ArrowRight, Share2,
+  Award, Briefcase, FolderKanban, GraduationCap, ArrowRight, Share2, Building2, ChevronLeft,
 } from 'lucide-react'
 import { InstagramIcon, LinkedinIcon } from '../components/ui/SocialIcons'
 import Badge from '../components/ui/Badge'
@@ -22,6 +22,8 @@ const imageFallback =
   'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=400&h=400&fit=crop'
 const coverFallback =
   'https://images.unsplash.com/photo-1557804506-669a67965ba0?w=1200&h=400&fit=crop'
+const brandLogoFallback =
+  'https://images.unsplash.com/photo-1560179707-f14e90ef3623?w=200&h=200&fit=crop'
 
 export default function MemberProfilePage() {
   const { id } = useParams()
@@ -69,7 +71,15 @@ export default function MemberProfilePage() {
   const programs = asArray(member.programs)
   const projects = asArray(member.projects)
   const achievements = asArray(member.achievements)
-  const gallery = [cover, image, ...related.map((m) => m.image)].filter(Boolean).slice(0, 6)
+  const brand = member.brand || null
+  const brandProducts = asArray(brand?.products)
+  const brandServices = asArray(brand?.services)
+  const displayProducts = brandProducts.length > 0 ? brandProducts : products
+  const gallery = [brand?.cover, cover, brand?.logo, image, ...related.map((m) => m.image)]
+    .filter(Boolean)
+    .slice(0, 6)
+  const isAcademy = member.plan === 'ACADEMY'
+  const acceptsConsultations = member.plan === 'EXPERT' || member.plan === 'ACADEMY'
   const description =
     (member.bio && member.bio.slice(0, 160)) ||
     `${member.name} — ${member.title}${member.specialty ? ` · ${member.specialty}` : ''}${member.city ? ` · ${member.city}` : ''}`
@@ -77,21 +87,21 @@ export default function MemberProfilePage() {
   return (
     <div className="pt-20 pb-16 min-h-screen bg-ivory">
       <SeoHead
-        title={`${member.name} | ${member.title}`}
+        title={`${member.name} | ${isAcademy ? 'أكاديمية رائدة' : member.title}`}
         description={description}
         path={`/members/${member.id}`}
         image={image}
         type="profile"
-        keywords={[member.name, member.title, member.specialty, member.city, 'رائدة', 'RAIDA'].filter(Boolean)}
+        keywords={[member.name, member.title, member.specialty, member.city, isAcademy ? 'أكاديمية' : '', 'رائدة', 'RAIDA'].filter(Boolean)}
         jsonLd={[
           breadcrumbJsonLd([
             { name: 'الرئيسية', path: '/' },
-            { name: 'دليل الأعضاء', path: '/members' },
+            { name: isAcademy ? 'الأكاديميات' : 'دليل الأعضاء', path: isAcademy ? '/academies' : '/members' },
             { name: member.name, path: `/members/${member.id}` },
           ]),
           {
             '@context': 'https://schema.org',
-            '@type': 'Person',
+            '@type': isAcademy ? 'EducationalOrganization' : 'Person',
             name: member.name,
             jobTitle: member.title,
             description,
@@ -100,7 +110,7 @@ export default function MemberProfilePage() {
             address: member.city
               ? { '@type': 'PostalAddress', addressLocality: member.city, addressCountry: 'DZ' }
               : undefined,
-            knowsAbout: [member.specialty, ...services].filter(Boolean),
+            knowsAbout: [member.specialty, ...services, ...programs].filter(Boolean),
           },
         ]}
       />
@@ -124,21 +134,44 @@ export default function MemberProfilePage() {
               <div className="flex-1">
                 <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
                   <div>
+                    {isAcademy && (
+                      <p className="mb-2 inline-flex items-center gap-1.5 rounded-full bg-gold/15 px-2.5 py-1 text-[11px] font-semibold text-gold-dark ring-1 ring-gold/25">
+                        <GraduationCap className="w-3.5 h-3.5" />
+                        أكاديمية / مركز تدريب في رائدة
+                      </p>
+                    )}
                     <h1 className="text-2xl sm:text-3xl font-extrabold text-navy">{member.name}</h1>
                     <p className="text-muted mt-1">{member.title}</p>
                     <div className="flex flex-wrap gap-2 mt-3">
-                      <Badge variant="rose">{member.specialty}</Badge>
-                      <Badge variant="gold">{member.category}</Badge>
+                      {member.specialty && <Badge variant="rose">{member.specialty}</Badge>}
+                      <Badge variant="gold">{member.category || (isAcademy ? 'أكاديميات ومراكز تدريب' : '')}</Badge>
                     </div>
-                    <p className="flex items-center gap-1.5 text-sm text-muted mt-3">
-                      <MapPin className="w-4 h-4 text-rose" />
-                      {member.city}
-                    </p>
+                    {member.city && (
+                      <p className="flex items-center gap-1.5 text-sm text-muted mt-3">
+                        <MapPin className="w-4 h-4 text-rose" />
+                        {member.city}
+                      </p>
+                    )}
                   </div>
                   <div className="flex flex-wrap gap-2">
-                    <Button variant="gold" size="sm" onClick={() => document.getElementById('consultation')?.scrollIntoView({ behavior: 'smooth' })}>
-                      <Mail className="w-4 h-4" /> استشارة
-                    </Button>
+                    {brand ? (
+                      <Button to={`/brands/${brand.id}`} variant="outline" size="sm">
+                        <Building2 className="w-4 h-4" /> {brand.name}
+                      </Button>
+                    ) : null}
+                    {isAcademy ? (
+                      <Button variant="gold" size="sm" onClick={() => document.getElementById('programs')?.scrollIntoView({ behavior: 'smooth' })}>
+                        <GraduationCap className="w-4 h-4" /> البرامج والدورات
+                      </Button>
+                    ) : acceptsConsultations ? (
+                      <Button variant="gold" size="sm" onClick={() => document.getElementById('consultation')?.scrollIntoView({ behavior: 'smooth' })}>
+                        <Mail className="w-4 h-4" /> استشارة
+                      </Button>
+                    ) : brand ? (
+                      <Button variant="gold" size="sm" onClick={() => document.getElementById('brand')?.scrollIntoView({ behavior: 'smooth' })}>
+                        <Building2 className="w-4 h-4" /> علامتها التجارية
+                      </Button>
+                    ) : null}
                     <ShareProfileButton name={member.name} />
                     <QrProfileButton name={member.name} />
                   </div>
@@ -153,50 +186,116 @@ export default function MemberProfilePage() {
           <div className="lg:col-span-2 space-y-6">
             {/* Bio */}
             <section className="bg-white rounded-[18px] p-6 border border-rose/10 shadow-soft">
-              <h2 className="text-lg font-bold text-navy mb-3">نبذة تعريفية</h2>
+              <h2 className="text-lg font-bold text-navy mb-3">
+                {isAcademy ? 'التعريف بالمؤسسة' : 'نبذة تعريفية'}
+              </h2>
               <p className="text-muted leading-relaxed">{member.bio || 'لا توجد نبذة بعد.'}</p>
             </section>
 
-            {/* Services */}
-            <section className="bg-white rounded-[18px] p-6 border border-rose/10 shadow-soft">
-              <h2 className="flex items-center gap-2 text-lg font-bold text-navy mb-4">
-                <Briefcase className="w-5 h-5 text-rose" /> الخدمات
-              </h2>
-              <div className="flex flex-wrap gap-2">
-                {(services).map((s) => (
-                  <Badge key={s} variant="soft">{s}</Badge>
-                ))}
-              </div>
-            </section>
+            {/* Programs — prioritized for academies */}
+            {(isAcademy || programs.length > 0) && (
+              <section id="programs" className="bg-white rounded-[18px] p-6 border border-rose/10 shadow-soft">
+                <h2 className="flex items-center gap-2 text-lg font-bold text-navy mb-4">
+                  <GraduationCap className="w-5 h-5 text-gold" />
+                  {isAcademy ? 'الدورات والتكوينات' : 'البرامج'}
+                </h2>
+                {programs.length > 0 ? (
+                  <div className="grid sm:grid-cols-2 gap-3">
+                    {programs.map((p) => (
+                      <div key={p} className="p-4 rounded-[14px] bg-[#F7F3EE] flex items-center gap-3">
+                        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] bg-gold/15 text-gold-dark">
+                          <GraduationCap className="w-4 h-4" />
+                        </span>
+                        <span className="text-sm font-semibold text-navy">{p}</span>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-sm text-muted">لم تُنشر دورات بعد.</p>
+                )}
+              </section>
+            )}
 
-            {/* Products */}
-            {products.length > 0 && (
-              <section className="bg-white rounded-[18px] p-6 border border-rose/10 shadow-soft">
-                <h2 className="text-lg font-bold text-navy mb-4">المنتجات والعروض</h2>
-                <div className="grid sm:grid-cols-2 gap-3">
-                  {products.map((p) => (
-                    <div key={p} className="p-4 rounded-[12px] bg-rose-soft/50 border border-rose/15">
-                      <p className="font-semibold text-navy text-sm">{p}</p>
+            {/* Brand */}
+            {brand && (
+              <section id="brand" className="bg-white rounded-[18px] overflow-hidden border border-rose/10 shadow-soft">
+                <div className="relative aspect-[21/9] bg-navy/5">
+                  <SafeImg
+                    src={brand.cover || brand.logo}
+                    fallback={coverFallback}
+                    alt={`غلاف ${brand.name}`}
+                    className="absolute inset-0 w-full h-full object-cover"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-navy/70 via-navy/20 to-transparent" />
+                  <div className="absolute bottom-4 start-4 end-4 flex items-end gap-3">
+                    <SafeImg
+                      src={brand.logo}
+                      fallback={brandLogoFallback}
+                      alt={brand.name}
+                      className="h-14 w-14 rounded-[14px] object-cover ring-2 ring-white/80 bg-white"
+                    />
+                    <div className="min-w-0 pb-0.5">
+                      <p className="text-[11px] font-semibold text-gold">العلامة التجارية</p>
+                      <h2 className="text-xl font-extrabold text-white tracking-tight truncate">{brand.name}</h2>
+                      {brand.category ? (
+                        <p className="text-[12px] text-white/75">{brand.category}</p>
+                      ) : null}
                     </div>
+                  </div>
+                </div>
+                <div className="p-6 space-y-4">
+                  {brand.description ? (
+                    <p className="text-sm text-muted leading-relaxed">{brand.description}</p>
+                  ) : null}
+                  {brand.story ? (
+                    <div>
+                      <p className="text-[12px] font-semibold text-navy mb-1">قصة العلامة</p>
+                      <p className="text-sm text-muted leading-relaxed">{brand.story}</p>
+                    </div>
+                  ) : null}
+                  {brandServices.length > 0 && (
+                    <div className="flex flex-wrap gap-2">
+                      {brandServices.map((s) => (
+                        <Badge key={s} variant="soft">{s}</Badge>
+                      ))}
+                    </div>
+                  )}
+                  <Button to={`/brands/${brand.id}`} variant="gold" size="sm">
+                    عرض صفحة العلامة كاملة
+                    <ChevronLeft className="w-4 h-4 opacity-70" />
+                  </Button>
+                </div>
+              </section>
+            )}
+
+            {/* Services */}
+            {(services.length > 0 || brandServices.length > 0) && (
+              <section className="bg-white rounded-[18px] p-6 border border-rose/10 shadow-soft">
+                <h2 className="flex items-center gap-2 text-lg font-bold text-navy mb-4">
+                  <Briefcase className="w-5 h-5 text-rose" />
+                  {isAcademy ? 'خدمات المركز' : brand ? 'خدمات العلامة' : 'الخدمات'}
+                </h2>
+                <div className="flex flex-wrap gap-2">
+                  {(brandServices.length > 0 ? brandServices : services).map((s) => (
+                    <Badge key={s} variant="soft">{s}</Badge>
                   ))}
                 </div>
               </section>
             )}
 
-            {/* Programs */}
-            {programs.length > 0 && (
+            {/* Products */}
+            {displayProducts.length > 0 && (
               <section className="bg-white rounded-[18px] p-6 border border-rose/10 shadow-soft">
-                <h2 className="flex items-center gap-2 text-lg font-bold text-navy mb-4">
-                  <GraduationCap className="w-5 h-5 text-gold" /> البرامج
+                <h2 className="text-lg font-bold text-navy mb-4">
+                  {brand ? `منتجات ${brand.name}` : 'المنتجات والعروض'}
                 </h2>
-                <ul className="space-y-2">
-                  {programs.map((p) => (
-                    <li key={p} className="flex items-center gap-2 text-sm text-dark">
-                      <span className="w-1.5 h-1.5 rounded-full bg-gold" />
-                      {p}
-                    </li>
+                <div className="grid sm:grid-cols-2 gap-3">
+                  {displayProducts.map((p) => (
+                    <div key={p} className="p-4 rounded-[12px] bg-rose-soft/50 border border-rose/15">
+                      <p className="font-semibold text-navy text-sm">{p}</p>
+                    </div>
                   ))}
-                </ul>
+                </div>
               </section>
             )}
 
@@ -253,12 +352,22 @@ export default function MemberProfilePage() {
           <aside className="space-y-6">
             {/* Contact card */}
             <div id="consultation" className="bg-white rounded-[18px] p-6 border border-rose/10 shadow-soft">
-              <h3 className="font-bold text-navy mb-2">اطلبي استشارة</h3>
+              <h3 className="font-bold text-navy mb-2">
+                {acceptsConsultations
+                  ? isAcademy
+                    ? 'اطلبي استشارة من الأكاديمية'
+                    : 'اطلبي استشارة'
+                  : 'تواصلي مع العلامة'}
+              </h3>
               <p className="text-[12px] text-muted mb-4">
-                المجال → الوقت → Online/حضوري → الجلسة. الطلب يصل للخبيرة ولصندوقكِ إن كنتِ مسجّلة.
+                {acceptsConsultations
+                  ? isAcademy
+                    ? 'الطلب يصل مباشرة إلى لوحة تحكّم الأكاديمية. يمكنكِ أيضًا التواصل عبر الروابط أدناه.'
+                    : 'المجال → الوقت → Online/حضوري → الجلسة. الطلب يصل للخبيرة ولصندوقكِ إن كنتِ مسجّلة.'
+                  : 'عضوية الأعمال للظهور وعرض العلامة — لا تستقبل طلبات استشارة. تواصلي عبر الروابط أدناه أو عبر دليل الخبراء للجلسات الاستشارية.'}
               </p>
               {(safeHref(member.website) || safeHref(member.social?.linkedin) || safeHref(member.social?.instagram)) && (
-                <div className="space-y-2 mb-4 pb-4 border-b border-rose/10">
+                <div className={`space-y-2 ${acceptsConsultations ? 'mb-4 pb-4 border-b border-rose/10' : ''}`}>
                   {safeHref(member.website) && (
                     <a href={safeHref(member.website)} className="flex items-center gap-3 text-sm text-muted hover:text-gold-dark transition-colors">
                       <Globe className="w-4 h-4 text-rose" /> الموقع الإلكتروني
@@ -276,12 +385,18 @@ export default function MemberProfilePage() {
                   )}
                 </div>
               )}
-              <ConsultationRequestForm
-                target="expert"
-                fixedMemberId={member.id}
-                fixedMemberName={member.name}
-                compact
-              />
+              {acceptsConsultations ? (
+                <ConsultationRequestForm
+                  target="expert"
+                  fixedMemberId={member.id}
+                  fixedMemberName={member.name}
+                  compact
+                />
+              ) : (
+                <Button to="/consultations" variant="outline" size="sm" className="w-full mt-2">
+                  اطلبي استشارة من خبيرة أو أكاديمية
+                </Button>
+              )}
             </div>
 
             {/* QR Code */}
@@ -300,7 +415,9 @@ export default function MemberProfilePage() {
             {/* Related */}
             {related.length > 0 && (
               <div className="bg-white rounded-[18px] p-6 border border-rose/10 shadow-soft">
-                <h3 className="font-bold text-navy mb-4">أعضاء مشابهات</h3>
+                <h3 className="font-bold text-navy mb-4">
+                  {isAcademy ? 'أكاديميات مشابهة' : 'أعضاء مشابهات'}
+                </h3>
                 <div className="space-y-3">
                   {related.map((m) => (
                     <MemberCardCompact key={m.id} member={m} />
@@ -309,8 +426,8 @@ export default function MemberProfilePage() {
               </div>
             )}
 
-            <Link to="/members" className="flex items-center gap-2 text-sm font-semibold text-navy hover:text-gold-dark transition-colors">
-              <ArrowRight className="w-4 h-4" /> العودة إلى الدليل
+            <Link to={isAcademy ? '/academies' : '/members'} className="flex items-center gap-2 text-sm font-semibold text-navy hover:text-gold-dark transition-colors">
+              <ArrowRight className="w-4 h-4" /> {isAcademy ? 'العودة إلى دليل الأكاديميات' : 'العودة إلى الدليل'}
             </Link>
           </aside>
         </div>
