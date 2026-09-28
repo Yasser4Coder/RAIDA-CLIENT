@@ -19,6 +19,7 @@ import { RaidaMark } from '../components/ui/Logo'
 import { LoadingBlock, ErrorBlock } from '../components/ui/StateBlocks'
 import AdminEditor, { confirmDelete, type AdminField } from '../components/admin/AdminEditor'
 import AdminMemberProfileEditor from '../components/admin/AdminMemberProfileEditor'
+import AdminPagination from '../components/admin/AdminPagination'
 import { useAuth } from '../context/AuthContext'
 import { useAsyncData } from '../hooks/useAsyncData'
 import { adminApi, catalogApi } from '../lib/catalog'
@@ -46,6 +47,8 @@ import type {
 } from '../types/api'
 import SeoHead from '../components/seo/SeoHead'
 import { routeSeo } from '../lib/seo'
+
+const ADMIN_PAGE_SIZE = 20
 
 type NavItem = {
   id: string
@@ -387,6 +390,13 @@ export default function AdminDashboardPage() {
   const [active, setActive] = useState('overview')
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [userSearch, setUserSearch] = useState('')
+  const [debouncedUserSearch, setDebouncedUserSearch] = useState('')
+  const [usersPage, setUsersPage] = useState(1)
+  const [brandsPage, setBrandsPage] = useState(1)
+  const [eventsPage, setEventsPage] = useState(1)
+  const [consultationsPage, setConsultationsPage] = useState(1)
+  const [telegramTestBusy, setTelegramTestBusy] = useState(false)
+  const [telegramTestHint, setTelegramTestHint] = useState<string | null>(null)
   const [editor, setEditor] = useState<Editor>(null)
   const allowed = canAccessAdminPanel(user?.role)
   const financeAllowed = canAccessFinance(user?.role)
@@ -399,14 +409,30 @@ export default function AdminDashboardPage() {
     if (!financeAllowed && active === 'revenue') setActive('overview')
   }, [financeAllowed, active])
 
+  useEffect(() => {
+    const t = window.setTimeout(() => setDebouncedUserSearch(userSearch.trim()), 320)
+    return () => window.clearTimeout(t)
+  }, [userSearch])
+
+  useEffect(() => {
+    setUsersPage(1)
+  }, [debouncedUserSearch])
+
+  useEffect(() => {
+    setUsersPage(1)
+    setBrandsPage(1)
+    setEventsPage(1)
+    setConsultationsPage(1)
+  }, [active])
+
   const {
     data: overview,
     loading: overviewLoading,
     error: overviewError,
     reload: reloadOverview,
   } = useAsyncData(
-    () => (allowed && (active === 'overview' || active === 'plans') ? adminApi.overview() : Promise.resolve(null)),
-    [user?.id, user?.role, active],
+    () => (allowed ? adminApi.overview() : Promise.resolve(null)),
+    [user?.id, user?.role, allowed],
   )
 
   const {
@@ -427,9 +453,13 @@ export default function AdminDashboardPage() {
   } = useAsyncData(
     () =>
       allowed && active === 'users'
-        ? adminApi.users({ limit: 100 })
+        ? adminApi.users({
+            page: usersPage,
+            limit: ADMIN_PAGE_SIZE,
+            search: debouncedUserSearch || undefined,
+          })
         : Promise.resolve({ data: [] }),
-    [user?.id, user?.role, active],
+    [user?.id, user?.role, active, usersPage, debouncedUserSearch],
   )
 
   const {
@@ -438,8 +468,11 @@ export default function AdminDashboardPage() {
     error: brandsError,
     reload: reloadBrands,
   } = useAsyncData(
-    () => (allowed && active === 'brands' ? adminApi.brands({ limit: 100 }) : Promise.resolve({ data: [] })),
-    [user?.id, user?.role, active],
+    () =>
+      allowed && active === 'brands'
+        ? adminApi.brands({ page: brandsPage, limit: ADMIN_PAGE_SIZE })
+        : Promise.resolve({ data: [] }),
+    [user?.id, user?.role, active, brandsPage],
   )
 
   const { data: membersPayload } = useAsyncData(
@@ -453,8 +486,11 @@ export default function AdminDashboardPage() {
     error: eventsError,
     reload: reloadEvents,
   } = useAsyncData(
-    () => (allowed && active === 'events' ? adminApi.events({ limit: 100 }) : Promise.resolve({ data: [] })),
-    [user?.id, user?.role, active],
+    () =>
+      allowed && active === 'events'
+        ? adminApi.events({ page: eventsPage, limit: ADMIN_PAGE_SIZE })
+        : Promise.resolve({ data: [] }),
+    [user?.id, user?.role, active, eventsPage],
   )
 
   const {
@@ -577,10 +613,10 @@ export default function AdminDashboardPage() {
     reload: reloadConsultations,
   } = useAsyncData(
     () =>
-      allowed
-        ? adminApi.consultations({ limit: 100 })
-        : Promise.resolve({ data: [] as Consultation[] }),
-    [user?.id, user?.role],
+      allowed && active === 'consultations'
+        ? adminApi.consultations({ page: consultationsPage, limit: ADMIN_PAGE_SIZE })
+        : Promise.resolve({ data: [] as Consultation[], meta: undefined }),
+    [user?.id, user?.role, active, consultationsPage],
   )
 
   const [replyDrafts, setReplyDrafts] = useState<Record<string, string>>({})
@@ -650,18 +686,12 @@ export default function AdminDashboardPage() {
     )
   }
 
-  const allUsers = usersPayload?.data ?? []
-  const userQuery = userSearch.trim().toLowerCase()
-  const users = !userQuery
-    ? allUsers
-    : allUsers.filter((u) => {
-        const name = u.profile?.name?.toLowerCase() ?? ''
-        const email = u.email?.toLowerCase() ?? ''
-        const phone = u.profile?.phone?.toLowerCase() ?? ''
-        return name.includes(userQuery) || email.includes(userQuery) || phone.includes(userQuery)
-      })
+  const users = usersPayload?.data ?? []
+  const usersMeta = usersPayload?.meta
   const brands = brandsPayload?.data ?? []
+  const brandsMeta = brandsPayload?.meta
   const events = eventsPayload?.data ?? []
+  const eventsMeta = eventsPayload?.meta
   const partnerList = partners ?? []
   const tierList = tiers ?? []
   const inquiryList = inquiries ?? []
@@ -674,6 +704,7 @@ export default function AdminDashboardPage() {
   const opportunityList = cmsOpportunities ?? []
   const announcementList = announcements ?? []
   const consultationList = consultationsPayload?.data ?? []
+  const consultationsMeta = consultationsPayload?.meta
   const memberOptions = (membersPayload?.data ?? []).map((m) => ({ value: m.id, label: m.name }))
   const recentMembers = overview?.recentMembers ?? []
   const recentConsultations = overview?.recentConsultations ?? []
@@ -682,7 +713,7 @@ export default function AdminDashboardPage() {
 
   const tabLoading =
     ((active === 'overview' || active === 'plans') && (overviewLoading || plansLoading)) ||
-    (active === 'users' && usersLoading) ||
+    (active === 'users' && (usersLoading || overviewLoading)) ||
     (active === 'brands' && brandsLoading) ||
     (active === 'events' && eventsLoading) ||
     (active === 'partnerships' && (partnersLoading || tiersLoading || inquiriesLoading)) ||
@@ -699,7 +730,7 @@ export default function AdminDashboardPage() {
 
   const tabError =
     ((active === 'overview' || active === 'plans') && (overviewError || plansError)) ||
-    (active === 'users' && usersError) ||
+    (active === 'users' && (usersError || overviewError)) ||
     (active === 'brands' && brandsError) ||
     (active === 'events' && eventsError) ||
     (active === 'partnerships' && (partnersError || tiersError || inquiriesError)) ||
@@ -721,7 +752,10 @@ export default function AdminDashboardPage() {
       reloadRevenue()
       reloadPlans()
     }
-    if (active === 'users') reloadUsers()
+    if (active === 'users') {
+      reloadUsers()
+      reloadOverview()
+    }
     if (active === 'brands') reloadBrands()
     if (active === 'events') reloadEvents()
     if (active === 'partnerships') {
@@ -763,30 +797,33 @@ export default function AdminDashboardPage() {
   const userStatCards = [
     {
       label: 'إجمالي المستخدمات',
-      value: String(allUsers.length),
+      value: String(usersMeta?.total ?? kpis?.totalUsers ?? '—'),
       icon: Users,
     },
     {
-      label: 'حسابات نشطة',
-      value: String(allUsers.filter((u) => u.isActive).length),
+      label: 'عضوات معتمدات',
+      value: String(kpis?.members ?? '—'),
       icon: UserCheck,
     },
     {
       label: 'بانتظار الموافقة',
-      value: String(allUsers.filter((u) => u.membershipStatus === 'pending').length),
+      value: String(kpis?.pendingMemberships ?? '—'),
       icon: Clock,
     },
     {
-      label: 'عضوية مقبولة',
-      value: String(allUsers.filter((u) => u.membershipStatus === 'approved').length),
+      label: 'زائرات',
+      value: String(kpis?.guests ?? '—'),
       icon: CreditCard,
     },
   ]
 
-  const userPlanStats = (['BUSINESS', 'EXPERT', 'ACADEMY'] as const).map((plan) => ({
-    plan,
-    count: allUsers.filter((u) => u.plan === plan).length,
-  }))
+  const userPlanStats = (['BUSINESS', 'EXPERT', 'ACADEMY'] as const).map((plan) => {
+    const fromOverview = planDistribution.find((row) => row.plan === plan)
+    return {
+      plan,
+      count: Number(fromOverview?.count ?? 0),
+    }
+  })
   const userPlanTotal = userPlanStats.reduce((sum, p) => sum + p.count, 0) || 1
 
   const totalPlanCount = planDistribution.reduce((sum, p) => sum + Number(p.count), 0) || 1
@@ -1302,7 +1339,7 @@ export default function AdminDashboardPage() {
                       item.id === 'partnerships'
                         ? inquiryList.filter((q) => q.status === 'new').length
                         : item.id === 'consultations'
-                          ? consultationList.filter((q) => q.status === 'new').length
+                          ? Number(kpis?.consultationsNew ?? 0)
                           : 0
                     return (
                       <button
@@ -1464,6 +1501,29 @@ export default function AdminDashboardPage() {
                         >
                           الاستشارات
                         </Button>
+                        <Button
+                          type="button"
+                          variant="glass"
+                          size="sm"
+                          className="!text-white !border-white/20 !bg-white/10"
+                          disabled={telegramTestBusy}
+                          onClick={async () => {
+                            setTelegramTestBusy(true)
+                            setTelegramTestHint(null)
+                            try {
+                              const res = await adminApi.testTelegram()
+                              setTelegramTestHint(res.message)
+                            } catch (err) {
+                              setTelegramTestHint(
+                                err instanceof Error ? err.message : 'تعذر إرسال اختبار تيليجرام',
+                              )
+                            } finally {
+                              setTelegramTestBusy(false)
+                            }
+                          }}
+                        >
+                          {telegramTestBusy ? 'جاري الإرسال...' : 'اختبار تيليجرام'}
+                        </Button>
                         {financeAllowed && (
                           <Button
                             type="button"
@@ -1477,6 +1537,11 @@ export default function AdminDashboardPage() {
                         )}
                       </div>
                     </div>
+                    {telegramTestHint && (
+                      <p className="relative mt-4 text-[12px] text-gold/90 bg-white/5 rounded-[12px] px-3 py-2 ring-1 ring-white/10">
+                        {telegramTestHint}
+                      </p>
+                    )}
                   </div>
 
                   <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4">
@@ -1692,7 +1757,7 @@ export default function AdminDashboardPage() {
                       <div className="relative max-w-sm">
                         <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted" />
                         <input
-                          placeholder="بحث بالاسم أو البريد..."
+                          placeholder="بحث بالاسم أو البريد أو الهاتف..."
                           value={userSearch}
                           onChange={(e) => setUserSearch(e.target.value)}
                           className="pr-10 pl-4 py-2.5 rounded-[12px] border border-navy/10 bg-white text-sm w-full focus:outline-none focus:border-gold/50 focus:ring-2 focus:ring-gold/15 transition"
@@ -1754,7 +1819,9 @@ export default function AdminDashboardPage() {
                                       const label = u.profile?.name || u.email
                                       if (!confirmDelete(label)) return
                                       await adminApi.deleteUser(u.id)
-                                      reloadUsers()
+                                      if (users.length === 1 && usersPage > 1) setUsersPage((p) => p - 1)
+                                      else reloadUsers()
+                                      reloadOverview()
                                     }}
                                   />
                                 </td>
@@ -1764,20 +1831,38 @@ export default function AdminDashboardPage() {
                           {users.length === 0 && (
                             <tr>
                               <td colSpan={8}>
-                                <EmptyState title="لا توجد مستخدمات" hint="أضيفي عضوة جديدة أو عدّلي كلمات البحث." />
+                                <EmptyState
+                                  title="لا توجد مستخدمات"
+                                  hint={
+                                    debouncedUserSearch
+                                      ? 'لا نتائج مطابقة — جرّبي كلمات بحث أخرى.'
+                                      : 'أضيفي عضوة جديدة للبدء.'
+                                  }
+                                />
                               </td>
                             </tr>
                           )}
                         </tbody>
                       </table>
                     </div>
+                    <AdminPagination
+                      meta={usersMeta}
+                      page={usersPage}
+                      onPageChange={setUsersPage}
+                      itemLabel="مستخدمة"
+                    />
                   </Panel>
                 </div>
               )}
 
               {active === 'brands' && (
                 <div className="space-y-4 animate-fade-up">
-                  <div className="flex justify-end">
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                    <p className="text-[13px] text-muted tabular-nums">
+                      {brandsMeta?.total != null
+                        ? `${brandsMeta.total.toLocaleString('ar-DZ')} علامة`
+                        : 'العلامات التجارية'}
+                    </p>
                     <Button variant="gold" size="sm" onClick={() => setEditor({ kind: 'brand' })}>
                       <Plus className="w-4 h-4" /> إضافة علامة
                     </Button>
@@ -1809,12 +1894,25 @@ export default function AdminDashboardPage() {
                       </Panel>
                     )}
                   </div>
+                  <Panel className="overflow-hidden !p-0">
+                    <AdminPagination
+                      meta={brandsMeta}
+                      page={brandsPage}
+                      onPageChange={setBrandsPage}
+                      itemLabel="علامة"
+                    />
+                  </Panel>
                 </div>
               )}
 
               {active === 'events' && (
                 <div className="space-y-3 animate-fade-up">
-                  <div className="flex justify-end mb-1">
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-1">
+                    <p className="text-[13px] text-muted tabular-nums">
+                      {eventsMeta?.total != null
+                        ? `${eventsMeta.total.toLocaleString('ar-DZ')} فعالية`
+                        : 'الفعاليات'}
+                    </p>
                     <Button variant="gold" size="sm" onClick={() => setEditor({ kind: 'event' })}>
                       <Plus className="w-4 h-4" /> إنشاء فعالية
                     </Button>
@@ -1858,6 +1956,14 @@ export default function AdminDashboardPage() {
                       <EmptyState title="لا توجد فعاليات" hint="أنشئي فعالية جديدة لنشرها على المنصة." />
                     </Panel>
                   )}
+                  <Panel className="overflow-hidden !p-0">
+                    <AdminPagination
+                      meta={eventsMeta}
+                      page={eventsPage}
+                      onPageChange={setEventsPage}
+                      itemLabel="فعالية"
+                    />
+                  </Panel>
                 </div>
               )}
 
@@ -1976,6 +2082,18 @@ export default function AdminDashboardPage() {
 
               {active === 'consultations' && (
                 <div className="space-y-4 animate-fade-up">
+                  <div className="flex items-center justify-between gap-3">
+                    <p className="text-[13px] text-muted tabular-nums">
+                      {consultationsMeta?.total != null
+                        ? `${consultationsMeta.total.toLocaleString('ar-DZ')} استشارة`
+                        : 'الاستشارات'}
+                      {Number(kpis?.consultationsNew ?? 0) > 0 && (
+                        <span className="mr-2 text-rose font-semibold">
+                          · {Number(kpis?.consultationsNew).toLocaleString('ar-DZ')} جديدة
+                        </span>
+                      )}
+                    </p>
+                  </div>
                   <Panel className="divide-y divide-navy/[0.06] overflow-hidden">
                     {consultationList.map((item) => (
                       <div key={item.id} className={`p-4 sm:p-5 ${item.status === 'new' ? 'bg-rose-soft/25' : ''}`}>
@@ -2074,6 +2192,12 @@ export default function AdminDashboardPage() {
                     {consultationList.length === 0 && (
                       <EmptyState title="لا توجد استشارات بعد" hint="ستظهر طلبات الاستشارة الواردة هنا." />
                     )}
+                    <AdminPagination
+                      meta={consultationsMeta}
+                      page={consultationsPage}
+                      onPageChange={setConsultationsPage}
+                      itemLabel="استشارة"
+                    />
                   </Panel>
                 </div>
               )}

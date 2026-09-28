@@ -264,6 +264,11 @@ export const adminApi = {
         status?: string
       }[]
     }>('/admin/overview'),
+  testTelegram: () =>
+    apiRequest<{ ok: boolean; message: string; chats?: { chatId: string; ok: boolean }[] }>(
+      '/admin/telegram/test',
+      { method: 'POST', body: {} },
+    ),
   revenue: () => apiRequest<AdminRevenue>('/admin/revenue'),
 
   users: (query?: Record<string, string | number | undefined>) =>
